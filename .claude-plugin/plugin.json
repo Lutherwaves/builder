@@ -1,0 +1,24 @@
+{
+  "name": "builder",
+  "description": "Operational tools for running AI coding agents at scale — recurring monitoring of Claude subscription usage limits (weekly/5h burn rate), session/context load with compaction picks, and ctx-wire token savings",
+  "version": "0.1.0",
+  "author": {
+    "name": "Lutherwaves"
+  },
+  "homepage": "https://github.com/Lutherwaves/builder",
+  "repository": "https://github.com/Lutherwaves/builder",
+  "license": "MIT",
+  "keywords": [
+    "claude-code",
+    "usage-limits",
+    "burn-rate",
+    "rate-limit",
+    "cctop",
+    "ctx-wire",
+    "context",
+    "compaction",
+    "monitoring",
+    "agent-ops",
+    "skills"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "name": "builder",
+  "owner": {
+    "name": "Lutherwaves"
+  },
+  "plugins": [
+    {
+      "name": "builder",
+      "source": "./"
+    }
+  ]
+}
