@@ -1,7 +1,7 @@
 {
   "name": "builder",
   "description": "Operational tools for running AI coding agents at scale — recurring monitoring of Claude subscription usage limits (weekly/5h burn rate), session/context load with compaction picks, and ctx-wire token savings",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": {
     "name": "Lutherwaves"
   },
