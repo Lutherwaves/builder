@@ -16,7 +16,7 @@ Built for [Claude Code](https://claude.com/claude-code) +
 /plugin marketplace add Lutherwaves/builder
 
 # Step 2: Install the plugin
-/plugin install builder@Lutherwaves-builder
+/plugin install builder@builder
 ```
 
 ## Skills
