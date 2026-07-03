@@ -4,9 +4,10 @@
 Usage: burn-proj.py <used_pct> <resets_at_epoch> [now_epoch]
 
 Prints naive (constant 7-day burn) and profile-aware projections.
-Profile-aware discounts remaining weekend hours (Sat x0.5, Sun x0.1) so the
-mid-week forecast isn't inflated by a hot weekday start — and it decays
-automatically as flat weekend hours accumulate.
+Profile-aware discounts the hours you predictably don't burn — a sleep window
+(02:00–09:00, x0.05) and the weekend (Sat x0.5, Sun x0.1) — so the forecast
+isn't inflated by charging daytime rates to hours you're asleep or resting.
+It also decays automatically as those low-usage hours accumulate.
 """
 import sys, time
 
@@ -14,7 +15,12 @@ WINDOW = 604800  # 7d in seconds
 HR = 3600
 
 def mult(ts):
-    wd = time.localtime(ts).tm_wday  # Mon=0 .. Sun=6
+    lt = time.localtime(ts)
+    h, wd = lt.tm_hour, lt.tm_wday  # hour 0..23 ; Mon=0 .. Sun=6
+    # Sleep window 02:00–09:00: near-zero usage any day.
+    if 2 <= h < 9:
+        return 0.05
+    # Active window (09:00–02:00), weekend-discounted.
     if wd == 5:  # Sat
         return 0.5
     if wd == 6:  # Sun

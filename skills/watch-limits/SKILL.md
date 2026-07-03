@@ -7,7 +7,7 @@ description: Use when you want a recurring monitor of your Claude subscription u
 
 ## Overview
 
-Installs a weekend-aware burn-rate projector and schedules a recurring status
+Installs an activity-aware burn-rate projector and schedules a recurring status
 watcher. The watcher reports, every ~30 min: weekly + 5h limit burn, a
 compaction pick, and `ctx-wire` savings. **Do not hand-roll the projection or
 the schedule — this skill is the canonical setup; reinventing it produces
@@ -50,13 +50,16 @@ prints two numbers:
 
 - **naive** = `used / elapsed_fraction` — worst case, assumes you burn every day
   at your average-so-far rate. Self-heals as elapsed grows.
-- **profile_aware** = discounts the *remaining* weekend hours (Sat ×0.5,
-  Sun ×0.1). The real forecast — a hot weekday start does NOT mean you'll blow
-  the cap if the weekend is predictably light.
+- **profile_aware** = discounts the hours you predictably don't burn — a sleep
+  window (02:00–09:00 ×0.05) and the weekend (Sat ×0.5, Sun ×0.1). The real
+  forecast — a hot evening or weekday start does NOT mean you'll blow the cap if
+  the hours ahead are predictably light (asleep or resting).
 
 **Lead with profile_aware; flag only when it exceeds 100%.** Reporting a naive
-mid-week spike as "WILL BLOW" is the false alarm this skill exists to prevent.
-Tune the multipliers in `burn-proj.py`'s `mult()` to your own cadence.
+evening/mid-week spike as "WILL BLOW" is the false alarm this skill exists to
+prevent — the projection should bend down as the clock nears your sleep window.
+Tune the sleep hours and weekend multipliers in `burn-proj.py`'s `mult()` to
+your own cadence (default active window 09:00–02:00).
 
 ## Caveats
 
@@ -70,7 +73,7 @@ Tune the multipliers in `burn-proj.py`'s `mult()` to your own cadence.
 
 | Mistake | Fix |
 |---------|-----|
-| Redesigning the burn math inline | Use `burn-proj.py` — weekend discounting is the point |
+| Redesigning the burn math inline | Use `burn-proj.py` — sleep/weekend discounting is the point |
 | Scheduling a 2nd watcher | Check existing jobs first; replace, don't duplicate |
 | Reporting naive % as the verdict | Lead with profile_aware; naive is the ceiling |
 | Sorting sessions on `contextTokens` raw | Treat null as 0 |

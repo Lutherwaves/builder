@@ -42,8 +42,9 @@ Built for [Claude Code](https://claude.com/claude-code) +
 ## What the watcher reports
 
 1. **Weekly burn rate** — how much of your weekly limit you've used, and whether
-   you're on pace to blow it before the (fixed) reset. Uses a **weekend-aware**
-   projection so a hot weekday start doesn't trigger a false alarm.
+   you're on pace to blow it before the (fixed) reset. Uses an **activity-aware**
+   projection (discounts your sleep window + weekend) so a hot evening or weekday
+   start doesn't trigger a false alarm.
 2. **Session/context load** — busy vs idle sessions and total subagents.
 3. **Compaction pick** — the highest-context *idle* session, safe to compact now.
 4. **ctx-wire savings** — cumulative tokens saved + a per-interval delta.
@@ -65,8 +66,10 @@ python3 burn-proj.py <used_pct> <resets_at_epoch> [now_epoch]
 
 - **naive** — straight-line `used / elapsed_fraction`; the worst case, self-heals
   as time passes.
-- **profile_aware** — discounts remaining weekend hours (Sat ×0.5, Sun ×0.1) for
-  a truer mid-week forecast. Tune the multipliers in `mult()` to your cadence.
+- **profile_aware** — discounts the hours you predictably don't burn: a sleep
+  window (02:00–09:00 ×0.05) and the weekend (Sat ×0.5, Sun ×0.1), for a forecast
+  that bends down as your quiet hours approach. Tune the sleep window and
+  multipliers in `mult()` to your own cadence (default active window 09:00–02:00).
 
 ## The toolkit that builds this
 
