@@ -1,0 +1,13 @@
+{
+  "default_repo": "owner/name",
+  "source": "todoist",
+  "scope": "today+overdue",
+  "labels": {
+    "needs_grooming": "intake:needs-grooming",
+    "filed": "intake:filed"
+  },
+  "create_markers": {
+    "comment_contains": ["gh issue", "→gh"],
+    "description_line": "intake: create"
+  }
+}
