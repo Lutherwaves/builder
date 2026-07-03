@@ -38,6 +38,11 @@ Built for [Claude Code](https://claude.com/claude-code) +
 - `/builder:watch-limits` — Install the burn-rate projector and schedule a
   recurring usage-limit watcher (weekly + 5h burn, compaction pick, ctx-wire
   savings). Run it once and the monitor reports every ~30 min.
+- `/builder:intake` — Grab & reconcile: pull today's captured tasks from a
+  tracker (Todoist first), drop anything already in motion (live session, open
+  PR, existing issue), and groom the raw leftovers into issues. Annotates by
+  default; creates issues only when you mark a task for it. Pluggable source
+  adapter — bring your own MCP for other trackers.
 
 ## What the watcher reports
 
