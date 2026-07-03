@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/Lutherwaves/builder/compare/builder-v0.1.2...builder-v0.1.3) (2026-07-03)
+
+
+### Features
+
+* add intake skill — grab & reconcile task tracker against work-in-flight ([#5](https://github.com/Lutherwaves/builder/issues/5)) ([e3fcee7](https://github.com/Lutherwaves/builder/commit/e3fcee71453b3efbd6e85c8f2f007154c1e0be17))
+
 ## [0.1.2](https://github.com/Lutherwaves/builder/compare/builder-v0.1.1...builder-v0.1.2) (2026-07-03)
 
 
