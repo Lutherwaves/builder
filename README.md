@@ -43,6 +43,12 @@ Built for [Claude Code](https://claude.com/claude-code) +
   PR, existing issue), and groom the raw leftovers into issues. Annotates by
   default; creates issues only when you mark a task for it. Pluggable source
   adapter — bring your own MCP for other trackers.
+- `/builder:code-graph` — Wire a local
+  [codebase-memory-mcp](https://github.com/DeusData/codebase-memory-mcp) graph
+  into a repo so agents answer structural questions (where is X, what calls Y,
+  architecture) instead of grep-reading files. One graph per repo path — clones
+  and worktrees stay isolated — plus a watcher that flags stale indexes with the
+  ~9s re-index command. Local-only, no API key.
 
 ## What the watcher reports
 

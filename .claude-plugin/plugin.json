@@ -1,6 +1,6 @@
 {
   "name": "builder",
-  "description": "Operational tools for running AI coding agents at scale — recurring monitoring of Claude subscription usage limits (weekly/5h burn rate), session/context load with compaction picks, and ctx-wire token savings",
+  "description": "Operational tools for running AI coding agents at scale — recurring monitoring of Claude subscription usage limits (weekly/5h burn rate), session/context load with compaction picks, ctx-wire token savings, and per-repo codebase-memory graphs (kept fresh) so agents query structure instead of grep-reading",
   "version": "0.1.3",
   "author": {
     "name": "Lutherwaves"
@@ -19,6 +19,9 @@
     "compaction",
     "monitoring",
     "agent-ops",
+    "codebase-memory",
+    "code-graph",
+    "indexing",
     "skills"
   ]
 }
