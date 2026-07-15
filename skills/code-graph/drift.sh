@@ -41,25 +41,33 @@ if [ -f "$REGISTRY" ]; then
 fi
 [ -n "$PROJECT" ] || PROJECT="$(printf '%s' "$REPO" | sed 's#^/##; s#/#-#g')"
 
-# Confirm the graph actually exists (registry could be ahead of a wiped cache).
+# Confirm the graph exists. Extract the field directly — do NOT pre-filter by
+# line: index_status returns one huge JSON line that can legitimately contain a
+# word like "supervisor" in a file path, and a line-filter would nuke the whole
+# payload. A field-specific match ignores the tool's log lines on its own.
 STATUS="$("$BIN" cli index_status "{\"project\":\"$PROJECT\"}" 2>/dev/null \
-  | grep -vE 'mem.init|deprecated|supervisor' \
   | grep -oE '"status":"[a-z_]+"' | head -1 | cut -d'"' -f4 || true)"
 if [ "${STATUS:-}" != "ready" ]; then
   echo "VERDICT=NOT_INDEXED project=$PROJECT repo=$REPO"; exit 0
 fi
 
-# Drift = committed (index-time sha ≠ live HEAD) and/or uncommitted (dirty tree).
+# Drift = committed (index-time sha ≠ live HEAD) and/or edited since index.
+# A dirty tree is NOT drift by itself — the graph was built from the working
+# tree, dirty files included. What matters is whether any tracked file changed
+# AFTER the graph was built, so compare tracked-file mtimes to the graph DB's
+# mtime (a stable index-time marker: read queries don't touch it).
 LIVE="$(git -C "$REPO" rev-parse HEAD 2>/dev/null || true)"
-DIRTY="$(git -C "$REPO" status --porcelain 2>/dev/null \
-  | grep -vE '(\.mcp\.json|\.codebase-memory/)' | grep -c . || true)"
-DIRTY="${DIRTY:-0}"
+DB="${HOME}/.cache/codebase-memory-mcp/${PROJECT}.db"
+DBMTIME="$(stat -c %Y "$DB" 2>/dev/null || echo 0)"
+NEWEST="$(git -C "$REPO" ls-files -z 2>/dev/null \
+  | ( cd "$REPO" 2>/dev/null && xargs -0 -r stat -c %Y 2>/dev/null ) | sort -rn | head -1 || true)"
+NEWEST="${NEWEST:-0}"
 
 REASON=""
 if [ -n "$STORED" ] && [ -n "$LIVE" ] && [ "$STORED" != "$LIVE" ]; then REASON="commits"; fi
-if [ "$DIRTY" -gt 0 ]; then REASON="${REASON:+$REASON+}uncommitted:${DIRTY}"; fi
+if [ "$NEWEST" -gt "$DBMTIME" ]; then REASON="${REASON:+$REASON+}edits"; fi
 
 if [ -z "$REASON" ]; then
-  echo "VERDICT=FRESH project=$PROJECT changed=0 head=${LIVE:0:7}"; exit 0
+  echo "VERDICT=FRESH project=$PROJECT head=${LIVE:0:7}"; exit 0
 fi
 echo "VERDICT=STALE project=$PROJECT reason=$REASON indexed=${STORED:0:7} head=${LIVE:0:7} repo=$REPO"

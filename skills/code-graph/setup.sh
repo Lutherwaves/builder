@@ -62,7 +62,10 @@ fi
 # ── Index the tree. No --name: the tool derives the project from the absolute
 #    path, so every clone/worktree gets an ISOLATED graph automatically. ────
 echo "→ indexing (moderate mode)…"
-OUT="$("$BIN" cli index_repository --repo-path "$REPO" --mode moderate 2>&1 | grep -vE 'mem.init|deprecated|supervisor' || true)"
+# Keep the raw output for error reporting; extract fields with specific matches
+# (a line pre-filter would nuke a JSON payload that happens to contain a log
+# keyword like "supervisor" in a file path).
+OUT="$("$BIN" cli index_repository --repo-path "$REPO" --mode moderate 2>&1 || true)"
 PROJECT="$(printf '%s' "$OUT" | grep -oE '"project":"[^"]+"' | head -1 | cut -d'"' -f4 || true)"
 NODES="$(printf '%s' "$OUT" | grep -oE '"nodes":[0-9]+' | head -1 | cut -d: -f2 || true)"
 EDGES="$(printf '%s' "$OUT" | grep -oE '"edges":[0-9]+' | head -1 | cut -d: -f2 || true)"

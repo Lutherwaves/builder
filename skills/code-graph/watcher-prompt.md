@@ -21,8 +21,8 @@ one repo per line). If it is missing or empty, say "no repos registered — run
 Each call prints one `VERDICT=…` line. Produce a tight, scannable report:
 
 1. STALE INDEXES: List every repo whose verdict is `STALE`, showing the short
-   project slug and `reason=` (`commits` = HEAD moved since index;
-   `uncommitted:N` = N working-tree files differ; or both). These return
+   project slug and `reason=` (`commits` = HEAD moved since index; `edits` = a
+   tracked file was modified after the graph was built; or both). These return
    wrong/old answers until re-indexed. For each, give the exact fix (re-index is
    ~9s and incremental):
      <binary> cli index_repository --repo-path <path> --mode moderate
