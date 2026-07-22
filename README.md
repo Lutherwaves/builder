@@ -50,6 +50,23 @@ Built for [Claude Code](https://claude.com/claude-code) +
   and worktrees stay isolated — plus a watcher that flags stale indexes with the
   ~9s re-index command. Local-only, no API key.
 
+## Doctrine
+
+builder is the applied side of **harness engineering** — improving a fixed
+coding agent by shaping its two external levers, **context** and **tools**.
+Each skill is one intervention on those levers, not a standalone gadget:
+
+| Skill | What it shapes |
+| --- | --- |
+| `code-graph` | Routes context just in time and makes the codebase a legible tool — a queryable structural graph instead of grep-reading files, kept fresh by a watcher. |
+| `harness` | Applies that loop to a repo end to end: baseline → provision → route → verify. |
+| `watch-limits` | Optimizes for measured effectiveness — tokens and attention against your real usage limits. |
+| `intake` | Turns feedback into infrastructure — captured work reconciled into durable issues. |
+
+The framing derives from Ryan Lopopolo's
+[Harness Engineering](https://github.com/lopopolo/harness-engineering) corpus
+(CC BY 4.0). See [`AGENTS.md`](AGENTS.md) for skill-selection routing.
+
 ## What the watcher reports
 
 1. **Weekly burn rate** — how much of your weekly limit you've used, and whether
@@ -133,3 +150,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full flow, and
 
 MIT
 
+Doctrine and vocabulary derive from Ryan Lopopolo's
+[Harness Engineering](https://github.com/lopopolo/harness-engineering),
+licensed CC BY 4.0. builder adapts the concepts and copies no source prose.
