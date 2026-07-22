@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.1.4](https://github.com/Lutherwaves/builder/compare/builder-v0.1.3...builder-v0.1.4) (2026-07-22)
+
+
+### Features
+
+* add code-graph skill — per-repo codebase-memory graph with stale-index watcher ([b2c6334](https://github.com/Lutherwaves/builder/commit/b2c6334e068f9512e9bd410ff986660aacb26464))
+* add harness-engineering doctrine layer and harness skill ([#8](https://github.com/Lutherwaves/builder/issues/8)) ([258d213](https://github.com/Lutherwaves/builder/commit/258d213c76eefe52ae5922847ed034c26af5dc3f))
+
+
+### Bug Fixes
+
+* correct code-graph drift detection ([c1c4721](https://github.com/Lutherwaves/builder/commit/c1c47215e893deede6cb74c06e770c87ae3e48bd))
+
+
+### CI
+
+* bump actions/checkout from 4.3.1 to 7.0.0 ([72e58e4](https://github.com/Lutherwaves/builder/commit/72e58e44be454158f6ae1eb40255af55e32d8891))
+
 ## [0.1.3](https://github.com/Lutherwaves/builder/compare/builder-v0.1.2...builder-v0.1.3) (2026-07-03)
 
 
