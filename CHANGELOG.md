@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.5](https://github.com/Lutherwaves/builder/compare/builder-v0.1.4...builder-v0.1.5) (2026-09-23)
+
+
+### Features
+
+* **intake:** GitHub Project drafts as a task source ([#12](https://github.com/Lutherwaves/builder/issues/12)) ([b414939](https://github.com/Lutherwaves/builder/commit/b41493983fc8e6324bc57a1385c508d0c458bb2a))
+
 ## [0.1.4](https://github.com/Lutherwaves/builder/compare/builder-v0.1.3...builder-v0.1.4) (2026-07-22)
 
 
