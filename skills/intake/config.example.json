@@ -2,6 +2,10 @@
   "default_repo": "owner/name",
   "source": "todoist",
   "scope": "today+overdue",
+  "project": {
+    "owner": "owner",
+    "number": 1
+  },
   "labels": {
     "needs_grooming": "intake:needs-grooming",
     "filed": "intake:filed"
