@@ -43,6 +43,13 @@ Built for [Claude Code](https://claude.com/claude-code) +
   PR, existing issue), and groom the raw leftovers into issues. Annotates by
   default; creates issues only when you mark a task for it. Pluggable source
   adapter — bring your own MCP for other trackers.
+- `/builder:tui` — Install `builder-tui`, a terminal cockpit you leave open in
+  a tmux window: every agent session by pane with its context use, machine load
+  and CPU power-limit drift, detached busy loops with the pane that leaked them,
+  git dirt and removable worktrees, and a ranked list of what to do with the
+  exact command for each. Read-only by default; destructive actions need a typed
+  `y`. Agents read the same state with `builder-tui status`. Linux, one static
+  binary, under 1% of one core at idle including the commands it runs.
 - `/builder:code-graph` — Wire a local
   [codebase-memory-mcp](https://github.com/DeusData/codebase-memory-mcp) graph
   into a repo so agents answer structural questions (where is X, what calls Y,
@@ -62,6 +69,7 @@ Each skill is one intervention on those levers, not a standalone gadget:
 | `harness` | Applies that loop to a repo end to end: baseline → provision → route → verify. |
 | `watch-limits` | Optimizes for measured effectiveness — tokens and attention against your real usage limits. |
 | `intake` | Turns feedback into infrastructure — captured work reconciled into durable issues. |
+| `tui` | Curates the environment the agents share — one view of sessions, load and git, so the costs agents impose on each other (a dirty checkout, a leaked loop) surface with their fix. |
 
 The framing derives from Ryan Lopopolo's
 [Harness Engineering](https://github.com/lopopolo/harness-engineering) corpus

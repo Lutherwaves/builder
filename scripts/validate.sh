@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Validate the builder plugin: manifests parse, skills have frontmatter,
-# Python tools compile. Run locally before opening a PR; CI runs it too.
+# Python tools compile, Go tools are formatted, vetted and tested. Run locally
+# before opening a PR; CI runs it too.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -44,6 +45,24 @@ out="$(python3 skills/watch-limits/burn-proj.py 19 1783504800 1782990571)"
 grep -qE 'elapsed=.* naive=.* profile_aware=.* reset_in=' <<<"$out" \
   || err "burn-proj.py output shape changed: $out"
 note "✓ burn-proj smoke: $out"
+
+echo "→ go tools"
+for mod in $(find skills -name go.mod -not -path '*/testdata/*'); do
+  dir="$(dirname "$mod")"
+  if ! command -v go >/dev/null 2>&1; then err "$dir needs Go to validate (https://go.dev/dl)"; continue; fi
+  unformatted="$(cd "$dir" && gofmt -l .)"
+  [ -z "$unformatted" ] && note "✓ gofmt: $dir" || err "$dir: gofmt needed: $unformatted"
+  (cd "$dir" && go vet ./...) && note "✓ vet: $dir" || err "$dir: go vet failed"
+  (cd "$dir" && go test ./...) >/dev/null && note "✓ tests: $dir" || err "$dir: go test failed (run: cd $dir && go test ./...)"
+done
+# builder-tui smoke: the binary reads the fixture machine and the example config
+if [ -f skills/tui/go.mod ] && command -v go >/dev/null 2>&1; then
+  bin="$(mktemp)"
+  (cd skills/tui && CGO_ENABLED=0 go build -o "$bin" .)
+  out="$("$bin" status --text --fixtures skills/tui/testdata/machine --config skills/tui/config.example.toml)"
+  grep -q 'sessions: 3 (busy 1, idle 2)' <<<"$out" && note "✓ builder-tui smoke" || err "builder-tui smoke output changed: $out"
+  rm -f "$bin"
+fi
 
 echo
 if [ "$fail" -eq 0 ]; then echo "✓ all checks passed"; else echo "✗ validation failed"; exit 1; fi

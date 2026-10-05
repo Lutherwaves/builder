@@ -2,3 +2,7 @@ __pycache__/
 *.pyc
 usage.json
 ctxwire-last.json
+skills/tui/builder-tui
+skills/tui/dist/
+*.test
+*.out

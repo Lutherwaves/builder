@@ -1,0 +1,4 @@
+%1	work:1.1	app	200	claude	/work/app
+%2	work:2.1	review	300	claude	/work/app-review
+%3	work:3.1	tools	401	zsh	/work/tools
+%4	notes:1.1	notes	500	zsh	/work/notes

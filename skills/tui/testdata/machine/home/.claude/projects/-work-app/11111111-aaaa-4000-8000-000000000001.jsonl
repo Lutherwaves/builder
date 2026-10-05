@@ -1,0 +1,5 @@
+{"type":"user","message":{"content":"hi"}}
+{"type":"assistant","isSidechain":false,"timestamp":"2026-09-21T20:00:00Z","message":{"model":"model-a","usage":{"input_tokens":10,"cache_read_input_tokens":90000,"cache_creation_input_tokens":0,"output_tokens":0}}}
+{"type":"assistant","isSidechain":false,"timestamp":"2026-09-21T20:00:00Z","message":{"model":"model-a","usage":{"input_tokens":10,"cache_read_input_tokens":179990,"cache_creation_input_tokens":0,"output_tokens":0}}}
+{"type":"assistant","isSidechain":true,"timestamp":"2026-09-21T20:00:00Z","message":{"model":"model-a","usage":{"input_tokens":5,"cache_read_input_tokens":5,"cache_creation_input_tokens":0,"output_tokens":0}}}
+{"type":"user","message":{"content":"next"}}
