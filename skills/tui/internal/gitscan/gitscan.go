@@ -161,9 +161,6 @@ func (s *Scanner) Scan(ctx context.Context, in Input) Report {
 	git, merged := s.Git, s.Merged
 	start := time.Now()
 	rep := Report{At: start}
-	if in.Main == "" {
-		in.Main = "main"
-	}
 	if in.Remote == "" {
 		in.Remote = "origin"
 	}
@@ -199,8 +196,12 @@ func (s *Scanner) Scan(ctx context.Context, in Input) Report {
 }
 
 func (s *Scanner) scanRepo(ctx context.Context, path string, in Input, sessionsIn map[string]int, git Runner, merged Merged) (Repo, error) {
-	r := Repo{Path: path, Main: in.Main}
-	if out, err := git(ctx, path, "rev-list", "--count", "refs/heads/"+in.Main+"..refs/remotes/"+in.Remote+"/"+in.Main); err == nil {
+	def := in.Main
+	if def == "" {
+		def = defaultBranch(ctx, git, path, in.Remote)
+	}
+	r := Repo{Path: path, Main: def}
+	if out, err := git(ctx, path, "rev-list", "--count", "refs/heads/"+def+"..refs/remotes/"+in.Remote+"/"+def); err == nil {
 		r.Behind, _ = strconv.Atoi(strings.TrimSpace(string(out)))
 	}
 	out, err := git(ctx, path, "worktree", "list", "--porcelain")
@@ -218,7 +219,7 @@ func (s *Scanner) scanRepo(ctx context.Context, path string, in Input, sessionsI
 	}
 	if mergedSet == nil {
 		mergedSet = map[string]bool{}
-		if out, err := git(ctx, path, "branch", "--format=%(refname:short)", "--merged", "refs/remotes/"+in.Remote+"/"+in.Main); err == nil {
+		if out, err := git(ctx, path, "branch", "--format=%(refname:short)", "--merged", "refs/remotes/"+in.Remote+"/"+def); err == nil {
 			for _, b := range strings.Fields(string(out)) {
 				mergedSet[b] = true
 			}
@@ -236,7 +237,7 @@ func (s *Scanner) scanRepo(ctx context.Context, path string, in Input, sessionsI
 			}
 		}
 		main := i == 0
-		wt.Merged = !main && wt.Branch != "" && wt.Branch != in.Main && mergedSet[wt.Branch]
+		wt.Merged = !main && wt.Branch != "" && wt.Branch != def && mergedSet[wt.Branch]
 		switch {
 		case wt.Sessions > 0 || main:
 			wt.Dirty = s.count(ctx, git, wt.Path, 0)
@@ -249,6 +250,16 @@ func (s *Scanner) scanRepo(ctx context.Context, path string, in Input, sessionsI
 		}
 	}
 	return r, nil
+}
+
+// defaultBranch is the branch the remote's HEAD points at (main, master,
+// develop...), or "main" when the clone never recorded it.
+func defaultBranch(ctx context.Context, git Runner, path, remote string) string {
+	out, err := git(ctx, path, "symbolic-ref", "--short", "refs/remotes/"+remote+"/HEAD")
+	if b, ok := strings.CutPrefix(strings.TrimSpace(string(out)), remote+"/"); err == nil && ok && b != "" {
+		return b
+	}
+	return "main"
 }
 
 // count returns a cached dirty count younger than maxAge, or counts again.

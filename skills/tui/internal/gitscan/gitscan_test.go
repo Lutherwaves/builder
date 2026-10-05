@@ -138,3 +138,27 @@ func TestScannerCachesIdleWorktrees(t *testing.T) {
 		t.Errorf("a merged idle worktree must come from the cache: %v (%s)", calls, repo)
 	}
 }
+
+func TestScanFindsTheRemotesDefaultBranch(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not installed")
+	}
+	root, _ := filepath.EvalSymlinks(t.TempDir())
+	repo := filepath.Join(root, "app")
+	run(t, root, "init", "-q", "-b", "trunk", repo)
+	run(t, repo, "commit", "-q", "--allow-empty", "-m", "a")
+	run(t, repo, "commit", "-q", "--allow-empty", "-m", "b")
+	run(t, repo, "update-ref", "refs/remotes/origin/trunk", "HEAD")
+	run(t, repo, "symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/trunk")
+	run(t, repo, "reset", "-q", "--hard", "HEAD~1")
+	run(t, repo, "worktree", "add", "-q", "-b", "done", filepath.Join(root, "wt", "done"))
+
+	rep := Scan(context.Background(), Input{SessionCwds: []string{repo}}, Git, func(context.Context, string) map[string]bool { return nil })
+	r := rep.Repos[0]
+	if r.Main != "trunk" || r.Behind != 1 {
+		t.Fatalf("want trunk 1 behind, got %s %d behind", r.Main, r.Behind)
+	}
+	if wt := r.Worktrees[1]; !wt.Merged {
+		t.Fatalf("a branch merged into trunk must count as merged: %+v", wt)
+	}
+}

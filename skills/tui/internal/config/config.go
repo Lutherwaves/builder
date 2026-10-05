@@ -87,7 +87,7 @@ func (g Group) Match(name string) bool { return g.re != nil && g.re.MatchString(
 type Git struct {
 	Repos    []string `toml:"repos"` // checkouts to watch besides the ones sessions use
 	Interval Duration `toml:"interval"`
-	Main     string   `toml:"main"`   // default branch name
+	Main     string   `toml:"main"`   // default branch name; empty: what the remote's HEAD names
 	Remote   string   `toml:"remote"` // remote to compare against
 }
 
@@ -117,7 +117,7 @@ func Default() Config {
 			MinAge:   Duration{2 * time.Minute},
 			Commands: []string{"sh", "bash", "zsh", "dash", "fish"},
 		},
-		Git: Git{Interval: Duration{5 * time.Minute}, Main: "main", Remote: "origin"},
+		Git: Git{Interval: Duration{5 * time.Minute}, Remote: "origin"},
 	}
 }
 

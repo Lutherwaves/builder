@@ -37,7 +37,7 @@ commands = ["sh", "bash", "zsh", "dash", "fish"]   # empty: any command
 
 [git]
 interval = "5m"
-main = "main"
+# main = "main"         # default: the branch the remote's HEAD names
 remote = "origin"
 repos = []               # checkouts to watch besides the ones sessions use
 
