@@ -1,0 +1,5 @@
+Inter-|   Receive |  Transmit
+ face |bytes packets errs drop fifo frame compressed multicast|bytes
+    lo: 999 1 0 0 0 0 0 0 999 1 0 0 0 0 0 0
+  eth0: 1000 10 0 0 0 0 0 0 2000 20 0 0 0 0 0 0
+veth1a: 5000 5 0 0 0 0 0 0 5000 5 0 0 0 0 0 0

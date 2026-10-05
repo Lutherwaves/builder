@@ -16,6 +16,7 @@ Pick the skill whose lever matches the gap you observe:
 | Adopt that graph-first workflow in a new repo end to end | `harness` | Both, as a loop |
 | Know whether you'll blow your weekly usage limit, and which idle session to compact | `watch-limits` | Effectiveness / economics |
 | Reconcile a task tracker against work already in flight and groom the rest | `intake` | Feedback into infrastructure |
+| See every agent session, machine load and git cost in one place, or read it as JSON (`builder-tui status`) | `tui` | Environment |
 
 ## Working on builder
 
@@ -23,7 +24,12 @@ Pick the skill whose lever matches the gap you observe:
   to edit. Each must open with a `---` frontmatter block carrying `name:` and
   `description:` (see any existing skill).
 - Run `bash scripts/validate.sh` before opening a PR. It checks manifest JSON,
-  skill frontmatter, and Python compilation. CI runs it too.
+  skill frontmatter, Python compilation, and gofmt/vet/tests plus a fixture
+  smoke run for Go tools (`skills/tui`). CI runs it too.
+- Go tools are single static binaries: no cgo. Linux readers are rooted at a
+  directory so tests run against `testdata/` fixtures, never the live machine;
+  macOS and Windows read through gopsutil (`internal/host`) behind the same
+  `procfs.Host` interface, and `validate.sh` cross-builds both.
 - Keep skills self-contained and composable: a new application skill should call
   an existing capability skill, not re-implement it.
 - Conventional Commits; release is automated via release-please.

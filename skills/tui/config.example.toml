@@ -1,0 +1,50 @@
+# builder-tui — copy to ~/.config/builder/tui.toml and keep it local.
+# Every key is optional; the values below are the defaults unless noted.
+
+interval = "2s"          # cheap counters; processes every 3x, git every git.interval
+agents = ["claude"]      # process names that are agent sessions
+latency_target = ""      # host:port to time a TCP connect against every 10 s, e.g. "example.com:443"
+
+[sessions]
+compact_at = 85          # context % at which a session should compact
+clear_idle = "30m"       # idle this long while holding clear_min_pct context: clear
+clear_min_pct = 20
+clear_stale = "24h"      # idle this long: clear whatever it holds
+# [sessions.windows]     # context window by model-name prefix; default 200k, or
+# "some-model" = 1000000 # 1M when the session's model setting ends in [1m] or it passed 200k
+
+[alerts]                 # a zero threshold is off
+temp_over_c = 95
+load1_over = 0
+load1_for = "2m"         # the condition must hold this long
+psi_cpu_over = 0         # PSI cpu "some avg10", percent
+psi_cpu_for = "2m"
+mem_available_under_gb = 0
+swap_over_gb = 0         # swap held although RAM is free:
+swap_when_available_over_gb = 0
+power_limits_w = []      # expected CPU package limits, long term then short term;
+                         # empty alerts when a limit changes from its value at startup
+
+[orphans]                # detached busy loops
+cpu_over = 80            # percent of one core
+for = "30s"
+min_age = "2m"
+commands = ["sh", "bash", "zsh", "dash", "fish"]   # empty: any command
+
+# [[groups]]             # CPU share of containers whose name matches
+# name = "CI runners"
+# container = "runner"   # regular expression
+
+[git]
+interval = "5m"
+# main = "main"         # default: the branch the remote's HEAD names
+remote = "origin"
+repos = []               # checkouts to watch besides the ones sessions use
+
+[history]
+log = ""                 # default ~/.local/share/builder/tui-history.csv; "-" disables
+source = ""              # another CSV with a ts column to chart alongside
+
+[hooks]
+alert = []               # argv run on each new alert, title and evidence appended,
+                         # e.g. ["notify-send", "builder-tui"]
