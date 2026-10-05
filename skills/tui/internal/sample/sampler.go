@@ -19,6 +19,7 @@ type Session struct {
 	PID        int           `json:"pid"`
 	Pane       string        `json:"pane"`
 	Target     string        `json:"target"`
+	Tab        string        `json:"tab"` // tmux window name
 	Name       string        `json:"name"`
 	SessionID  string        `json:"session_id"`
 	Cwd        string        `json:"cwd"`
@@ -338,7 +339,7 @@ func (s *Sampler) sampleSessions(snap *Snapshot, panes []Pane, procs map[int]pro
 
 		cpu, n := s.treeCPU(pid, procs, children, dt)
 		sess := Session{
-			PID: pid, Pane: paneID, Target: pane.Target, Cwd: s.FS.Cwd(pid),
+			PID: pid, Pane: paneID, Target: pane.Target, Tab: pane.Window, Cwd: s.FS.Cwd(pid),
 			CPU: cpu, Procs: n, Window: 200_000, Context: "unknown",
 		}
 		if e, ok := s.agents.entry(pid); ok {

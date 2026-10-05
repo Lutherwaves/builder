@@ -48,7 +48,7 @@ func TestViewFitsWidth(t *testing.T) {
 				t.Fatalf("width %d: line %d is %d wide: %q", w, i, lw, line)
 			}
 		}
-		for _, want := range []string{"app-feature", "app-review", "! compact", "▲ clear", "fresh", "1 without an agent: %4 zsh"} {
+		for _, want := range []string{"app-feature", "app-review", "! compact", "▲ clear", "fresh", "1 without an agent: notes:1.1 zsh"} {
 			if !strings.Contains(out, want) {
 				t.Fatalf("width %d: view lacks %q:\n%s", w, want, out)
 			}

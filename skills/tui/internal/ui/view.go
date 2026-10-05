@@ -197,8 +197,9 @@ func (m Model) footer(w int) string {
 }
 
 const (
-	colPane = 6
-	colName = 20
+	colPane = 10 // session:window.pane; widened to show the tab name when there is room
+	colTab  = 12
+	colName = 18
 	colSt   = 6
 	colIdle = 7
 	colBar  = 10
@@ -219,8 +220,12 @@ func (m Model) sessions(w, h int) []string {
 	region := fmt.Sprintf(" %d AGENTS  ·  BUSY %d  ·  IDLE %d", len(ss), busy, len(ss)-busy)
 	lines := []string{"", st.label.Render(region)}
 
-	tree := min(max(w-(1+colPane+colName+colSt+colIdle+colBar+1+colPct+colCPU+colDo+1), 12), 48)
-	head := " " + pad("PANE", colPane) + pad("NAME", colName) + pad("STATE", colSt) + pad("IDLE", colIdle) +
+	tab := 0
+	if w >= 100 {
+		tab = colTab
+	}
+	tree := min(max(w-(1+colPane+tab+colName+colSt+colIdle+colBar+1+colPct+colCPU+colDo+1), 12), 48)
+	head := " " + pad("TMUX", colPane+tab) + pad("NAME", colName) + pad("STATE", colSt) + pad("IDLE", colIdle) +
 		pad("CONTEXT", colBar+1+colPct) + pad("CPU", colCPU) + pad("DO", colDo+1) + "WORKTREE"
 	lines = append(lines, st.label.Render(fit(head, w)))
 
@@ -229,12 +234,12 @@ func (m Model) sessions(w, h int) []string {
 	sel := m.selIndex()
 	first := max(min(sel-room/2, len(ss)-room), 0)
 	for i := first; i < len(ss) && i < first+room; i++ {
-		lines = append(lines, m.row(ss[i], i == sel, w, tree))
+		lines = append(lines, m.row(ss[i], i == sel, w, tab, tree))
 	}
 	if n := len(m.snap.IdlePanes); n > 0 {
 		var ids []string
 		for _, p := range m.snap.IdlePanes {
-			ids = append(ids, p.Pane+" "+p.Command)
+			ids = append(ids, place(p.Target, p.Pane)+" "+p.Command)
 		}
 		lines = append(lines, st.faint.Render(fit(fmt.Sprintf(" %d without an agent: %s", n, strings.Join(ids, ", ")), w)))
 	}
@@ -242,7 +247,7 @@ func (m Model) sessions(w, h int) []string {
 	return append(lines, detail...)
 }
 
-func (m Model) row(s sample.Session, selected bool, w, tree int) string {
+func (m Model) row(s sample.Session, selected bool, w, tab, tree int) string {
 	st := m.st
 	state, idle := st.text.Render(pad("busy", colSt)), pad("", colIdle)
 	if !s.Busy {
@@ -276,9 +281,16 @@ func (m Model) row(s sample.Session, selected bool, w, tree int) string {
 		do = st.warn.Render(pad("▲ clear", colDo+1))
 	}
 	name := st.text.Render(pad(s.Name, colName))
-	pane := st.muted.Render(pad(s.Pane, colPane))
+	where := place(s.Target, s.Pane)
 	if selected {
-		pane = st.accent.Render(pad("▌"+s.Pane, colPane))
+		where = "▌" + where
+	}
+	pane := st.muted.Render(pad(where, colPane))
+	if selected {
+		pane = st.accent.Render(pad(where, colPane))
+	}
+	if tab > 0 {
+		pane += st.muted.Render(pad(s.Tab, tab))
 	}
 	line := " " + pane + name + state + idle + ctx + cpu + do + st.muted.Render(pad(worktree(s.Cwd), tree))
 	if selected {
@@ -295,10 +307,10 @@ func (m Model) detail(w int) []string {
 	if !ok {
 		return []string{st.faint.Render(" no agent sessions found in tmux")}
 	}
-	lines := []string{st.label.Render(" " + strings.ToUpper(s.Pane+"  "+s.Name))}
+	lines := []string{st.label.Render(" " + strings.ToUpper(place(s.Target, s.Pane)+" "+s.Tab+"  "+s.Name))}
 	facts := []string{fmt.Sprintf("pid %d", s.PID)}
-	if s.Target != "" {
-		facts = append(facts, s.Target)
+	if s.Pane != "" {
+		facts = append(facts, "pane "+s.Pane)
 	}
 	if !s.Started.IsZero() {
 		facts = append(facts, "started "+sample.Human(time.Since(s.Started))+" ago")
@@ -337,6 +349,15 @@ func worktree(cwd string) string {
 		return "wt/" + base
 	}
 	return base
+}
+
+// place names a pane the way the tmux status bar does (session:window.pane),
+// falling back to its id when tmux did not list it.
+func place(target, id string) string {
+	if target != "" {
+		return target
+	}
+	return id
 }
 
 func pad(s string, w int) string {
