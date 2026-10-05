@@ -197,7 +197,7 @@ func (m Model) footer(w int) string {
 }
 
 const (
-	colPane = 10 // session:window.pane; widened to show the tab name when there is room
+	colPane = 11 // session:window.pane; widened to show the tab name when there is room
 	colTab  = 12
 	colName = 18
 	colSt   = 6

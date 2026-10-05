@@ -127,7 +127,8 @@ type Sampler struct {
 	lat        time.Duration
 	latErr     string
 	burn       map[string][]tokenPoint
-	bigSession map[string]bool // sessions seen past 200k tokens, so 1M windows
+	bigSession map[string]bool  // sessions seen past 200k tokens, so 1M windows
+	longCtx    map[procKey]bool // processes started with a 1M model setting
 
 	owners     map[procKey]string
 	hotSince   map[procKey]time.Time
@@ -161,6 +162,7 @@ func (s *Sampler) init() {
 		s.panes = map[procKey]string{}
 		s.burn = map[string][]tokenPoint{}
 		s.bigSession = map[string]bool{}
+		s.longCtx = map[procKey]bool{}
 		s.owners = map[procKey]string{}
 		s.toplevel = map[string]string{}
 		if s.Cfg.Interval.Duration == 0 && s.Cfg.Orphans.CPUOver == 0 {
@@ -355,7 +357,13 @@ func (s *Sampler) sampleSessions(snap *Snapshot, panes []Pane, procs map[int]pro
 			if u, ok := s.agents.usageOf(e.SessionID, e.Cwd); ok {
 				sess.Context = "known"
 				sess.Model, sess.Tokens = u.Model, u.Tokens
-				sess.Window = s.window(e.SessionID, u.Model, u.Tokens)
+				long, ok := s.longCtx[key]
+				if !ok {
+					env := func(k string) (string, bool) { return s.FS.Environ(pid, k) }
+					long = longContext(modelSetting(s.FS.Cmdline(pid), env, e.Cwd, s.Home))
+					s.longCtx[key] = long
+				}
+				sess.Window = s.window(e.SessionID, u.Model, u.Tokens, long)
 				sess.ContextPct = 100 * float64(u.Tokens) / float64(sess.Window)
 				sess.Burn30m = s.trackBurn(e.SessionID, now, u.Tokens)
 			}
@@ -369,6 +377,11 @@ func (s *Sampler) sampleSessions(snap *Snapshot, panes []Pane, procs map[int]pro
 	for key := range s.panes {
 		if !alive[key] {
 			delete(s.panes, key)
+		}
+	}
+	for key := range s.longCtx {
+		if !alive[key] {
+			delete(s.longCtx, key)
 		}
 	}
 	seen := map[string]bool{}
@@ -444,15 +457,16 @@ func (s *Sampler) treeCPU(root int, procs map[int]procfs.Proc, children map[int]
 }
 
 // window is the session's context size. A configured value for its model
-// wins; otherwise a session that has been past 200k must have a 1M window.
-// Sessions of one model can differ, so this is decided per session.
-func (s *Sampler) window(sessionID, model string, tokens int) int {
+// wins; otherwise a session started with a 1M model setting, or seen past
+// 200k, has a 1M window. Sessions of one model can differ, so this is decided
+// per session.
+func (s *Sampler) window(sessionID, model string, tokens int, long bool) int {
 	for prefix, w := range s.Rules.Windows {
 		if strings.HasPrefix(model, prefix) {
 			return w
 		}
 	}
-	if tokens > 200_000 {
+	if long || tokens > 200_000 {
 		s.bigSession[sessionID] = true
 	}
 	if s.bigSession[sessionID] {

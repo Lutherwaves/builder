@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -195,4 +196,42 @@ func lastUsage(path string, size int64) (Usage, bool) {
 		}, true
 	}
 	return Usage{}, false
+}
+
+// modelSetting is the model a Claude Code process was started with, in the
+// order Claude Code resolves it: the --model flag, ANTHROPIC_MODEL, then the
+// project's local and shared settings and the user's settings. A change made
+// with /model inside the session is not visible here.
+func modelSetting(cmdline string, env func(string) (string, bool), cwd, home string) string {
+	args := strings.Fields(cmdline)
+	for i, a := range args {
+		if v, ok := strings.CutPrefix(a, "--model="); ok {
+			return v
+		}
+		if a == "--model" && i+1 < len(args) {
+			return args[i+1]
+		}
+	}
+	if v, ok := env("ANTHROPIC_MODEL"); ok && v != "" {
+		return v
+	}
+	for _, f := range []string{
+		filepath.Join(cwd, ".claude", "settings.local.json"),
+		filepath.Join(cwd, ".claude", "settings.json"),
+		filepath.Join(home, ".claude", "settings.json"),
+	} {
+		var s struct {
+			Model string `json:"model"`
+		}
+		if b, err := os.ReadFile(f); err == nil && json.Unmarshal(b, &s) == nil && s.Model != "" {
+			return s.Model
+		}
+	}
+	return ""
+}
+
+// longContext reports a model setting that asks for the 1M window, such as
+// "opus[1m]". The transcript names the model without that suffix.
+func longContext(model string) bool {
+	return strings.HasSuffix(strings.ToLower(model), "[1m]")
 }
