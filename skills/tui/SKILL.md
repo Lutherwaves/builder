@@ -5,12 +5,12 @@ description: Use when you want one place to watch a machine that runs many AI co
 
 # builder tui — a cockpit for agent sessions, tmux, git and machine load
 
-`builder-tui` is a single static Go binary (Linux) that a builder leaves open in
+`builder-tui` is a single static Go binary (Linux, macOS, Windows) that a builder leaves open in
 a tmux window. It answers, in one screen:
 
-- **Sessions** — every agent process mapped pane → process → worktree (via
-  `TMUX_PANE` in `/proc/<pid>/environ`, so a re-parented process still finds its
-  pane), busy/idle, context use and 30-minute burn, CPU of its whole process
+- **Sessions** — every agent process mapped pane → process → worktree (from
+  the pane the agent records in its session file, else `TMUX_PANE` in its
+  environment, so a re-parented process still finds its pane), busy/idle, context use and 30-minute burn, CPU of its whole process
   tree, and a suggestion: `compact`, `clear`, or nothing.
 - **Machine** — CPU per core, load, PSI, memory and swap, package temperature,
   CPU power limits (alerting on drift), GPUs, containers and the CPU share of
@@ -39,7 +39,9 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/tui/setup.sh"
 
 `setup.sh` downloads the release binary for this machine and checks its
 SHA-256, or builds from the plugin checkout when Go is installed. It installs to
-`~/.local/bin/builder-tui` (override with `BUILDER_BIN_DIR`).
+`~/.local/bin/builder-tui` (override with `BUILDER_BIN_DIR`). It runs on Linux
+and macOS; on Windows, run it inside WSL, or download
+`builder-tui-windows-amd64.exe` (or `-arm64.exe`) from the release page.
 
 ## Run
 
@@ -81,6 +83,15 @@ Machine goals live in a local file, never in a repository:
 
 ## Requirements
 
-Linux (reads `/proc` and `/sys`), tmux. Optional: `docker` (containers),
-`nvidia-smi` (GPUs), `gh` (merged pull requests, so squash merges count as
-merged).
+tmux for the Sessions panel. Optional: `docker` (containers), `nvidia-smi`
+(GPUs), `gh` (merged pull requests, so squash merges count as merged).
+
+| | Linux | macOS | Windows |
+|---|---|---|---|
+| Sessions, Git, Recs, History | yes | yes | in WSL (no native tmux) |
+| CPU, memory, swap, network, disk, load, processes | yes | yes | yes |
+| Pressure (PSI), power limits, temperature, container CPU | yes | no | no |
+
+Linux reads `/proc` and `/sys` directly. macOS and Windows read through the
+system's own APIs, which cost more per process scan, so the scan stays on its
+10-second cadence. Under WSL the cockpit is the Linux build.

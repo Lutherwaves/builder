@@ -14,8 +14,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"runtime/pprof"
-	"syscall"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -24,6 +24,7 @@ import (
 	"github.com/Lutherwaves/builder/skills/tui/internal/config"
 	"github.com/Lutherwaves/builder/skills/tui/internal/gitscan"
 	"github.com/Lutherwaves/builder/skills/tui/internal/history"
+	"github.com/Lutherwaves/builder/skills/tui/internal/host"
 	"github.com/Lutherwaves/builder/skills/tui/internal/procfs"
 	"github.com/Lutherwaves/builder/skills/tui/internal/sample"
 	"github.com/Lutherwaves/builder/skills/tui/internal/state"
@@ -75,7 +76,7 @@ func run(args []string) error {
 
 	// The cockpit must not add load: lowest CPU priority for us and every
 	// command we start.
-	_ = syscall.Setpriority(syscall.PRIO_PROCESS, 0, 19)
+	lowestPriority()
 
 	fixtures := *root != ""
 	smp := newSampler(cfg, *root)
@@ -164,7 +165,7 @@ func gitSource(cfg config.Config) ui.GitSource {
 // checkGuard re-verifies, right before a step runs, what its evidence said.
 func checkGuard(g advice.Guard) error {
 	if g.PID > 0 {
-		p, ok := procfs.FS{Root: "/proc"}.Proc(g.PID)
+		p, ok := newHost().Proc(g.PID)
 		if !ok || p.StartTime != g.StartTicks {
 			return fmt.Errorf("pid %d is no longer the process that was flagged", g.PID)
 		}
@@ -180,7 +181,7 @@ func checkGuard(g advice.Guard) error {
 // processCwds is where every process of ours sits, so a worktree someone
 // still works in is never offered for removal.
 func processCwds() []string {
-	fs := procfs.FS{Root: "/proc"}
+	fs := newHost()
 	procs, _ := fs.Procs()
 	out := make([]string, 0, len(procs))
 	for pid := range procs {
@@ -189,6 +190,14 @@ func processCwds() []string {
 		}
 	}
 	return out
+}
+
+// newHost reads /proc on Linux and the system's own APIs elsewhere.
+func newHost() procfs.Host {
+	if runtime.GOOS == "linux" {
+		return procfs.FS{Root: "/proc"}
+	}
+	return host.Host{}
 }
 
 // stateEvery is how often the state file is rewritten; status treats a file
@@ -217,7 +226,7 @@ func newSampler(cfg config.Config, root string) *sample.Sampler {
 		smp.Tmux = func() ([]byte, error) { return os.ReadFile(filepath.Join(root, "tmux-panes.txt")) }
 		return smp
 	}
-	smp.FS, smp.Sys = procfs.FS{Root: "/proc"}, procfs.Sys{Root: "/sys"}
+	smp.FS, smp.Sys = newHost(), procfs.Sys{Root: "/sys"}
 	smp.Home, _ = os.UserHomeDir()
 	smp.GPU, smp.Docker = sample.NvidiaSMI, sample.DockerPS
 	smp.LatencyTarget = cfg.LatencyTarget

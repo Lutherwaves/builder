@@ -181,11 +181,10 @@ func gitRecs(snap sample.Snapshot, git *gitscan.Report) []Rec {
 					Level: "info", score: 200 + float64(repo.Behind),
 					Title:    fmt.Sprintf("Update %s in %s", repo.Main, filepath.Base(repo.Path)),
 					Evidence: fmt.Sprintf("%s is %d commits behind its remote and %d sessions work on it", repo.Main, repo.Behind, wt.Sessions),
-					// It changes a checkout agents work in, and must never stop
-					// to ask for credentials on the cockpit's terminal.
+					// It changes a checkout agents work in. The runner never lets
+					// git ask for credentials and stops it after two minutes.
 					Second: &Action{Label: "fast-forward", Destructive: true, Steps: one(
-						"env", "GIT_TERMINAL_PROMPT=0", "GIT_SSH_COMMAND=ssh -o BatchMode=yes",
-						"timeout", "120", "git", "-C", wt.Path, "pull", "--ff-only")},
+						"git", "-C", wt.Path, "pull", "--ff-only")},
 				})
 			}
 		}

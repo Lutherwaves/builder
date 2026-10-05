@@ -10,8 +10,8 @@ compact_at = 85          # context % at which a session should compact
 clear_idle = "30m"       # idle this long while holding clear_min_pct context: clear
 clear_min_pct = 20
 clear_stale = "24h"      # idle this long: clear whatever it holds
-# [sessions.windows]     # context window by model-name prefix; default 200k,
-# "some-model" = 1000000 # or 1M once any session of that model passes 200k
+# [sessions.windows]     # context window by model-name prefix; default 200k, or
+# "some-model" = 1000000 # 1M when the session's model setting ends in [1m] or it passed 200k
 
 [alerts]                 # a zero threshold is off
 temp_over_c = 95

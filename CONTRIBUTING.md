@@ -66,8 +66,8 @@ Fully automated:
 2. release-please opens/updates a **release PR** with the next version + changelog.
 3. Merging the release PR tags the version, cuts a GitHub release, and bumps
    `.claude-plugin/plugin.json`.
-4. The same workflow then builds static `builder-tui` binaries (linux
-   amd64/arm64) and attaches them with a checksum file, which
+4. The same workflow then builds static `builder-tui` binaries (Linux,
+   macOS and Windows, amd64/arm64) and attaches them with a checksum file, which
    `skills/tui/setup.sh` downloads and verifies.
 
 Maintainers: do not bump versions manually.

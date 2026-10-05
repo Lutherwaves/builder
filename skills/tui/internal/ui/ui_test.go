@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -203,5 +204,16 @@ func TestRanMsgStartsNoSecondSampleLoop(t *testing.T) {
 	m := loaded(t, 100)
 	if _, cmd := m.Update(ranMsg{cmd: "x"}); cmd != nil {
 		t.Fatal("a finished action must not start another sample; the tick loop already runs")
+	}
+}
+
+// A confirmed step must never stop to ask for credentials on the cockpit's
+// terminal.
+func TestRunNeverPrompts(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("uses sh")
+	}
+	if err := run([]string{"sh", "-c", `test "$GIT_TERMINAL_PROMPT" = 0 && test -n "$GIT_SSH_COMMAND"`}); err != nil {
+		t.Fatalf("step ran with prompts allowed: %v", err)
 	}
 }

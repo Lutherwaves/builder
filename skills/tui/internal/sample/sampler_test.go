@@ -417,3 +417,28 @@ func writeTOML(t *testing.T, body string) string {
 	}
 	return path
 }
+
+// The session file's pane wins over the environment: it is the only source
+// on systems where another process's environment cannot be read.
+func TestPaneFromSessionFile(t *testing.T) {
+	root := copyFixture(t)
+	f := filepath.Join(root, "home", ".claude", "sessions", "200.json")
+	b, err := os.ReadFile(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b = []byte(strings.Replace(string(b), `"pid":200,`, `"pid":200,"tmux":"notes:@4.%4",`, 1))
+	if err := os.WriteFile(f, b, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	snap := newFixtureSampler(root).Sample()
+	for _, s := range snap.Sessions {
+		if s.PID == 200 {
+			if s.Pane != "%4" || s.Target != "notes:1.1" {
+				t.Fatalf("want %%4 notes:1.1 from the session file, got %s %s", s.Pane, s.Target)
+			}
+			return
+		}
+	}
+	t.Fatal("session 200 not found")
+}

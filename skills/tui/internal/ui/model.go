@@ -3,7 +3,9 @@
 package ui
 
 import (
+	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -109,9 +111,23 @@ func New(opt Options) Model {
 		opt.CompactAt = sample.DefaultRules.CompactAt
 	}
 	if opt.Run == nil {
-		opt.Run = func(argv []string) error { return exec.Command(argv[0], argv[1:]...).Run() }
+		opt.Run = run
 	}
 	return Model{opt: opt, st: newStyles(true), width: 100, height: 30, history: newSeries(60)}
+}
+
+// stepTimeout bounds every confirmed step; a git fetch over a dead network
+// would otherwise hang the action forever.
+const stepTimeout = 2 * time.Minute
+
+// run executes one step without a terminal: git and ssh fail instead of
+// prompting for credentials on the cockpit's screen.
+func run(argv []string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), stepTimeout)
+	defer cancel()
+	c := exec.CommandContext(ctx, argv[0], argv[1:]...)
+	c.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0", "GIT_SSH_COMMAND=ssh -o BatchMode=yes")
+	return c.Run()
 }
 
 func (m Model) Init() tea.Cmd {

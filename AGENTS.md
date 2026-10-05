@@ -26,8 +26,10 @@ Pick the skill whose lever matches the gap you observe:
 - Run `bash scripts/validate.sh` before opening a PR. It checks manifest JSON,
   skill frontmatter, Python compilation, and gofmt/vet/tests plus a fixture
   smoke run for Go tools (`skills/tui`). CI runs it too.
-- Go tools are single static binaries: no cgo, Linux readers rooted at a
-  directory so tests run against `testdata/` fixtures, never the live machine.
+- Go tools are single static binaries: no cgo. Linux readers are rooted at a
+  directory so tests run against `testdata/` fixtures, never the live machine;
+  macOS and Windows read through gopsutil (`internal/host`) behind the same
+  `procfs.Host` interface, and `validate.sh` cross-builds both.
 - Keep skills self-contained and composable: a new application skill should call
   an existing capability skill, not re-implement it.
 - Conventional Commits; release is automated via release-please.

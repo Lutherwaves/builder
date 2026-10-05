@@ -20,6 +20,7 @@ type registryEntry struct {
 	Status          string `json:"status"`
 	StartedAt       int64  `json:"startedAt"`
 	StatusUpdatedAt int64  `json:"statusUpdatedAt"`
+	Tmux            string `json:"tmux"` // session:@window.%pane
 }
 
 // Usage is the context state read from the end of a transcript.

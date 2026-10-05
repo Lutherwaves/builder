@@ -97,7 +97,7 @@ var DefaultRules = Rules{
 }
 
 type Sampler struct {
-	FS            procfs.FS
+	FS            procfs.Host
 	Sys           procfs.Sys
 	Home          string
 	Tmux          func() ([]byte, error)
@@ -421,9 +421,15 @@ func (s *Sampler) isAgent(comm string) bool {
 	return false
 }
 
-// ownerPane prefers TMUX_PANE from the process environment, which survives
-// re-parenting, and falls back to walking up to a pane's shell.
+// ownerPane prefers the pane the agent recorded in its session file, then
+// TMUX_PANE from its environment (both survive re-parenting), and falls back
+// to walking up to a pane's shell.
 func (s *Sampler) ownerPane(pid int, procs map[int]procfs.Proc, byPID map[int]Pane) string {
+	if e, ok := s.agents.entry(pid); ok && e.Tmux != "" {
+		if i := strings.LastIndexByte(e.Tmux, '.'); i >= 0 && strings.HasPrefix(e.Tmux[i+1:], "%") {
+			return e.Tmux[i+1:]
+		}
+	}
 	if v, ok := s.FS.Environ(pid, "TMUX_PANE"); ok {
 		return v
 	}

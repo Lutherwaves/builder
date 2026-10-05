@@ -22,6 +22,9 @@ const PaneFormat = "#{pane_id}\t#{session_name}:#{window_index}.#{pane_index}\t#
 // TmuxPanes lists every pane on the default tmux server. No server is not an
 // error: the cockpit still shows the machine.
 func TmuxPanes() ([]byte, error) {
+	if _, err := exec.LookPath("tmux"); err != nil {
+		return nil, nil
+	}
 	out, err := exec.Command("tmux", "list-panes", "-a", "-F", PaneFormat).Output()
 	if err != nil {
 		if _, ok := err.(*exec.ExitError); ok {

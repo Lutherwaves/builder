@@ -13,7 +13,11 @@ BIN_DIR="${BUILDER_BIN_DIR:-$HOME/.local/bin}"
 DEST="$BIN_DIR/builder-tui"
 REPO="Lutherwaves/builder"
 
-[ "$(uname -s)" = Linux ] || { echo "error: builder-tui reads /proc and /sys and runs on Linux only." >&2; exit 2; }
+case "$(uname -s)" in
+  Linux) os=linux ;;
+  Darwin) os=darwin ;;
+  *) echo "error: on Windows, run this in WSL, or download builder-tui-windows-<arch>.exe from the release page." >&2; exit 2 ;;
+esac
 case "$(uname -m)" in
   x86_64 | amd64) arch=amd64 ;;
   aarch64 | arm64) arch=arm64 ;;
@@ -28,18 +32,21 @@ build() {
   mv "$DEST.new" "$DEST"
 }
 
+# sha256 checks "<hash>  <file>" lines: sha256sum on Linux, shasum on macOS.
+sha256() { if command -v sha256sum >/dev/null 2>&1; then sha256sum --quiet "$@"; else shasum -a 256 --quiet "$@"; fi; }
+
 download() {
   version="$(jq -r .version "$ROOT/.claude-plugin/plugin.json" 2>/dev/null)" || return 1
   [ -n "$version" ] && [ "$version" != null ] || return 1
   # release-please tags carry the package name: builder-v1.2.3
   base="https://github.com/$REPO/releases/download/builder-v$version"
-  asset="builder-tui-linux-$arch"
+  asset="builder-tui-$os-$arch"
   tmp="$(mktemp -d)"
   trap 'rm -rf "$tmp"' RETURN
   echo "→ downloading $asset v$version"
   curl -fsSL -o "$tmp/$asset" "$base/$asset" || return 1
   curl -fsSL -o "$tmp/checksums.txt" "$base/builder-tui-checksums.txt" || return 1
-  (cd "$tmp" && grep " $asset\$" checksums.txt | sha256sum -c --quiet -) || { echo "error: checksum mismatch for $asset" >&2; exit 3; }
+  (cd "$tmp" && grep " $asset\$" checksums.txt | sha256 -c) || { echo "error: checksum mismatch for $asset" >&2; exit 3; }
   install -m 0755 "$tmp/$asset" "$DEST"
 }
 

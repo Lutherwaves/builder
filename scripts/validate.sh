@@ -57,6 +57,10 @@ for mod in $(find skills -name go.mod -not -path '*/testdata/*'); do
 done
 # builder-tui smoke: the binary reads the fixture machine and the example config
 if [ -f skills/tui/go.mod ] && command -v go >/dev/null 2>&1; then
+  for target in darwin/arm64 darwin/amd64 windows/amd64; do
+    (cd skills/tui && CGO_ENABLED=0 GOOS="${target%/*}" GOARCH="${target#*/}" go build -o /dev/null .) \
+      && note "✓ builder-tui builds for $target" || err "builder-tui does not build for $target"
+  done
   bin="$(mktemp)"
   (cd skills/tui && CGO_ENABLED=0 go build -o "$bin" .)
   out="$("$bin" status --text --fixtures skills/tui/testdata/machine --config skills/tui/config.example.toml)"

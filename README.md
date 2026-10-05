@@ -48,8 +48,9 @@ Built for [Claude Code](https://claude.com/claude-code) +
   and CPU power-limit drift, detached busy loops with the pane that leaked them,
   git dirt and removable worktrees, and a ranked list of what to do with the
   exact command for each. Read-only by default; destructive actions need a typed
-  `y`. Agents read the same state with `builder-tui status`. Linux, one static
-  binary, under 1% of one core at idle including the commands it runs.
+  `y`. Agents read the same state with `builder-tui status`. One static binary for
+  Linux, macOS and Windows; on Linux it stays under 1% of one core at idle,
+  including the commands it runs.
 - `/builder:code-graph` — Wire a local
   [codebase-memory-mcp](https://github.com/DeusData/codebase-memory-mcp) graph
   into a repo so agents answer structural questions (where is X, what calls Y,
