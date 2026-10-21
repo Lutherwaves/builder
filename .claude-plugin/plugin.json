@@ -1,6 +1,6 @@
 {
   "name": "builder",
-  "description": "An agent builds the way a seasoned builder does: shapes work from the person, keeps one lane per session, reaches teammates only on a yes, reconciles tasks, watches the weekly usage limit, and keeps a local code graph fresh",
+  "description": "The builder soul for Claude Code: start from the person, decide on the record, prove it, and never write to the world unseen.",
   "version": "0.1.4",
   "author": {
     "name": "Lutherwaves"
@@ -10,15 +10,14 @@
   "license": "MIT",
   "keywords": [
     "claude-code",
-    "usage-limits",
-    "burn-rate",
-    "rate-limit",
-    "context",
-    "compaction",
-    "monitoring",
-    "agent-ops",
-    "codebase-memory",
-    "indexing",
-    "skills"
+    "soul",
+    "onboarding",
+    "shaping",
+    "rulings",
+    "peer-messaging",
+    "fleet",
+    "usage-budget",
+    "harness",
+    "code-graph"
   ]
 }

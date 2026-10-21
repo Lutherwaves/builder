@@ -1,69 +1,100 @@
 # Contributing to builder
 
-Thanks for your interest. `builder` is a Claude Code plugin of operational tools
-for running AI coding agents — usage-limit projection, session/context load, and
-token-efficiency watchers.
+Thanks for your interest. builder is a Claude Code plugin: eight skills, one SessionStart hook,
+and a small Python library. [AGENTS.md](AGENTS.md) tells you which file to change for each job.
 
 ## Quick start
 
-1. Fork + clone the repo.
-2. Install the plugin locally for testing:
-   ```bash
-   /plugin marketplace add <your-fork-path-or-owner/repo>
-   /plugin install builder@builder
-   ```
-3. Skills live under `skills/<skill-name>/SKILL.md` (Markdown + YAML frontmatter).
-   Bundled tools sit beside the skill (e.g. `skills/budget/burn-proj.py`).
+1. Fork and clone the repository.
+2. Load your checkout in a session: `claude --plugin-dir .`
+3. A skill lives in `skills/<name>/SKILL.md`. Its tools sit beside it, for example `skills/budget/burn-proj.py`.
 
-## Before you open a PR
+## Before you open a pull request
 
-Run the validator — CI runs the same script and it gates merges:
+Run the validator. CI runs the same script, and it gates every merge.
 
 ```bash
 bash scripts/validate.sh
 ```
 
-It checks: manifests parse, skills have valid frontmatter and the skill shape
-(description starts "Use when", 60 to 150 lines, `## Common mistakes` and
-`## Self-check`), Python tools compile, `burn-proj.py`'s output shape is stable,
-and the tests pass.
+It checks that:
 
-## Commit convention
+- the manifests and the release config parse;
+- every commit subject since `origin/main` follows Conventional Commits;
+- every skill has the skill shape (see below);
+- the Python tools compile, and `burn-proj.py` keeps its output shape;
+- the unit tests, the hook tests, the drift tests and the eval runner tests pass;
+- every eval fixture is valid;
+- no tracked file holds a deny-listed name (see "Scrub guard").
 
-We use [Conventional Commits](https://www.conventionalcommits.org/). The release
-pipeline ([release-please](https://github.com/googleapis/release-please)) reads
-commit/PR titles to decide version bumps and generate `CHANGELOG.md`.
+## Skill conventions
 
-- `feat: ...` — new feature (minor bump pre-1.0)
-- `fix: ...` — bug fix (patch bump)
-- `feat!: ...` or `BREAKING CHANGE:` in body — breaking change
-- `docs: ...`, `refactor: ...`, `ci: ...`, `chore: ...` — no bump (docs/refactor/ci still appear in the changelog)
+- Frontmatter holds `name` and a `description`. The description starts "Use when" and lists triggers, not the workflow.
+- A skill has 60 to 150 lines.
+- A skill has the sections `## Common mistakes` and `## Self-check`.
+- Write in ASD-STE100: active voice, present tense, one idea per sentence, short sentences.
+- After an explanation, the skill offers other formats in one line.
+- Refer to a bundled tool through `${CLAUDE_PLUGIN_ROOT}`, so the path works after install.
+- Add the skill to the table in the README.
 
-PRs are **squash-merged**, so the PR title becomes the commit that drives the release.
+## Evals
 
-## Adding a new skill
+A skill is written test-first. Each skill has a fixture in `tests/evals/<name>/`:
+`prompt.md` holds the task, and `expect.md` holds 3 to 6 behaviours that only the with-skill run shows.
 
-1. Create `skills/<name>/SKILL.md` with frontmatter: `name` + a `description` that
-   starts with "Use when…" and describes triggering conditions (not the workflow).
-2. Keep bundled tools beside the skill; reference them via `${CLAUDE_PLUGIN_ROOT}`
-   in setup steps so they resolve after install.
-3. Run `bash scripts/validate.sh`.
-4. Update the README **Skills** list.
+```bash
+bash tests/evals/run.sh --check     # validate the fixtures, no API call
+bash tests/evals/run.sh <name>      # run without the skill, then with it
+```
+
+A skill change is done when the with-skill run shows every `expect.md` bullet.
+Transcripts go outside the repository. Never commit one.
+See [tests/evals/README.md](tests/evals/README.md).
+
+## Scrub guard
+
+The repository is public. No file, commit or pull request names an employer, a client,
+a product or a private repository.
+
+Keep your own deny-list outside the repository: one name per line.
+Then run the validator with it:
+
+```bash
+BUILDER_DENYLIST=/path/outside/the/repo/denylist.txt bash scripts/validate.sh
+```
+
+The scrub prints each tracked file that holds a listed name, and the check fails.
+Never copy the deny-list, or any name in it, into the repository.
+
+## Commits
+
+Every commit follows two rules.
+
+1. **Conventional Commits.** The subject is `type(scope)?!?: outcome`, and the outcome says what a person can now do.
+   Example: `feat: a new builder is walked through setup one step at a time`.
+   `scripts/check-subjects.sh` enforces this rule in `validate.sh` and in the CI job, for every commit and the pull request title.
+2. **Signed commits.** Sign every commit. Never use `--no-verify`. Never make a WIP commit.
+
+The release pipeline ([release-please](https://github.com/googleapis/release-please)) reads the subjects:
+
+- `feat: ...` adds a feature (a minor bump).
+- `fix: ...` fixes a bug (a patch bump).
+- `feat!: ...`, or `BREAKING CHANGE:` in the body, breaks a contract (a major bump).
+- `docs:`, `refactor:`, `ci:` and `chore:` cause no bump.
 
 ## Pull requests
 
-- One logical change per PR.
-- PR title in conventional-commits format.
-- No machine-specific paths, tokens, or personal identifiers.
-- All PRs require the `validate` check to pass and go through review — direct
-  pushes to `main` are blocked.
+- One logical change per pull request.
+- The title is a Conventional Commit. Pull requests are squash-merged, so the title becomes the commit.
+- No machine-specific paths, tokens or personal names.
+- Every pull request passes the `validate` check and a review. Nobody pushes to `main` directly.
 
 ## Release process
 
-Fully automated:
-1. Merge PRs with conventional-commit titles.
-2. release-please opens/updates a **release PR** with the next version + changelog.
-3. Merging the release PR tags the version, cuts a GitHub release, and bumps
-   `.claude-plugin/plugin.json`.
+The release is automated.
 
-Maintainers: do not bump versions manually.
+1. Merge pull requests with Conventional Commit titles.
+2. release-please opens a release pull request with the next version and the changelog.
+3. Merging that pull request tags the version, cuts a GitHub release, and bumps `.claude-plugin/plugin.json`.
+
+Never edit `CHANGELOG.md` or the `version` in `plugin.json` by hand.

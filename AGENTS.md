@@ -1,36 +1,40 @@
 # builder — agent guide
 
-builder is the applied side of **harness engineering**: the practice of
-improving a fixed coding agent's output by shaping the two external levers it
-depends on — **context** and **tools** — and curating the environment around
-them. Each skill here is one intervention on those levers. This guide routes an
-agent to the right skill and to the conventions for working on builder itself.
+builder is a Claude Code plugin: eight skills, one SessionStart hook, and a small Python library.
+This guide routes an agent that works on builder itself.
 
-## Which skill for which job
+## Where each change goes
 
-Pick the skill whose lever matches the gap you observe:
-
-| You need to… | Skill | Lever |
+| You change… | Edit | Then run |
 | --- | --- | --- |
-| Let agents answer "where is X / what calls Y / architecture" from a local code graph, kept fresh, instead of grep-reading files | `harness` | Tools + just-in-time context, as a loop |
-| Know whether the week's usage limit lasts, and which idle session to compact | `budget` | Effectiveness / economics |
-| Reconcile a task tracker against work already in flight and groom the rest | `intake` | Feedback into infrastructure |
+| A skill's behaviour | `skills/<name>/SKILL.md` and its eval fixture `tests/evals/<name>/` | `bash tests/evals/run.sh --check`, then `bash tests/evals/run.sh <name>` |
+| The soul the hook injects | `skills/builder/soul-compact.md` (keep it in step with `skills/builder/SKILL.md`) | `bash tests/test_hook.sh` |
+| The SessionStart hook | `hooks/session-start`, `hooks/session_start.py` | `bash tests/test_hook.sh` |
+| A recommendation or its signal | `lib/recommendations.json`, `lib/signals.py`, `lib/ledger.py` | `python3 -m unittest tests.test_signals tests.test_ledger` |
+| A send rule for `reach` | `lib/reach.py`, `skills/reach/rules.default.json` | `python3 -m unittest tests.test_reach` |
+| The budget forecast | `skills/budget/burn-proj.py` | `python3 -m unittest tests.test_burn_proj` |
+| The graph drift check | `skills/harness/drift.sh` | `bash tests/test_drift.sh` |
+| An issue or rule template | `skills/shape/issue-template.md`, `skills/canon/rule-template.md` | `python3 -m unittest tests.test_templates` |
+| The parity eval | `tests/evals/parity.sh`, `tests/evals/lib.sh` | `bash tests/evals/parity.sh --dry-run` |
+| The plugin manifest | `.claude-plugin/plugin.json` (description and keywords only) | `bash scripts/validate.sh` |
 
-## Working on builder
+Before every commit, run `bash scripts/validate.sh`. It runs all of the checks above except the paid eval runs.
 
-- Skills live in `skills/<name>/SKILL.md`; they are auto-discovered — no manifest
-  to edit. Each must open with a `---` frontmatter block carrying `name:` and
-  `description:` (see any existing skill).
-- Every skill has the same shape: a `description:` that starts "Use when", 60 to
-  150 lines, and the sections `## Common mistakes` and `## Self-check`.
-- Run `bash scripts/validate.sh` before opening a PR. It checks manifest JSON,
-  skill frontmatter and shape, Python compilation, and the tests. CI runs it too.
-- Keep skills self-contained and composable: a new application skill should call
-  an existing capability skill, not re-implement it.
-- Conventional Commits; release is automated via release-please.
+## Conventions
 
-## Doctrine and attribution
+- A skill opens with frontmatter: `name`, and a `description` that starts "Use when" and lists its triggers.
+- A skill has 60 to 150 lines and the sections `## Common mistakes` and `## Self-check`.
+- Write in ASD-STE100: active voice, present tense, one idea per sentence, short sentences.
+- A skill change starts with an eval: run the fixture without the skill, watch it fail, then write the skill.
+- The hook uses Bash and the Python 3 standard library only. It makes no network call and finishes in under one second.
+- Nothing writes outside the local machine without a send rule or the person's yes.
+- The repository is public. Keep employer, client, product and private repository names out of files, commits and pull requests.
+- Never commit an eval transcript. Transcripts live outside the repository.
+- Commits follow Conventional Commits and are signed. See [CONTRIBUTING.md](CONTRIBUTING.md).
+- Never edit `CHANGELOG.md` or the `version` in `plugin.json`. release-please owns both.
 
-builder's framing derives from Ryan Lopopolo's **Harness Engineering** corpus
-(<https://github.com/lopopolo/harness-engineering>), licensed CC BY 4.0. builder
-adapts its vocabulary and applies its improve-harness loop; it copies no prose.
+## Attribution
+
+The `harness` skill derives its framing from Ryan Lopopolo's **Harness Engineering** corpus
+(<https://github.com/lopopolo/harness-engineering>), licensed CC BY 4.0.
+builder adapts its vocabulary and applies its improve-harness loop. It copies no prose.
