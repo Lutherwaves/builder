@@ -105,7 +105,7 @@ the candidate list on its own; refresh an existing
 ## Setup
 
 1. **Config:** copy `config.example.json` to `~/.claude/intake/config.json` and
-   set `default_repo` (e.g. `blox-eng/blox`) and `source` (`todoist` or
+   set `default_repo` (e.g. `your-org/your-repo`) and `source` (`todoist` or
    `github-project`; for the latter also `project.owner` + `project.number`).
    Tunable without touching the skill.
 2. **Prerequisites:** `gh` authed (`gh auth status`) with access to the repos

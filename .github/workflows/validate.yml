@@ -14,4 +14,11 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Validate plugin manifests, skills, and scripts
-        run: bash scripts/validate.sh
+        env:
+          DENYLIST_SECRET: ${{ secrets.BUILDER_DENYLIST }}
+        run: |
+          if [ -n "$DENYLIST_SECRET" ]; then
+            printf '%s\n' "$DENYLIST_SECRET" > "$RUNNER_TEMP/deny.txt"
+            export BUILDER_DENYLIST="$RUNNER_TEMP/deny.txt"
+          fi
+          bash scripts/validate.sh

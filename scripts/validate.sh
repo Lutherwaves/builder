@@ -45,5 +45,18 @@ grep -qE 'elapsed=.* naive=.* profile_aware=.* reset_in=' <<<"$out" \
   || err "burn-proj.py output shape changed: $out"
 note "✓ burn-proj smoke: $out"
 
+echo "→ scrub"
+if [ -n "${BUILDER_DENYLIST:-}" ] && [ -f "$BUILDER_DENYLIST" ]; then
+  # Private names must never appear in a tracked file. -F fixed strings, -i case-insensitive.
+  hits="$(git grep -I -i -n -F -f "$BUILDER_DENYLIST" 2>/dev/null | cut -d: -f1 | sort -u || true)"
+  if [ -n "$hits" ]; then
+    while IFS= read -r f; do err "scrub: $f"; done <<<"$hits"
+  else
+    note "✓ no deny-listed names in tracked files"
+  fi
+else
+  note "scrub: skipped (no BUILDER_DENYLIST)"
+fi
+
 echo
 if [ "$fail" -eq 0 ]; then echo "✓ all checks passed"; else echo "✗ validation failed"; exit 1; fi

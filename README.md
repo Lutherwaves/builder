@@ -14,8 +14,7 @@ Operational tools for running AI coding agents at scale. Keep an eye on your
 Claude subscription usage limits, session/context load, and token efficiency
 while you work — without hand-rolling the math or babysitting a dashboard.
 
-Built for [Claude Code](https://claude.com/claude-code) +
-[`cctop`](https://github.com/) + [`ctx-wire`](https://github.com/).
+Built for [Claude Code](https://claude.com/claude-code).
 
 > The three live badges above are **anonymized aggregates** — total tokens
 > `ctx-wire` has trimmed out of my agent transcripts, commands filtered, and the
@@ -116,14 +115,9 @@ self-contained — but it's what makes contributing frictionless.
   `watch-limits` skill in this repo was written **test-first** with
   `superpowers:writing-skills`: baseline an agent *without* the skill, watch it
   fail, then write the skill to close exactly those failures.
-- **[gstack](https://github.com/Lutherwaves/gstack)** — Garry Tan's opinionated
+- **[gstack](https://github.com/garrytan/gstack)** — Garry Tan's opinionated
   CEO / eng-manager / release-manager / QA skill set (`/ship`, `/review`, `/qa`)
   for planning, review, and release flows.
-- **[`ctx-wire`](https://github.com/)** — filters noisy command output out of the
-  agent's context. It's why the badges up top exist: those are the tokens it
-  kept out of my transcripts. Lean context = cheaper, faster, longer sessions.
-- **[`cctop`](https://github.com/)** — live per-session monitor. `builder`'s
-  `watch-limits` watcher reads it to pick which idle session to compact.
 
 Refresh the metrics badges (anonymized aggregates only) any time with:
 
