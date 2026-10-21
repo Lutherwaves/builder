@@ -111,6 +111,17 @@ class LedgerTest(unittest.TestCase):
         done = {"answers": {}, "onboarded": True}
         self.assertEqual([i["id"] for i in ledger.due_catalog(done, cat)], ["a", "b"])
 
+    def test_channel_item_is_for_teammates_not_for_notes_to_the_person(self):
+        cat = json.loads((Path(ledger.__file__).parent / "recommendations.json").read_text())
+        ch = next(i for i in cat if i["id"] == "channel")
+        text = " ".join((ch["say"], ch["why"], ch["how"]))
+        self.assertIn("teammates", text)
+        self.assertIn("notification", text)
+        self.assertNotIn("reach you", text)
+        self.assertNotIn("send you", text)
+        readme = (Path(ledger.__file__).parent.parent / "README.md").read_text()
+        self.assertNotIn("a channel to reach you", readme)
+
     def test_signing_item_comes_right_after_gh(self):
         cat = sorted(ledger._catalog(), key=lambda i: i["order"])
         ids = [i["id"] for i in cat]

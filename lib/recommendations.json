@@ -50,8 +50,8 @@
     "when": {
       "channel": null
     },
-    "say": "Builder has no channel to reach you when a long task finishes.",
-    "why": "A channel lets builder send you a short note instead of waiting in a terminal.",
+    "say": "Builder does not know where your team talks, so it cannot draft messages to your teammates there.",
+    "why": "reach drafts teammate messages for that channel. Notes to you go by matchblox, a push or an OS notification, never by the channel.",
     "how": "Ask me: \"set up reach\" (the reach skill walks you through it)."
   },
   {
