@@ -36,7 +36,7 @@ Never index with the MCP `index_repository` tool instead. It skips the `.mcp.jso
 
 1. It finds the binary: `CBM_BIN`, then `PATH`, then `~/dev/codebase-memory-mcp/build/c/`, then `~/.local/bin/`.
    No binary? It prints the build commands and exits 2. It never compiles for you: the build is large. The person opts in.
-2. It adds a `codebase-memory` server to the repository's `.mcp.json`. It keeps every other server in the file.
+2. It adds a `codebase-memory` server to the repository's `.mcp.json`. It keeps every other server in the file. It merges with `jq` or `python3`. With neither, it stops and changes nothing.
 3. It indexes the tree, under a project name made from the absolute path.
 4. It registers the repository in `~/.claude/code-graph/repos.txt`, with the HEAD at index time.
 
