@@ -69,8 +69,20 @@
     "how": "curl -fsSL https://matchblox.sh | sh"
   },
   {
-    "id": "fleet",
+    "id": "matchblox-setup",
     "order": 7,
+    "onboarding": false,
+    "when": {
+      "matchblox": true,
+      "matchblox_hooks": false
+    },
+    "say": "matchblox is installed, but its hooks are not in your Claude Code settings, so it cannot see this session.",
+    "why": "The hooks tell matchblox what each session does and asks, and they put its status line under every session.",
+    "how": "matchblox setup (it adds the hooks, the status line and the tmux way back in one step; see https://docs.matchblox.com)"
+  },
+  {
+    "id": "fleet",
+    "order": 8,
     "onboarding": false,
     "when": {
       "sessions": {
@@ -83,7 +95,7 @@
   },
   {
     "id": "budget",
-    "order": 8,
+    "order": 9,
     "onboarding": false,
     "when": {
       "weekly_pct": {
@@ -95,8 +107,30 @@
     "how": "Ask me: /builder:budget"
   },
   {
+    "id": "autocompact",
+    "order": 10,
+    "onboarding": false,
+    "when": {
+      "autocompact": false
+    },
+    "say": "Claude Code compacts only when the context window is almost full.",
+    "why": "An earlier compact leaves room to write the durable record first, so the session keeps its place after the compact.",
+    "how": "Add \"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE\": \"85\" to the \"env\" object in ~/.claude/settings.json, then start a new session"
+  },
+  {
+    "id": "code-graph",
+    "order": 11,
+    "onboarding": false,
+    "when": {
+      "code_graph": false
+    },
+    "say": "No code graph is set up, so agents read file after file to find callers and structure.",
+    "why": "A code graph answers \"who calls this?\" in one query and keeps the context window small.",
+    "how": "Ask me: /builder:harness (it provisions the codebase-memory-mcp graph and keeps it fresh)"
+  },
+  {
     "id": "canon",
-    "order": 9,
+    "order": 12,
     "onboarding": false,
     "when": {
       "has_canon": false

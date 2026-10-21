@@ -1,3 +1,4 @@
+import json
 import os
 import stat
 import sys
@@ -151,6 +152,67 @@ fi''')
         sub = self.cwd / "a" / "b"
         sub.mkdir(parents=True)
         self.assertTrue(signals.collect(str(sub), timeout=GENEROUS)["has_canon"])
+
+    def write_settings(self, base, data):
+        (base / "settings.json").parent.mkdir(parents=True, exist_ok=True)
+        (base / "settings.json").write_text(data if isinstance(data, str) else json.dumps(data))
+
+    def test_matchblox_hooks_need_the_binary_and_a_hook_command(self):
+        hooks = {"hooks": {"Stop": [{"hooks": [{"type": "command", "command": "/opt/bin/matchblox hook Stop"}]}]}}
+        self.write_settings(self.home / ".claude", hooks)
+        self.assertFalse(signals.collect(str(self.cwd), timeout=GENEROUS)["matchblox_hooks"])
+        self.fake("matchblox", "exit 0")
+        self.assertTrue(signals.collect(str(self.cwd), timeout=GENEROUS)["matchblox_hooks"])
+        other = {"hooks": {"Stop": [{"hooks": [{"type": "command", "command": "echo matchblox"}]}]}}
+        self.write_settings(self.home / ".claude", other)
+        self.assertFalse(signals.collect(str(self.cwd), timeout=GENEROUS)["matchblox_hooks"])
+        self.write_settings(self.home / ".claude", "{bad")
+        self.assertFalse(signals.collect(str(self.cwd), timeout=GENEROUS)["matchblox_hooks"])
+
+    def test_settings_come_from_claude_config_dir_when_set(self):
+        self.fake("matchblox", "exit 0")
+        cfg = Path(self.tmp.name) / "cfg"
+        hooks = {"hooks": {"Stop": [{"hooks": [{"type": "command", "command": "matchblox hook Stop"}]}]},
+                 "env": {"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "85"}}
+        self.write_settings(cfg, hooks)
+        (cfg / ".claude.json").write_text('{"mcpServers": {"codebase-memory-mcp": {"command": "x"}}}')
+        out = signals.collect(str(self.cwd), timeout=GENEROUS)
+        self.assertFalse(out["matchblox_hooks"])
+        self.assertFalse(out["autocompact"])
+        self.assertFalse(out["code_graph"])
+        with mock.patch.dict(os.environ, {"CLAUDE_CONFIG_DIR": str(cfg)}):
+            out = signals.collect(str(self.cwd), timeout=GENEROUS)
+        self.assertTrue(out["matchblox_hooks"])
+        self.assertTrue(out["autocompact"])
+        self.assertTrue(out["code_graph"])
+
+    def test_code_graph_from_mcp_servers(self):
+        self.assertFalse(signals.collect(str(self.cwd), timeout=GENEROUS)["code_graph"])
+        (self.home / ".claude.json").write_text('{"mcpServers": {"other": {}}}')
+        self.assertFalse(signals.collect(str(self.cwd), timeout=GENEROUS)["code_graph"])
+        (self.home / ".claude.json").write_text('{"mcpServers": {"codebase-memory-mcp": {"command": "x"}}}')
+        self.assertTrue(signals.collect(str(self.cwd), timeout=GENEROUS)["code_graph"])
+        (self.home / ".claude.json").write_text('{"mcpServers": ["codebase-memory-mcp"]}')
+        self.assertFalse(signals.collect(str(self.cwd), timeout=GENEROUS)["code_graph"])
+
+    def test_code_graph_from_the_repository_mcp_json_that_harness_writes(self):
+        self.fake("git", 'echo "%s"' % self.cwd)
+        (self.cwd / ".mcp.json").write_text('{"mcpServers": {"codebase-memory": {"command": "x"}}}')
+        sub = self.cwd / "a"
+        sub.mkdir()
+        self.assertTrue(signals.collect(str(sub), timeout=GENEROUS)["code_graph"])
+        (self.cwd / ".mcp.json").write_text('{"mcpServers": {"other": {}}}')
+        self.assertFalse(signals.collect(str(sub), timeout=GENEROUS)["code_graph"])
+
+    def test_autocompact_from_settings_env_or_process_env(self):
+        self.assertFalse(signals.collect(str(self.cwd), timeout=GENEROUS)["autocompact"])
+        self.write_settings(self.home / ".claude", {"env": {"OTHER": "1"}})
+        self.assertFalse(signals.collect(str(self.cwd), timeout=GENEROUS)["autocompact"])
+        self.write_settings(self.home / ".claude", {"env": {"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "85"}})
+        self.assertTrue(signals.collect(str(self.cwd), timeout=GENEROUS)["autocompact"])
+        self.write_settings(self.home / ".claude", {})
+        with mock.patch.dict(os.environ, {"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "85"}):
+            self.assertTrue(signals.collect(str(self.cwd), timeout=GENEROUS)["autocompact"])
 
 
 if __name__ == "__main__":

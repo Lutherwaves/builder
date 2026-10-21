@@ -114,6 +114,30 @@ class LedgerTest(unittest.TestCase):
         self.assertTrue(signing["onboarding"])
         self.assertEqual(signing["when"], {"signing": False})
 
+    def test_parity_items_follow_matchblox_and_fire_on_their_signals(self):
+        cat = sorted(ledger._catalog(), key=lambda i: i["order"])
+        ids = [i["id"] for i in cat]
+        by = {i["id"]: i for i in cat}
+        self.assertEqual(ids[ids.index("matchblox") + 1], "matchblox-setup")
+        for i in ("matchblox-setup", "code-graph", "autocompact"):
+            self.assertFalse(by[i]["onboarding"])
+            self.assertGreater(by[i]["order"], max(c["order"] for c in cat if c.get("onboarding")))
+        self.assertEqual(by["matchblox-setup"]["when"], {"matchblox": True, "matchblox_hooks": False})
+        self.assertIn("matchblox setup", by["matchblox-setup"]["how"])
+        self.assertEqual(by["code-graph"]["when"], {"code_graph": False})
+        self.assertIn("/builder:harness", by["code-graph"]["how"])
+        self.assertEqual(by["autocompact"]["when"], {"autocompact": False})
+        self.assertIn('"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "85"', by["autocompact"]["how"])
+        self.assertIn("record", by["autocompact"]["why"])
+        only = lambda i: [by[i]]
+        sig = {"matchblox": True, "matchblox_hooks": False, "code_graph": False, "autocompact": False}
+        for i in ("matchblox-setup", "code-graph", "autocompact"):
+            self.assertEqual(ledger.next_recommendation(EMPTY, only(i), sig, 1.0)["id"], i)
+        done = {"matchblox": True, "matchblox_hooks": True, "code_graph": True, "autocompact": True}
+        for i in ("matchblox-setup", "code-graph", "autocompact"):
+            self.assertIsNone(ledger.next_recommendation(EMPTY, only(i), done, 1.0))
+        self.assertIsNone(ledger.next_recommendation(EMPTY, only("matchblox-setup"), dict(sig, matchblox=False), 1.0))
+
 
 if __name__ == "__main__":
     unittest.main()

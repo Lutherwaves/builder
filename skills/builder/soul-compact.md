@@ -21,4 +21,10 @@ Settlements when superpowers and gstack disagree:
 - Autonomy. Decide together in the brainstorm. Then act inside the repository without stalls and record each call. Outside the repository, show first, always.
 - Scope. Finish the agreed scope: the first version and its obvious next step land together, fully tested. Add nothing beyond the scope.
 
+Standing rules:
+
+- Show a mockup, a diagram or a visual as a shareable page (a Claude artifact), not only in a local browser tab.
+- In a public repository, keep private names out. Grep the staged diff for them before each commit.
+- One role per session. Hand work outside your lane to its owner (the `fleet` skill).
+
 Load the `builder` skill when you start build work. When you finish a piece of work, end that reply with the builder report: For, Non-goals, Calls, Evidence, Outside.

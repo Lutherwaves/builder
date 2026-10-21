@@ -14,6 +14,7 @@ import ledger  # noqa: E402
 
 WEEK_MIN = 10080
 CANON_MARKERS = ("DESIGN.md", ".claude/rules", "docs/canon")
+GRAPH_SERVERS = ("codebase-memory-mcp", "codebase-memory")  # user-wide name; the name harness writes to .mcp.json
 
 
 def _run_all(cmds, cwd, timeout):
@@ -86,6 +87,32 @@ def _git_root(cwd, res):
     return p
 
 
+def _read_json(path):
+    try:
+        data = json.loads(Path(path).read_text())
+    except (OSError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _hook_commands(settings):
+    hooks = settings.get("hooks")
+    for groups in (hooks.values() if isinstance(hooks, dict) else ()):
+        for group in (groups if isinstance(groups, list) else ()):
+            entries = group.get("hooks") if isinstance(group, dict) else None
+            for h in (entries if isinstance(entries, list) else ()):
+                if isinstance(h, dict) and isinstance(h.get("command"), str):
+                    yield h["command"]
+
+
+def _claude_files(home):
+    """Claude Code's settings.json and .claude.json; CLAUDE_CONFIG_DIR moves both."""
+    cfg = os.environ.get("CLAUDE_CONFIG_DIR")
+    if cfg:
+        return Path(cfg) / "settings.json", Path(cfg) / ".claude.json"
+    return home / ".claude" / "settings.json", home / ".claude.json"
+
+
 def collect(cwd, timeout=0.5):
     home = Path.home()
     cmds = {}
@@ -112,8 +139,15 @@ def collect(cwd, timeout=0.5):
         channel = channel if isinstance(channel, str) and channel else None
     except (OSError, ValueError, AttributeError):
         channel = None
+    settings_path, state_path = _claude_files(home)
+    settings = _read_json(settings_path)
+    env = settings.get("env") if isinstance(settings.get("env"), dict) else {}
     sessions = _json(res.get("sessions"))
     root = _git_root(cwd, res.get("git"))
+    servers = {}
+    for f in (state_path, root / ".mcp.json"):
+        s = _read_json(f).get("mcpServers")
+        servers.update(s if isinstance(s, dict) else {})
     pg = res.get("pgrep")
 
     return {
@@ -123,6 +157,9 @@ def collect(cwd, timeout=0.5):
         "signing": _stdout(res.get("gpgsign")) == "true" and bool(_stdout(res.get("signkey"))),
         "channel": channel,
         "matchblox": has["matchblox"],
+        "matchblox_hooks": has["matchblox"] and any("matchblox hook" in c for c in _hook_commands(settings)),
+        "code_graph": any(n in servers for n in GRAPH_SERVERS),
+        "autocompact": "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE" in env or "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE" in os.environ,
         "sessions": len(sessions) if isinstance(sessions, list) else None,
         "weekly_pct": _weekly_pct(_json(res.get("usage"))),
         "sessions_proc": len(pg[1].split()) if pg and pg[0] == 0 else 0,

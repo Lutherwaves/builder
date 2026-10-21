@@ -28,6 +28,26 @@ Both runs set `BUILDER_HOME` to a temp dir with an onboarded ledger in which eve
 
 Because the baseline uses your normal setup, plugins you have installed also load in it. Disable plugins that overlap with the skill under test before you run.
 
+## Drop-in parity
+
+    bash tests/evals/parity.sh             # run the builder and shape fixtures in two setups
+    bash tests/evals/parity.sh --dry-run   # print the builder-led settings and the commands only
+
+This eval answers one question: does builder replace a hand-built setup and keep its results?
+
+- Current: `claude -p` with your setup as it is.
+- Builder-led: `CLAUDE_CONFIG_DIR` points to a separate folder that holds only what builder recommends, each one accepted.
+  Builder loads with `--plugin-dir`. superpowers is enabled. The matchblox hooks and status line come from your settings, or have the `matchblox setup` shape. `env` sets `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` to 85. The `codebase-memory-mcp` server comes from your `.claude.json`.
+  Your plugin cache, marketplaces and skills folder are linked, not installed again, so both runs use the same versions.
+
+Both runs use the deny list and the PATH shims of `run.sh` (shared in `lib.sh`) and the same temp builder home.
+
+Claude Code keeps its sign-in per config folder, and the eval never copies credentials.
+A new folder is not signed in, so the eval stops before any run and says how to fix it:
+set `BUILDER_PARITY_CONFIG_DIR` to a folder you keep, and run `CLAUDE_CONFIG_DIR=<that folder> claude auth login` once.
+
+The runner writes `<fixture>/current.md` and `<fixture>/builder.md` to `<eval out>/parity/<timestamp>/` and prints both after each `expect.md`.
+
 ## Transcripts
 
 The runner writes `baseline.md` and `with.md` (stdout) and `baseline.err` and `with.err` (stderr) to `${BUILDER_EVAL_OUT:-${XDG_STATE_HOME:-$HOME/.local/state}/builder/evals}/<skill>/<timestamp>/`, your XDG state folder, `~/.local/state/builder/evals` by default. Set `BUILDER_EVAL_OUT` to write somewhere else. This is outside the repository. Never commit a transcript. The runner prints `expect.md` and both transcripts for you to compare.

@@ -47,7 +47,7 @@ Each tenet has a rule and a test. Fail the test, fix the work.
 9. **Rules are guards.** A rule that matters has a test or check that enforces it. Name the incident that made it.
    Test: break the rule on purpose. Something fails.
 10. **The human decides; the agent proposes behind a gate.** Make no external write unseen. Confirm a destructive action by typing, and check again just before it runs.
-    Test: no push, post, message, deploy or ticket write happened without the person's yes in this session.
+    Test: no push, pull request, post, message, deploy, tracker or ticket write happened without the person's yes in this session.
 11. **Fix what you touch, and say so.** Do not call a failure "pre-existing". Do not refactor the world.
     Test: the suite you ran is green, or the report names each red test and what you did about it.
 12. **Agents are first-class readers.** Write descriptions as scripts. Write every explanation in ASD-STE100: one idea per sentence, active voice, present tense, short sentences, one word for one thing. After an explanation, offer other formats in one line.
@@ -75,6 +75,8 @@ Still stop before a step that leaves the repository, destroys data, or costs mon
 
 - Use Conventional Commits, always: `type(scope)?: outcome`. The outcome says what the person can now do.
 - Sign every commit. Never use `--no-verify`. Never make a WIP commit.
+- In a public repository, keep private names out of files, commits and pull requests: employers, clients, products, private repositories, people.
+  Before each commit, grep the staged diff for those names.
 
 ## Routing
 
@@ -89,6 +91,7 @@ Use the named skill for the job. If its provider is not installed, use the fallb
 | Find a bug's cause | superpowers `systematic-debugging` or gstack `/investigate` | Reproduce, find the root cause, then fix |
 | Say it is done | superpowers `verification-before-completion` | Run the tests; quote the output |
 | Review a diff | superpowers `requesting-code-review` or gstack `/review` | Read your own diff against the request |
+| Show a mockup, a diagram or a visual | A shareable page (a Claude artifact) | A file in the repository; give its path. Never only a local browser tab |
 | Test a web app in a browser | gstack `/qa` or `/browse` | Say "not tested in a browser" under Evidence |
 | Check security | gstack `/cso` | Say "no security pass" under Evidence |
 | Ship a branch | gstack `/ship` or superpowers `finishing-a-development-branch` | Show the diff; push only on a yes |
@@ -117,6 +120,8 @@ superpowers and gstack are separate plugins. If a row names one you lack, say so
 | Stopping at the happy path | The obvious next step lands too: bad input and conflicts, each with a fix-it message. |
 | Long, passive, multi-idea explanations | One idea per sentence, active, present tense. Then offer other formats in one line. |
 | Pushing, posting or opening a PR to "finish" | Commit locally if asked. Everything outside waits for a yes. |
+| A mockup opened in a local browser tab | Publish it as a shareable page. The person opens it on any device and can pass it on. |
+| An employer or client name in a public repository | Use a generic word. Grep the staged diff for private names before each commit. |
 
 ## Self-check
 
@@ -132,4 +137,6 @@ Before you send the reply that finishes a piece of work:
 - [ ] Nothing left the repository without a yes.
 - [ ] The copy fails the squint test for any other product.
 - [ ] Each explanation is plain ASD-STE100 and ends with a one-line offer of other formats.
+- [ ] Each mockup or visual is a shareable page, not only a local browser tab.
+- [ ] A public repository's diff holds no private name: I grepped it before the commit.
 - [ ] Each commit is a signed Conventional Commit, made without `--no-verify`, and is not a WIP commit.

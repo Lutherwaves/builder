@@ -118,4 +118,50 @@ out="$(run good --dry-run 2>&1)"
 ! grep -q -- '--allowedTools' <<<"$out" && check "no allow file, no --allowedTools" ok || check "no allow file, no --allowedTools" bad
 rm -rf "$tmp/evals/allowed"
 
+# parity.sh: the builder-led config, the auth gate, and two runs per fixture.
+ph="$tmp/phome"; mkdir -p "$ph/.claude/plugins/cache/m/superpowers/1" "$ph/.claude/plugins/marketplaces/m" "$ph/.claude/skills/gstack"
+cat > "$ph/.claude/settings.json" <<'JSON'
+{"hooks": {"Stop": [{"hooks": [{"type": "command", "command": "/x/matchblox hook Stop"}, {"type": "command", "command": "/x/other-hook"}]}],
+           "PostToolUse": [{"hooks": [{"type": "command", "command": "/x/other-hook"}]}]},
+ "statusLine": {"type": "command", "command": "/x/matchblox hook statusline"},
+ "enabledPlugins": {"superpowers@m": true, "extra@m": true}, "permissions": {"allow": ["Bash(ls:*)"]}}
+JSON
+printf '{"version":2,"plugins":{"superpowers@m":[{"installPath":"%s/.claude/plugins/cache/m/superpowers/1"}],"extra@m":[{}]}}' "$ph" > "$ph/.claude/plugins/installed_plugins.json"
+printf '{"m":{"installLocation":"%s/.claude/plugins/marketplaces/m"},"other":{}}' "$ph" > "$ph/.claude/plugins/known_marketplaces.json"
+printf '{"mcpServers":{"codebase-memory-mcp":{"command":"/x/cbm"},"other":{}},"oauthAccount":{"secret":1}}' > "$ph/.claude.json"
+for f in builder shape; do mkdir -p "$tmp/pevals/$f"; echo "Do $f." > "$tmp/pevals/$f/prompt.md"; printf -- '- a\n- b\n- c\n' > "$tmp/pevals/$f/expect.md"; done
+cat > "$tmp/bin/claude" <<'FAKE'
+#!/usr/bin/env bash
+if [ "$1" = auth ]; then echo "{\"loggedIn\": ${FAKE_LOGGED_IN:-false}}"; exit 0; fi
+echo "STDIN: $(cat)"; echo "CFG: ${CLAUDE_CONFIG_DIR:-unset}"; echo "ARGS: $*"
+FAKE
+prun() { HOME="$ph" PATH="$tmp/bin:$PATH" BUILDER_EVAL_DIR="$tmp/pevals" bash "$root/tests/evals/parity.sh" "$@"; }
+out="$(BUILDER_EVAL_OUT="$tmp/pout0" prun --dry-run 2>&1)"; rc=$?
+sj="$(sed -n '/^# settings.json:/,/^# builder current/p' <<<"$out" | sed '1d;$d')"
+[ "$rc" -eq 0 ] && [ ! -e "$tmp/pout0" ] \
+  && [ "$(jq -c '.enabledPlugins' <<<"$sj")" = '{"superpowers@m":true}' ] \
+  && [ "$(jq -r '.env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE' <<<"$sj")" = 85 ] \
+  && [ "$(jq -c '[.hooks[][].hooks[].command]' <<<"$sj")" = '["/x/matchblox hook Stop"]' ] \
+  && [ "$(jq -r '.statusLine.command' <<<"$sj")" = '/x/matchblox hook statusline' ] \
+  && [ "$(jq 'has("permissions")' <<<"$sj")" = false ] \
+  && [ "$(grep -c -- '--plugin-dir' <<<"$out")" -eq 2 ] && [ "$(grep -c '^CLAUDE_CONFIG_DIR=' <<<"$out")" -eq 2 ] \
+  && check "parity dry-run: builder-led settings hold only builder's recommendations" ok || check "parity dry-run ($out)" bad
+out="$(BUILDER_EVAL_OUT="$tmp/pout1" prun 2>&1)"; rc=$?
+[ "$rc" -eq 4 ] && grep -q 'not signed in under CLAUDE_CONFIG_DIR' <<<"$out" && grep -q 'never copies credentials' <<<"$out" \
+  && [ ! -e "$tmp/pout1" ] \
+  && check "parity stops before any run when the config dir is not signed in" ok || check "parity auth gate ($rc: $out)" bad
+mkdir -p "$tmp/pcfg"
+out="$(FAKE_LOGGED_IN=true BUILDER_PARITY_CONFIG_DIR="$tmp/pcfg" BUILDER_EVAL_OUT="$tmp/pout2" prun 2>&1)"; rc=$?
+d="$(ls -d "$tmp"/pout2/parity/*/ 2>/dev/null | head -1)"
+[ "$rc" -eq 0 ] && [ -n "$d" ] && grep -q '^CFG: unset' "$d/builder/current.md" && grep -q "^CFG: $tmp/pcfg" "$d/shape/builder.md" \
+  && grep -q -- '--plugin-dir' "$d/shape/builder.md" && ! grep -q -- '--plugin-dir' "$d/shape/current.md" \
+  && grep -q '^STDIN: Do shape.' "$d/shape/builder.md" && grep -q '===== Builder-led setup =====' <<<"$out" \
+  && check "parity runs each fixture in the current and the builder-led setup" ok || check "parity runs ($rc: $out)" bad
+[ "$(jq -c '.mcpServers' "$tmp/pcfg/.claude.json")" = '{"codebase-memory-mcp":{"command":"/x/cbm"}}' ] \
+  && ! grep -q oauthAccount "$tmp/pcfg/.claude.json" && [ -L "$tmp/pcfg/skills" ] && [ -L "$tmp/pcfg/plugins/cache" ] \
+  && [ "$(jq -r '.plugins|keys|join(",")' "$tmp/pcfg/plugins/installed_plugins.json")" = 'superpowers@m' ] \
+  && grep -q "$tmp/pcfg/plugins/cache/m/superpowers/1" "$tmp/pcfg/plugins/installed_plugins.json" \
+  && [ "$(jq -r 'keys|join(",")' "$tmp/pcfg/plugins/known_marketplaces.json")" = m ] \
+  && check "parity links plugins and skills, adds the code graph, copies no account" ok || check "parity config contents" bad
+
 exit "$fails"
