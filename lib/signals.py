@@ -37,20 +37,33 @@ def _run_all(cmds, cwd, timeout):
     for name, p in procs.items():
         if p is None:
             out[name] = None
-        elif p.poll() is not None:
-            stdout, _ = p.communicate()  # finished: read it, however late we are
-            out[name] = (p.returncode, stdout)
-        else:
+            continue
+        if p.poll() is not None:
             try:
-                os.killpg(p.pid, _signal.SIGKILL)
-            except OSError:
-                p.kill()
-            try:
-                p.communicate(timeout=0.2)
-            except Exception:
+                # Finished: read it within the budget. A child it left behind can hold stdout open.
+                stdout, _ = p.communicate(timeout=max(0.05, deadline - time.monotonic()))
+                out[name] = (p.returncode, stdout)
+                continue
+            except subprocess.TimeoutExpired:
                 pass
-            out[name] = None
+        _kill(p)
+        out[name] = None
     return out
+
+
+def _kill(p):
+    """Kill the process group (the tool and any child it left), then reap it without waiting long."""
+    try:
+        os.killpg(p.pid, _signal.SIGKILL)
+    except OSError:
+        try:
+            p.kill()
+        except OSError:
+            pass
+    try:
+        p.communicate(timeout=0.2)
+    except Exception:
+        pass
 
 
 def _json(res):

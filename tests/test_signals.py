@@ -94,6 +94,14 @@ fi''')
         self.assertLess(time.time() - t, 1.0)
         self.assertFalse(out["gh"])
 
+    def test_finished_tool_whose_child_holds_stdout_is_bounded(self):
+        self.fake("gh", "/bin/sleep 5 &\nexit 0")
+        os.system("%s/gh >/dev/null 2>&1" % self.bin)  # warm the fake; its sleep is detached from this test
+        t = time.time()
+        out = signals.collect(str(self.cwd), timeout=0.5)
+        self.assertLess(time.time() - t, 1.0)
+        self.assertFalse(out["gh"])
+
     def test_finished_calls_are_read_after_a_hung_one(self):
         self.fake("matchblox", "/bin/sleep 3")
         self.fake("gh", "exit 0")
