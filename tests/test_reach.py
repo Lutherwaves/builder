@@ -251,6 +251,12 @@ class ReachTest(unittest.TestCase):
         self.assertEqual(r.stdout.strip(), "matchblox")
         self.assertEqual(self.calls(), ["--help", "notify Waiting for you."])
 
+    def test_matchblox_with_only_a_notify_prefixed_command_falls_through(self):
+        path = self.matchblox_shim(["<host>", "notify-x \"<text>\"", "usage"])
+        r = self.cli("matchblox-notify", "--text", "Waiting for you.", path=path)
+        self.assertEqual(r.returncode, 3)
+        self.assertEqual(self.calls(), ["--help"])
+
     def test_no_matchblox_falls_through(self):
         empty = self.dir / "empty"
         empty.mkdir()

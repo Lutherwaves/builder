@@ -150,7 +150,7 @@ def matchblox_has_notify(path=None):
     except (OSError, subprocess.TimeoutExpired):
         return None
     help_text = (r.stdout or "") + (r.stderr or "")
-    return tool if re.search(r"^\s*(matchblox\s+)?notify\b", help_text, re.M) else None
+    return tool if re.search(r"^\s*(matchblox\s+)?notify(\s|$)", help_text, re.M) else None
 
 
 def matchblox_notify(text, path=None):
