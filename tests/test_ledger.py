@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lib"))
+import harness  # noqa: E402
 import ledger  # noqa: E402
 
 EMPTY = {"answers": {}, "onboarded": False}
@@ -154,7 +155,7 @@ class LedgerTest(unittest.TestCase):
     def test_gstack_install_goes_where_the_signal_looks(self):
         import os, subprocess
         cat = json.loads((Path(ledger.__file__).parent / "recommendations.json").read_text())
-        how = next(i for i in cat if i["id"] == "gstack")["how"]
+        how = next(i for i in ledger.for_harness(cat, "claude") if i["id"] == "gstack")["how"]
         self.assertIn("CLAUDE_CONFIG_DIR", how)
         target = '"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/gstack"'
         self.assertIn(target, how)
@@ -177,7 +178,7 @@ class LedgerTest(unittest.TestCase):
     def test_parity_items_follow_matchblox_and_fire_on_their_signals(self):
         cat = sorted(ledger._catalog(), key=lambda i: i["order"])
         ids = [i["id"] for i in cat]
-        by = {i["id"]: i for i in cat}
+        by = {i["id"]: i for i in ledger.for_harness(cat, "claude")}
         self.assertEqual(ids[ids.index("matchblox") + 1], "matchblox-setup")
         for i in ("matchblox-setup", "code-graph", "autocompact"):
             self.assertFalse(by[i]["onboarding"])
@@ -185,7 +186,7 @@ class LedgerTest(unittest.TestCase):
         self.assertEqual(by["matchblox-setup"]["when"], {"matchblox": True, "matchblox_hooks": False})
         self.assertIn("matchblox setup", by["matchblox-setup"]["how"])
         self.assertEqual(by["code-graph"]["when"], {"code_graph": False})
-        self.assertIn("/builder:harness", by["code-graph"]["how"])
+        self.assertIn("harness skill", by["code-graph"]["how"])
         self.assertEqual(by["autocompact"]["when"], {"autocompact": False})
         self.assertIn('"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "85"', by["autocompact"]["how"])
         self.assertIn("record", by["autocompact"]["why"])
@@ -198,6 +199,73 @@ class LedgerTest(unittest.TestCase):
         for i in ("matchblox-setup", "code-graph", "autocompact"):
             self.assertIsNone(ledger.next_recommendation(EMPTY, only(i), done, 1.0))
         self.assertIsNone(ledger.next_recommendation(EMPTY, only("matchblox-setup"), dict(sig, matchblox=False), 1.0))
+
+
+class ForHarnessTest(unittest.TestCase):
+    def test_for_harness_drops_missing_entry(self):
+        cat = [dict(item("a"), how={"claude": "c"}), dict(item("b"), how="s")]
+        self.assertEqual([i["id"] for i in ledger.for_harness(cat, "codex")], ["b"])
+
+    def test_for_harness_resolves_map(self):
+        cat = [dict(item("a"), how={"claude": "c", "codex": "x"})]
+        self.assertEqual(ledger.for_harness(cat, "codex")[0]["how"], "x")
+        self.assertEqual(cat[0]["how"], {"claude": "c", "codex": "x"})
+
+    def test_harnesses_filter(self):
+        cat = [dict(item("a"), how="s", harnesses=["claude"]), dict(item("b"), how="s")]
+        self.assertEqual([i["id"] for i in ledger.for_harness(cat, "claude")], ["a", "b"])
+        self.assertEqual([i["id"] for i in ledger.for_harness(cat, "cursor")], ["b"])
+
+    def test_catalog_every_item_offered_somewhere(self):
+        for i in ledger._catalog():
+            offered = [h for h in harness.HARNESSES if ledger.for_harness([i], h)]
+            self.assertTrue(offered, i["id"])
+            for h in offered:
+                self.assertIsInstance(ledger.for_harness([i], h)[0]["how"], str)
+
+    def test_catalog_sources_for_map_how(self):
+        for i in ledger._catalog():
+            if isinstance(i["how"], dict):
+                for h in i["how"]:
+                    if h != "claude":
+                        self.assertTrue(i.get("sources", {}).get(h, "").startswith("https://"), (i["id"], h))
+
+    def test_neutral_how_has_no_slash_command(self):
+        for i in ledger._catalog():
+            if isinstance(i["how"], str):
+                self.assertNotRegex(i["how"], r"(^|[\s(`])/(loop|usage|compact|clear|plugin|builder:[a-z-]+)\b", i["id"])
+
+    def test_autocompact_claude_only(self):
+        by = {i["id"]: i for i in ledger._catalog()}
+        self.assertEqual(by["autocompact"]["harnesses"], ["claude"])
+        for h in ("codex", "cursor", "opencode"):
+            self.assertNotIn("autocompact", [i["id"] for i in ledger.for_harness(ledger._catalog(), h)])
+
+    def test_per_harness_items(self):
+        for h in harness.HARNESSES:
+            ids = [i["id"] for i in ledger.for_harness(ledger._catalog(), h)]
+            for need in ("superpowers", "gstack", "matchblox-setup", "code-graph", "fleet", "budget", "canon"):
+                self.assertIn(need, ids, (h, need))
+        by = {i["id"]: i for i in ledger.for_harness(ledger._catalog(), "cursor")}
+        self.assertIn("/add-plugin superpowers", by["superpowers"]["how"])
+
+    def test_next_cli_harness_flag(self):
+        import os, subprocess
+        with tempfile.TemporaryDirectory() as d:
+            env = {"PATH": os.environ["PATH"], "HOME": d, "BUILDER_HOME": d + "/b"}
+            lp = str(Path(ledger.__file__))
+            subprocess.run(["python3", lp, "onboarded"], env=env, check=True, capture_output=True)
+            for i in ledger._catalog():
+                if i["id"] != "superpowers":
+                    subprocess.run(["python3", lp, "answer", i["id"], "never"], env=env, check=True, capture_output=True)
+            out = {}
+            for h in ("claude", "codex", "unknown"):
+                r = subprocess.run(["python3", lp, "next", "--harness", h], env=env, capture_output=True, text=True, cwd=d)
+                self.assertEqual(r.returncode, 0, r.stderr)
+                out[h] = json.loads(r.stdout)
+            self.assertIn("/plugins", out["codex"]["how"])
+            self.assertIn("/plugin install", out["claude"]["how"])
+            self.assertEqual(out["unknown"], out["claude"])
 
 
 if __name__ == "__main__":

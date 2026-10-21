@@ -8,7 +8,17 @@
     },
     "say": "Builder works best with the superpowers plugin, which adds planning, TDD and review skills.",
     "why": "It gives every task a plan, a test and a review step.",
-    "how": "/plugin marketplace add obra/superpowers-marketplace, then /plugin install superpowers@superpowers-marketplace"
+    "how": {
+      "claude": "/plugin marketplace add obra/superpowers-marketplace, then /plugin install superpowers@superpowers-marketplace",
+      "codex": "In Codex, run /plugins, search for superpowers, and pick Install Plugin",
+      "cursor": "In Cursor Agent chat, run /add-plugin superpowers",
+      "opencode": "Tell opencode: Fetch and follow instructions from https://raw.githubusercontent.com/obra/superpowers/refs/heads/main/.opencode/INSTALL.md"
+    },
+    "sources": {
+      "codex": "https://github.com/obra/superpowers",
+      "cursor": "https://github.com/obra/superpowers",
+      "opencode": "https://github.com/obra/superpowers"
+    }
   },
   {
     "id": "gstack",
@@ -18,8 +28,18 @@
       "gstack": false
     },
     "say": "Builder pairs well with gstack, a set of skills for browsing, QA and shipping.",
-    "why": "It adds a real browser and ship workflows that builder can route to. It installs in ~/.claude/skills/gstack, or in $CLAUDE_CONFIG_DIR/skills/gstack when CLAUDE_CONFIG_DIR is set.",
-    "how": "git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/gstack\" && cd \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/gstack\" && ./setup"
+    "why": "It adds a real browser and ship workflows that builder can route to.",
+    "how": {
+      "claude": "git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/gstack\" && cd \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/gstack\" && ./setup",
+      "codex": "git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git ~/gstack && cd ~/gstack && ./setup --host codex",
+      "cursor": "git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git ~/gstack && cd ~/gstack && ./setup --host cursor",
+      "opencode": "git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git ~/gstack && cd ~/gstack && ./setup --host opencode"
+    },
+    "sources": {
+      "codex": "https://github.com/garrytan/gstack",
+      "cursor": "https://github.com/garrytan/gstack",
+      "opencode": "https://github.com/garrytan/gstack"
+    }
   },
   {
     "id": "gh",
@@ -64,7 +84,7 @@
         ">=": 2
       }
     },
-    "say": "You run several Claude sessions at once, and matchblox can show them together with their usage.",
+    "say": "You run several coding agent sessions at once, and matchblox can show them together with their usage.",
     "why": "It lists live sessions and limits in one view.",
     "how": "curl -fsSL https://matchblox.sh | sh"
   },
@@ -76,9 +96,15 @@
       "matchblox": true,
       "matchblox_hooks": false
     },
-    "say": "matchblox is installed, but its hooks are not in your Claude Code settings, so it cannot see this session.",
+    "say": "matchblox is installed, but its hooks are not in your coding agent's hook settings, so it cannot see this session.",
     "why": "The hooks tell matchblox what each session does and asks, and they put its status line under every session.",
-    "how": "matchblox setup (it adds the hooks, the status line and the tmux way back in one step; see https://docs.matchblox.com)"
+    "how": "matchblox setup (it adds the hooks, the status line and the tmux way back in one step; see https://docs.matchblox.com)",
+    "harnesses": [
+      "claude",
+      "codex",
+      "opencode",
+      "cursor"
+    ]
   },
   {
     "id": "fleet",
@@ -91,7 +117,7 @@
     },
     "say": "You have three or more live sessions, so builder can help you run them as a fleet.",
     "why": "Parallel sessions need one owner per task to avoid clashes.",
-    "how": "Ask me: /builder:fleet"
+    "how": "Ask me for the fleet skill"
   },
   {
     "id": "budget",
@@ -104,7 +130,7 @@
     },
     "say": "Your weekly usage is at 80% or more, so builder can help you plan the rest of the week.",
     "why": "A budget stops one big task from using the whole limit.",
-    "how": "Ask me: /builder:budget"
+    "how": "Ask me for the budget skill"
   },
   {
     "id": "autocompact",
@@ -115,7 +141,10 @@
     },
     "say": "Claude Code compacts only when the context window is almost full.",
     "why": "An earlier compact leaves room to write the durable record first, so the session keeps its place after the compact.",
-    "how": "Add \"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE\": \"85\" to the \"env\" object in your Claude Code settings.json (~/.claude/settings.json, or $CLAUDE_CONFIG_DIR/settings.json when CLAUDE_CONFIG_DIR is set), then start a new session"
+    "how": "Add \"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE\": \"85\" to the \"env\" object in your Claude Code settings.json (~/.claude/settings.json, or $CLAUDE_CONFIG_DIR/settings.json when CLAUDE_CONFIG_DIR is set), then start a new session",
+    "harnesses": [
+      "claude"
+    ]
   },
   {
     "id": "code-graph",
@@ -126,7 +155,7 @@
     },
     "say": "No code graph is set up, so agents read file after file to find callers and structure.",
     "why": "A code graph answers \"who calls this?\" in one query and keeps the context window small.",
-    "how": "Ask me: /builder:harness (it provisions the codebase-memory-mcp graph and keeps it fresh)"
+    "how": "Ask me for the harness skill (it provisions the codebase-memory-mcp graph and keeps it fresh)"
   },
   {
     "id": "canon",
@@ -137,6 +166,6 @@
     },
     "say": "This project has no written canon, so builder cannot tell your rules from its own guesses.",
     "why": "A short canon (RULES.md, DESIGN.md or docs/rules/) gives every session the same rules.",
-    "how": "Ask me: /builder:canon"
+    "how": "Ask me for the canon skill"
   }
 ]

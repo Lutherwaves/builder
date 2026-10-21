@@ -128,6 +128,19 @@ printf '%s\n' 'Run `gh pr list`, `tmux send-keys`, `matchblox usage --json`, see
 out="$(run_in "$tmp/guard")"; rc=$?
 [ "$rc" -eq 0 ] && ! grep -q 'guard:' <<<"$out" && check "guard allows gh, tmux, matchblox, paths" ok || check "guard allows gh, tmux, matchblox, paths (got $rc)" bad
 
+# Case 15b (guard_flags_slash_in_neutral_how): a string-valued `how` with a slash command fails; a map-valued `how` may have one.
+rm -rf "$tmp/guard"; mkrepo "$tmp/clean" "$tmp/guard"
+python3 - "$tmp/guard/lib/recommendations.json" <<'PY'
+import json, sys
+p = sys.argv[1]
+cat = json.load(open(p))
+next(i for i in cat if i["id"] == "fleet")["how"] = "Ask me: /builder:fleet"
+json.dump(cat, open(p, "w"), indent=2)
+PY
+out="$(run_in "$tmp/guard")"; rc=$?
+[ "$rc" -eq 1 ] && grep -q '✗ guard: lib/recommendations.json: fleet how' <<<"$out" && ! grep -q 'guard: lib/recommendations.json: superpowers' <<<"$out" \
+  && check "guard flags slash command in a string how, allows it in a map how" ok || check "guard flags slash command in a string how, allows it in a map how (got $rc)" bad
+
 # Case 16: the run left the real repo's HEAD, refs and working tree as they were.
 [ "$(snapshot)" = "$before" ] && check "real repo untouched by the test run" ok || check "real repo untouched by the test run" bad
 

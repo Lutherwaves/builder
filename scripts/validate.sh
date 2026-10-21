@@ -68,6 +68,21 @@ else
   note "✓ no harness tool or slash command names in skills"
 fi
 
+# A string-valued `how` runs on every harness, so it names no slash command. A map-valued `how` is per harness.
+how_hits="$(python3 - <<'PY'
+import json, re, sys
+rx = re.compile(r"(^|[\s(`])/(loop|usage|compact|clear|plugin|builder:[a-z-]+)\b")
+for i in json.load(open("lib/recommendations.json")):
+    if isinstance(i.get("how"), str) and rx.search(i["how"]):
+        print("lib/recommendations.json: %s how names a slash command" % i["id"])
+PY
+)"
+if [ -n "$how_hits" ]; then
+  while IFS= read -r h; do err "guard: $h"; done <<<"$how_hits"
+else
+  note "✓ no slash commands in string-valued recommendation steps"
+fi
+
 echo "→ python tools"
 for py in $(find . -name '*.py' -not -path './.git/*'); do
   python3 -m py_compile "$py" && note "✓ compiles: $py" || err "$py failed to compile"

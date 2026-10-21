@@ -58,7 +58,8 @@ def build_body(harness):
     soul = (ROOT / "skills" / "builder" / "soul-compact.md").read_text().rstrip("\n")
     try:
         led = ledger.load(ledger.home() / "ledger.json")
-        catalog = json.loads((ROOT / "lib" / "recommendations.json").read_text())
+        catalog = ledger.for_harness(json.loads((ROOT / "lib" / "recommendations.json").read_text()),
+                                     harness if harness in harness_lib.HARNESSES else "claude")
         sig = signals.collect(os.getcwd(), 0.5, harness=harness if harness in harness_lib.HARNESSES else None)
         now = time.time()
         if not led["onboarded"]:

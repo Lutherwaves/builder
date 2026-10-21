@@ -72,6 +72,21 @@ def _unseen(when, signals):
     return any(signals.get(k) is None and isinstance(v, bool) for k, v in when.items())
 
 
+def for_harness(catalog, harness_name):
+    """Items that work on this harness, each with `how` resolved to this harness's own string."""
+    offered = []
+    for i in catalog:
+        if harness_name not in i.get("harnesses", harness.HARNESSES):
+            continue
+        how = i["how"]
+        if isinstance(how, dict):
+            if harness_name not in how:
+                continue
+            how = how[harness_name]
+        offered.append(dict(i, how=how))
+    return offered
+
+
 def due_catalog(ledger, catalog):
     """Until onboarding ends, only onboarding items are due; the hook and `next` agree."""
     if ledger.get("onboarded"):
@@ -121,15 +136,18 @@ def main(argv):
             return 1
         print("ok")
         return 0
-    if len(argv) == 2 and argv[1] == "next":
+    if len(argv) in (2, 4) and argv[1] == "next" and (len(argv) == 2 or argv[2] == "--harness"):
+        name = argv[3] if len(argv) == 4 else harness.detect(os.environ)
+        if name not in harness.HARNESSES:
+            name = "claude"
         sys.path.insert(0, str(Path(__file__).resolve().parent))
         import signals
         sig = signals.collect(os.getcwd())
         led = load(path)
-        print(json.dumps(next_recommendation(led, due_catalog(led, _catalog()), sig, time.time(),
+        print(json.dumps(next_recommendation(led, due_catalog(led, for_harness(_catalog(), name)), sig, time.time(),
                                               onboarding=not led["onboarded"])))
         return 0
-    print("usage: ledger.py answer <id> yes|later|never | ledger.py onboarded | ledger.py next", file=sys.stderr)
+    print("usage: ledger.py answer <id> yes|later|never | ledger.py onboarded | ledger.py next [--harness H]", file=sys.stderr)
     return 2
 
 
