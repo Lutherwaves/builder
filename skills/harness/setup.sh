@@ -7,8 +7,9 @@
 # Env:   CBM_BIN=/path/to/codebase-memory-mcp  to force a specific binary.
 set -euo pipefail
 
-STATE_DIR="${HOME}/.claude/code-graph"
+STATE_DIR="${BUILDER_HOME:-${HOME}/.config/builder}/code-graph"
 REGISTRY="${STATE_DIR}/repos.txt"
+OLD_REGISTRY="${HOME}/.claude/code-graph/repos.txt"   # read once when the new file is missing; never written
 
 # ── Locate the binary (never auto-compile — building is a 279MB C build the
 #    user should opt into explicitly) ─────────────────────────────────────
@@ -104,6 +105,7 @@ echo "→ indexed project '$PROJECT' — ${NODES:-?} nodes / ${EDGES:-?} edges"
 #    committed and uncommitted drift without re-deriving anything. Dedup by path.
 IDX_SHA="$(git -C "$REPO" rev-parse HEAD 2>/dev/null || true)"
 mkdir -p "$STATE_DIR"
+if [ ! -f "$REGISTRY" ] && [ -f "$OLD_REGISTRY" ]; then cp "$OLD_REGISTRY" "$REGISTRY"; fi
 touch "$REGISTRY"
 if [ -s "$REGISTRY" ]; then
   awk -F'\t' -v p="$REPO" '$1!=p' "$REGISTRY" > "${REGISTRY}.tmp" && mv "${REGISTRY}.tmp" "$REGISTRY"

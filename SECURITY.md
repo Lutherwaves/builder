@@ -23,8 +23,8 @@ mitigation plan within 14 days for confirmed issues.
 
 ## Scope
 
-This plugin runs inside Claude Code. As part of its normal flow, it runs
-shell commands and schedules recurring agent prompts on the user's machine.
+This plugin runs inside Claude Code, Codex CLI, Cursor CLI and opencode. As part
+of its normal flow, it runs shell commands and schedules recurring agent prompts on the user's machine.
 Security-relevant surfaces:
 
 - `hooks/` — the SessionStart hook. It runs at the start of every session and
@@ -38,8 +38,17 @@ Security-relevant surfaces:
   answers), `reach.json` (send rules and the team channel) and `reach-log.jsonl`.
   **`reach-log.jsonl` holds the full text of each message** that `reach` sent or
   skipped, with its recipient. It is written with mode 0600.
-- Files under `~/.claude/code-graph/` (the graph registry) and
-  `~/.claude/intake/` (config and seen messages).
+- Files under `$BUILDER_HOME/code-graph/` (the graph registry) and
+  `$BUILDER_HOME/intake/` (config and seen messages). `$BUILDER_HOME` is
+  `~/.config/builder` by default. Builder still reads the old
+  `~/.claude/code-graph/` and `~/.claude/intake/` files when the new ones are
+  missing. It never writes or deletes them.
+- The adapters: the per-harness manifests, the hook files and the opencode plugin.
+- The state directories of each harness that builder reads: the Claude Code
+  directory (`~/.claude` or `CLAUDE_CONFIG_DIR`), the Codex directory
+  (`~/.codex` or `CODEX_HOME`), the Cursor directory (`~/.cursor` or
+  `CURSOR_CONFIG_DIR`), the opencode directory (`~/.config/opencode` or
+  `OPENCODE_CONFIG_DIR`), and `$BUILDER_HOME`.
 - Scheduled watcher prompts that read `matchblox usage --json`,
   `matchblox sessions --json`, and the graph registry.
 

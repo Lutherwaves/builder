@@ -72,6 +72,7 @@ if ut_out="$(python3 -m unittest discover -s tests -p 'test_*.py' 2>&1)"; then n
 
 echo "→ harness drift tests"
 if dr_out="$(bash tests/test_drift.sh 2>&1)"; then note "✓ drift"; else printf '%s\n' "$dr_out"; err "drift tests failed"; fi
+if sp_out="$(bash tests/test_state_paths.sh 2>&1)"; then note "✓ state paths"; else printf '%s\n' "$sp_out"; err "state path tests failed"; fi
 
 echo "→ hook tests"
 if hk_out="$(bash tests/test_hook.sh 2>&1)"; then note "✓ hook"; else printf '%s\n' "$hk_out"; err "hook tests failed"; fi

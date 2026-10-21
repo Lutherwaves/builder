@@ -38,7 +38,8 @@ Never index with the MCP `index_repository` tool instead. It skips the `.mcp.jso
    No binary? It prints the build commands and exits 2. It never compiles for you: the build is large. The person opts in.
 2. It adds a `codebase-memory` server to the repository's `.mcp.json`. It keeps every other server in the file. It merges with `jq` or `python3`. With neither, it stops and changes nothing.
 3. It indexes the tree, under a project name made from the absolute path.
-4. It registers the repository in `~/.claude/code-graph/repos.txt`, with the HEAD at index time.
+4. It registers the repository in `$BUILDER_HOME/code-graph/repos.txt` (default `~/.config/builder/code-graph/repos.txt`), with the HEAD at index time.
+   It still reads the old `~/.claude/code-graph/repos.txt` once when the new file is missing. It writes only the new file.
 
 **Never pass `--name`.** The path-based name keeps each clone and each worktree on its own graph.
 A forced name makes two checkouts share one graph. Then a query in one checkout returns code from the other branch.

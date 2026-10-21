@@ -6,8 +6,9 @@
 # Usage: drift.sh [repo-path]   (default: $PWD)
 # Output: VERDICT=<FRESH|STALE|NOT_INDEXED|NO_BINARY|BAD_PATH> project=<name> ...
 #
-# The registry written by setup.sh (~/.claude/code-graph/repos.txt, tab-
-# separated: <abs-path>\t<project>\t<indexed-sha>) is the source of truth:
+# The registry written by setup.sh ($BUILDER_HOME/code-graph/repos.txt, default
+# ~/.config/builder; the old ~/.claude/code-graph/repos.txt is read when the new
+# one is missing). Tab-separated: <abs-path>\t<project>\t<indexed-sha>) is the source of truth:
 #   - <project>     the AUTHORITATIVE name the tool assigned (paths get
 #                   normalized in ways a naive slug can't reproduce).
 #   - <indexed-sha> the git HEAD *at index time* — the only reliable way to
@@ -16,7 +17,8 @@
 #                   graph-vs-disk diff (detect_changes only sees git dirtiness).
 set -u
 
-REGISTRY="${HOME}/.claude/code-graph/repos.txt"
+REGISTRY="${BUILDER_HOME:-${HOME}/.config/builder}/code-graph/repos.txt"
+[ -f "$REGISTRY" ] || REGISTRY="${HOME}/.claude/code-graph/repos.txt"
 
 find_bin() {
   if [ -n "${CBM_BIN:-}" ] && [ -x "${CBM_BIN}" ]; then printf '%s' "${CBM_BIN}"; return 0; fi
