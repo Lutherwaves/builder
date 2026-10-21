@@ -129,6 +129,7 @@ class LedgerTest(unittest.TestCase):
         self.assertEqual(by["autocompact"]["when"], {"autocompact": False})
         self.assertIn('"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "85"', by["autocompact"]["how"])
         self.assertIn("record", by["autocompact"]["why"])
+        self.assertIn("CLAUDE_CONFIG_DIR", by["autocompact"]["how"])
         only = lambda i: [by[i]]
         sig = {"matchblox": True, "matchblox_hooks": False, "code_graph": False, "autocompact": False}
         for i in ("matchblox-setup", "code-graph", "autocompact"):

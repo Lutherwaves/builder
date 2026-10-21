@@ -105,12 +105,23 @@ def _hook_commands(settings):
                     yield h["command"]
 
 
-def _claude_files(home):
-    """Claude Code's settings.json and .claude.json; CLAUDE_CONFIG_DIR moves both."""
+def _claude_paths(home):
+    """Claude Code's config dir and its .claude.json; CLAUDE_CONFIG_DIR moves both."""
     cfg = os.environ.get("CLAUDE_CONFIG_DIR")
     if cfg:
-        return Path(cfg) / "settings.json", Path(cfg) / ".claude.json"
-    return home / ".claude" / "settings.json", home / ".claude.json"
+        return Path(cfg), Path(cfg) / ".claude.json"
+    return home / ".claude", home / ".claude.json"
+
+
+def _mcp_servers(state, dirs):
+    """Server names: user scope, local scope (projects.<dir>) for each dir, and each dir's .mcp.json."""
+    names = set()
+    projects = state.get("projects") if isinstance(state.get("projects"), dict) else {}
+    scopes = [state] + [projects.get(str(d)) for d in dirs] + [_read_json(d / ".mcp.json") for d in dirs]
+    for scope in scopes:
+        servers = scope.get("mcpServers") if isinstance(scope, dict) else None
+        names.update(servers if isinstance(servers, dict) else ())
+    return names
 
 
 def collect(cwd, timeout=0.5):
@@ -130,8 +141,9 @@ def collect(cwd, timeout=0.5):
         cmds["signkey"] = ["git", "config", "--get", "user.signingkey"]
     res = _run_all(cmds, cwd, timeout) if cmds else {}
 
+    cdir, state_path = _claude_paths(home)
     try:
-        plugins = (home / ".claude/plugins/installed_plugins.json").read_text()
+        plugins = (cdir / "plugins/installed_plugins.json").read_text()
     except OSError:
         plugins = ""
     try:
@@ -139,20 +151,16 @@ def collect(cwd, timeout=0.5):
         channel = channel if isinstance(channel, str) and channel else None
     except (OSError, ValueError, AttributeError):
         channel = None
-    settings_path, state_path = _claude_files(home)
-    settings = _read_json(settings_path)
+    settings = _read_json(cdir / "settings.json")
     env = settings.get("env") if isinstance(settings.get("env"), dict) else {}
     sessions = _json(res.get("sessions"))
     root = _git_root(cwd, res.get("git"))
-    servers = {}
-    for f in (state_path, root / ".mcp.json"):
-        s = _read_json(f).get("mcpServers")
-        servers.update(s if isinstance(s, dict) else {})
+    servers = _mcp_servers(_read_json(state_path), {root, Path(cwd).resolve()})
     pg = res.get("pgrep")
 
     return {
         "superpowers": "superpowers@" in plugins,
-        "gstack": (home / ".claude/skills/gstack").exists(),
+        "gstack": (cdir / "skills/gstack").exists(),
         "gh": bool(res.get("gh")) and res["gh"][0] == 0,
         "signing": _stdout(res.get("gpgsign")) == "true" and bool(_stdout(res.get("signkey"))),
         "channel": channel,

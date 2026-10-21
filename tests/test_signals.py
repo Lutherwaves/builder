@@ -204,6 +204,35 @@ fi''')
         (self.cwd / ".mcp.json").write_text('{"mcpServers": {"other": {}}}')
         self.assertFalse(signals.collect(str(sub), timeout=GENEROUS)["code_graph"])
 
+    def test_code_graph_from_the_local_scope_in_claude_json(self):
+        self.fake("git", 'echo "%s"' % self.cwd)
+        sub = self.cwd / "a"
+        sub.mkdir()
+        local = {"projects": {str(self.cwd): {"mcpServers": {"codebase-memory-mcp": {"command": "x"}}}}}
+        (self.home / ".claude.json").write_text(json.dumps(local))
+        self.assertTrue(signals.collect(str(sub), timeout=GENEROUS)["code_graph"])
+        local = {"projects": {str(sub.resolve()): {"mcpServers": {"codebase-memory": {}}}}}
+        (self.home / ".claude.json").write_text(json.dumps(local))
+        self.assertTrue(signals.collect(str(sub), timeout=GENEROUS)["code_graph"])
+        local = {"projects": {"/elsewhere": {"mcpServers": {"codebase-memory-mcp": {}}}, str(self.cwd): "bad"}}
+        (self.home / ".claude.json").write_text(json.dumps(local))
+        self.assertFalse(signals.collect(str(sub), timeout=GENEROUS)["code_graph"])
+
+    def test_plugins_and_gstack_come_from_claude_config_dir_when_set(self):
+        cfg = Path(self.tmp.name) / "cfg"
+        (cfg / "plugins").mkdir(parents=True)
+        (cfg / "plugins" / "installed_plugins.json").write_text('{"plugins":{"superpowers@x":[]}}')
+        (cfg / "skills" / "gstack").mkdir(parents=True)
+        self.assertFalse(signals.collect(str(self.cwd), timeout=GENEROUS)["superpowers"])
+        with mock.patch.dict(os.environ, {"CLAUDE_CONFIG_DIR": str(cfg)}):
+            out = signals.collect(str(self.cwd), timeout=GENEROUS)
+        self.assertTrue(out["superpowers"])
+        self.assertTrue(out["gstack"])
+        (self.home / ".claude" / "skills" / "gstack").mkdir(parents=True)
+        with mock.patch.dict(os.environ, {"CLAUDE_CONFIG_DIR": str(Path(self.tmp.name) / "empty")}):
+            out = signals.collect(str(self.cwd), timeout=GENEROUS)
+        self.assertFalse(out["gstack"])
+
     def test_autocompact_from_settings_env_or_process_env(self):
         self.assertFalse(signals.collect(str(self.cwd), timeout=GENEROUS)["autocompact"])
         self.write_settings(self.home / ".claude", {"env": {"OTHER": "1"}})

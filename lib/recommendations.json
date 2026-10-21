@@ -115,7 +115,7 @@
     },
     "say": "Claude Code compacts only when the context window is almost full.",
     "why": "An earlier compact leaves room to write the durable record first, so the session keeps its place after the compact.",
-    "how": "Add \"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE\": \"85\" to the \"env\" object in ~/.claude/settings.json, then start a new session"
+    "how": "Add \"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE\": \"85\" to the \"env\" object in your Claude Code settings.json (~/.claude/settings.json, or $CLAUDE_CONFIG_DIR/settings.json when CLAUDE_CONFIG_DIR is set), then start a new session"
   },
   {
     "id": "code-graph",
