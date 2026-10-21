@@ -172,6 +172,16 @@ out="$(prun CLAUDE_CONFIG_DIR="$ph/.claude" BUILDER_PARITY_CONFIG_DIR="$ph/.clau
 mkdir -p "$tmp/foreign"; echo '{"mine": 1}' > "$tmp/foreign/settings.json"
 out="$(prun BUILDER_PARITY_CONFIG_DIR="$tmp/foreign" bash "$parity" 2>&1)"; rc=$?
 { [ "$rc" -eq 2 ] && [ "$(cat "$tmp/foreign/settings.json")" = '{"mine": 1}' ]; } || { guard_ok=0; echo "    foreign settings not refused ($rc: $out)"; }
+# A folder parity did not create keeps its plugins/ and skills/: a checkout of this repository, and a foreign dir.
+git clone -q "$root" "$tmp/repo-copy" 2>/dev/null || cp -R "$root" "$tmp/repo-copy"
+mkdir -p "$tmp/other/plugins/p" "$tmp/other/skills/s"; echo keep > "$tmp/other/skills/s/SKILL.md"; echo keep > "$tmp/other/plugins/p/x"
+for bad in "$tmp/repo-copy" "$tmp/other"; do
+  before="$(cd "$bad" && find . -path ./.git -prune -o -print | sort)"
+  out="$(prun BUILDER_PARITY_CONFIG_DIR="$bad" BUILDER_EVAL_OUT="$tmp/pout-g" bash "$parity" 2>&1)"; rc=$?
+  after="$(cd "$bad" && find . -path ./.git -prune -o -print | sort)"
+  { [ "$rc" -eq 2 ] && grep -q 'not empty' <<<"$out" && [ "$before" = "$after" ] && [ -d "$bad/skills" ]; } \
+    || { guard_ok=0; echo "    non-empty dir not refused or changed: $bad ($rc: $out)"; }
+done
 [ "$guard_ok" -eq 1 ] && [ "$(cat "$ph/.claude/settings.json")" = "$real_settings" ] && [ ! -e "$ph/.claude/sub" ] && [ ! -e "$tmp/pout-g" ] \
   && check "parity refuses a config dir that is or holds the real one" ok || check "parity refuses a config dir that is or holds the real one" bad
 out="$(prun BUILDER_EVAL_OUT="$tmp/pout1" bash "$parity" 2>&1)"; rc=$?

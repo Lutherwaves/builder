@@ -45,7 +45,8 @@ trap cleanup EXIT
 trap 'exit 130' INT TERM
 
 # Never touch the real config. Refuse a cfg that is the real config dir, sits inside it, or holds it
-# (for example $HOME, whose .claude.json is real). Refuse a cfg whose settings.json parity did not write.
+# (for example $HOME, whose .claude.json is real). Refuse a cfg that parity did not create: it must
+# not exist yet, be empty, or hold parity's marker. Parity never deletes anything in a foreign folder.
 realpath_() { python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$1"; }
 refuse() {
   echo "✗ parity refuses CLAUDE_CONFIG_DIR=$cfg: $1" >&2
@@ -56,8 +57,11 @@ r_cfg="$(realpath_ "$cfg")"; r_src="$(realpath_ "$src")"
 case "$r_cfg/" in "$r_src/"*) refuse "it is your real config dir or sits inside it." ;; esac
 case "$r_src/" in "$r_cfg/"*) refuse "it holds your real config dir." ;; esac
 [ "$r_cfg/.claude.json" = "$(realpath_ "$src_state")" ] && refuse "its .claude.json is your real one."
-if [ -e "$cfg/settings.json" ] && [ ! -e "$cfg/.builder-parity" ]; then
-  refuse "it holds a settings.json that parity did not write."
+if [ -e "$cfg" ] || [ -L "$cfg" ]; then
+  [ -d "$cfg" ] || refuse "it is not a folder."
+  if [ ! -e "$cfg/.builder-parity" ] && [ -n "$(ls -A "$cfg" 2>/dev/null)" ]; then
+    refuse "it is not empty, and parity did not create it (no .builder-parity marker)."
+  fi
 fi
 
 # The builder-led config dir. Parity owns it (marker .builder-parity) and rebuilds it on each run:

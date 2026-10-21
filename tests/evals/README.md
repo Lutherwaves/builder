@@ -47,7 +47,7 @@ Claude Code keeps its sign-in per config folder, and the eval never copies crede
 A new folder is not signed in, so the eval stops before any run and says how to fix it:
 set `BUILDER_PARITY_CONFIG_DIR` to a separate folder you keep, run `parity.sh` once to prepare it, run `CLAUDE_CONFIG_DIR=<that folder> claude auth login` once, then run `parity.sh` again.
 
-The eval refuses (exit 2) a folder that is your real config dir, sits inside it, or holds it. It also refuses a folder whose `settings.json` it did not write.
+The eval refuses (exit 2) a folder that is your real config dir, sits inside it, or holds it. It also refuses a folder that is not empty and that it did not create (no `.builder-parity` marker). It never deletes anything in such a folder.
 
 The runner writes `<fixture>/current.md` and `<fixture>/builder.md` to `<eval out>/parity/<timestamp>/` and prints both after each `expect.md`.
 
