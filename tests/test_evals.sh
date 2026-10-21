@@ -39,12 +39,17 @@ cat > "$tmp/bin/claude" <<'FAKE'
 echo "ARGS: $*"; echo "STDIN: $(cat)"; echo "fake-stderr" >&2
 echo "HOME_DIR: ${BUILDER_HOME:-unset}"
 echo "HOOK: $("$HOOK" 2>/dev/null)"
+echo "GITLOG: $(git log --oneline 2>&1 | wc -l | tr -d ' ') $(git config user.email) $(git config commit.gpgsign) $([ -d .git ] && echo dotgit)"
+# Like Claude Code: leave a session folder named after the cwd (and a decoy that must survive).
+pdir="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects"
+mkdir -p "$pdir/$(pwd -P | sed 's/[^A-Za-z0-9]/-/g')" "$pdir/-decoy-project"
 FAKE
 chmod +x "$tmp/bin/claude"
 mkdir -p "$tmp/evals/dash"
 printf -- '- leading dash prompt\n' > "$tmp/evals/dash/prompt.md"
 printf -- '- a\n- b\n- c\n' > "$tmp/evals/dash/expect.md"
-HOOK="$root/hooks/session-start" PATH="$tmp/bin:$PATH" BUILDER_EVAL_OUT="$tmp/out2" run dash </dev/null >/dev/null 2>&1
+mkdir -p "$tmp/home"
+HOME="$tmp/home" HOOK="$root/hooks/session-start" PATH="$tmp/bin:$PATH" BUILDER_EVAL_OUT="$tmp/out2" run dash </dev/null >/dev/null 2>&1
 d="$(ls -d "$tmp"/out2/dash/*/ 2>/dev/null | head -1)"
 [ -n "$d" ] && grep -q '^STDIN: - leading dash prompt' "$d/baseline.md" && grep -q '^STDIN: - leading dash prompt' "$d/with.md" \
   && ! grep -q 'leading dash' <(grep '^ARGS:' "$d/baseline.md") \
@@ -57,6 +62,18 @@ d="$(ls -d "$tmp"/out2/dash/*/ 2>/dev/null | head -1)"
   && grep -q 'Build the right thing' "$d/with.md" \
   && ! grep -qi 'onboarding\|builder recommends' "$d/with.md" \
   && check "eval runs use an onboarded temp BUILDER_HOME" ok || check "eval runs use an onboarded temp BUILDER_HOME" bad
+# The work dir is a git repo with exactly one commit and a local throwaway identity.
+[ -n "$d" ] && [ "$(grep -c '^GITLOG: 1 eval@example.invalid false dotgit' "$d/baseline.md")" -eq 1 ] \
+  && grep -q '^GITLOG: 1 eval@example.invalid false dotgit' "$d/with.md" \
+  && check "work dir is a git repo with one commit" ok || check "work dir is a git repo with one commit" bad
+# Session folders of the work dirs are removed; other projects stay.
+[ -d "$tmp/home/.claude/projects/-decoy-project" ] \
+  && [ "$(ls "$tmp/home/.claude/projects" | wc -l | tr -d ' ')" -eq 1 ] \
+  && check "run removes its own session folders only" ok || check "run removes its own session folders only ($(ls "$tmp/home/.claude/projects" 2>&1))" bad
+# CLAUDE_CONFIG_DIR is honoured.
+CLAUDE_CONFIG_DIR="$tmp/cfg" HOME="$tmp/home" HOOK="$root/hooks/session-start" PATH="$tmp/bin:$PATH" BUILDER_EVAL_OUT="$tmp/out3" run dash </dev/null >/dev/null 2>&1
+[ -d "$tmp/cfg/projects/-decoy-project" ] && [ "$(ls "$tmp/cfg/projects" | wc -l | tr -d ' ')" -eq 1 ] \
+  && check "CLAUDE_CONFIG_DIR projects dir is cleaned" ok || check "CLAUDE_CONFIG_DIR projects dir is cleaned" bad
 rm -rf "$tmp/evals/dash"
 
 # An optional allow file adds tool rules to --allowedTools; blank and # lines are skipped.
@@ -65,6 +82,13 @@ echo "Do it." > "$tmp/evals/allowed/prompt.md"
 printf -- '- a\n- b\n- c\n' > "$tmp/evals/allowed/expect.md"
 printf '# tests\nBash(python3 -m unittest:*)\n\n' > "$tmp/evals/allowed/allow"
 out="$(run allowed --dry-run 2>&1)"
+for rule in 'Bash(matchblox send:*)' 'Bash(matchblox compact:*)' 'Bash(matchblox hold:*)' 'Bash(matchblox release:*)' \
+  'Bash(matchblox kill:*)' 'Bash(matchblox new:*)' 'Bash(matchblox rename:*)' 'Bash(matchblox stoker:*)' \
+  'Bash(tmux send-keys:*)' 'Bash(tmux kill-session:*)' 'Bash(git push:*)' 'WebFetch'; do
+  q="$(printf '%q' "$rule")"
+  [ "$(grep -cF -- "$q" <<<"$out")" -eq 2 ] || { check "both runs deny $rule" bad; }
+done
+check "both runs deny session-steering and existing tools" ok
 [ "$(grep -c -- '--allowedTools Bash\\(python3\\ -m\\ unittest:\\\*\\) --disallowedTools' <<<"$out")" -eq 2 ] \
   && ! grep -q -- '--allowedTools.*#' <<<"$out" \
   && check "allow file adds --allowedTools" ok || check "allow file adds --allowedTools ($out)" bad
