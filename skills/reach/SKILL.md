@@ -8,6 +8,7 @@ description: Use when you tell, message, ping, notify or update a person ("tell 
 A message leaves the machine. It cannot come back.
 `reach` sends few messages, to the right place, and logs each one.
 The builder skill's tenet 10 says why: "The human decides." This skill says how.
+The standing rules in the builder soul apply to every message too.
 
 ## Three recipients, three routes
 

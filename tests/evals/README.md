@@ -37,14 +37,17 @@ This eval answers one question: does builder replace a hand-built setup and keep
 
 - Current: `claude -p` with your setup as it is.
 - Builder-led: `CLAUDE_CONFIG_DIR` points to a separate folder that holds only what builder recommends, each one accepted.
-  Builder loads with `--plugin-dir`. superpowers is enabled. The matchblox hooks and status line come from your settings, or have the `matchblox setup` shape. `env` sets `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` to 85. The `codebase-memory-mcp` server comes from your `.claude.json`.
-  Your plugin cache, marketplaces and skills folder are linked, not installed again, so both runs use the same versions.
+  Builder loads with `--plugin-dir`. superpowers is enabled. `env` sets `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` to 85. The `codebase-memory-mcp` server comes from your `.claude.json`.
+  The matchblox hooks and status line come from your settings. If your settings have none, the run has none, and a note tells you to run `matchblox setup` first.
+  The folder holds a copy of your installed superpowers version and its marketplace, so both runs use the same version. It links your gstack clone and copies the skill folders that gstack setup made. It holds no other plugin or skill.
 
 Both runs use the deny list and the PATH shims of `run.sh` (shared in `lib.sh`) and the same temp builder home.
 
 Claude Code keeps its sign-in per config folder, and the eval never copies credentials.
 A new folder is not signed in, so the eval stops before any run and says how to fix it:
-set `BUILDER_PARITY_CONFIG_DIR` to a folder you keep, and run `CLAUDE_CONFIG_DIR=<that folder> claude auth login` once.
+set `BUILDER_PARITY_CONFIG_DIR` to a separate folder you keep, run `parity.sh` once to prepare it, run `CLAUDE_CONFIG_DIR=<that folder> claude auth login` once, then run `parity.sh` again.
+
+The eval refuses (exit 2) a folder that is your real config dir, sits inside it, or holds it. It also refuses a folder whose `settings.json` it did not write.
 
 The runner writes `<fixture>/current.md` and `<fixture>/builder.md` to `<eval out>/parity/<timestamp>/` and prints both after each `expect.md`.
 

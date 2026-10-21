@@ -44,27 +44,34 @@ cleanup() {
 trap cleanup EXIT
 trap 'exit 130' INT TERM
 
-# The builder-led config dir. It links the person's plugin cache, marketplaces and skills (read only),
-# and writes settings.json and .claude.json from what builder recommends. It never copies credentials.
+# Never touch the real config. Refuse a cfg that is the real config dir, sits inside it, or holds it
+# (for example $HOME, whose .claude.json is real). Refuse a cfg whose settings.json parity did not write.
+realpath_() { python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$1"; }
+refuse() {
+  echo "✗ parity refuses CLAUDE_CONFIG_DIR=$cfg: $1" >&2
+  echo "  Pick a separate, empty folder for BUILDER_PARITY_CONFIG_DIR. Your real config dir is $src." >&2
+  exit 2
+}
+r_cfg="$(realpath_ "$cfg")"; r_src="$(realpath_ "$src")"
+case "$r_cfg/" in "$r_src/"*) refuse "it is your real config dir or sits inside it." ;; esac
+case "$r_src/" in "$r_cfg/"*) refuse "it holds your real config dir." ;; esac
+[ "$r_cfg/.claude.json" = "$(realpath_ "$src_state")" ] && refuse "its .claude.json is your real one."
+if [ -e "$cfg/settings.json" ] && [ ! -e "$cfg/.builder-parity" ]; then
+  refuse "it holds a settings.json that parity did not write."
+fi
+
+# The builder-led config dir. Parity owns it (marker .builder-parity) and rebuilds it on each run:
+# - plugins: a copy of the installed superpowers version and its marketplace, nothing else;
+# - skills: a link to the gstack clone, and a copy of the skill folders gstack setup made (.gstack-owned);
+# - settings.json and .claude.json: only what builder recommends.
+# No path in it leads back into the real config, except the gstack clone, which Claude Code does not manage.
+# It never copies credentials or account data.
 make_config() {
-  mkdir -p "$cfg/plugins" || return 1
-  local d
-  for d in cache marketplaces; do
-    [ -d "$src/plugins/$d" ] && ln -sfn "$src/plugins/$d" "$cfg/plugins/$d"
-  done
-  if [ -d "$src/skills/gstack" ]; then
-    if [ -e "$cfg/skills" ] && [ ! -L "$cfg/skills" ]; then
-      echo "note: $cfg/skills is a real folder; parity leaves it as it is" >&2
-    else
-      ln -sfn "$src/skills" "$cfg/skills"
-    fi
-  else
-    echo "note: gstack is not installed; the builder-led run has no gstack" >&2
-  fi
-  python3 - "$src" "$src_state" "$cfg" "$(command -v matchblox 2>/dev/null || true)" <<'PY'
-import json, sys
+  mkdir -p "$cfg" && : > "$cfg/.builder-parity" || return 1
+  python3 - "$src" "$src_state" "$cfg" <<'PY'
+import json, os, shutil, sys
 from pathlib import Path
-src, src_state, cfg, mbx = Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3]), sys.argv[4]
+src, src_state, cfg = Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3])
 
 def load(p):
     try:
@@ -73,19 +80,54 @@ def load(p):
         return {}
     return d if isinstance(d, dict) else {}
 
-def relink(obj):  # paths into the person's plugins folder now go through cfg's links
+def clear(p):  # remove a link without following it, or a folder parity owns
+    if p.is_symlink() or p.is_file():
+        p.unlink()
+    elif p.is_dir():
+        shutil.rmtree(p)
+
+def copy_in(path):  # copy one folder under the person's plugins folder to the same place under cfg
+    try:
+        rel = Path(path).relative_to(src / "plugins")
+    except ValueError:
+        print("note: %s is outside your plugins folder; parity does not copy it" % path, file=sys.stderr)
+        return
+    if Path(path).is_dir():
+        shutil.copytree(path, cfg / "plugins" / rel)
+
+def relink(obj):  # paths into the person's plugins folder now point to cfg's copies
     return json.loads(json.dumps(obj).replace(json.dumps(str(src / "plugins"))[1:-1], json.dumps(str(cfg / "plugins"))[1:-1]))
 
+for d in ("plugins", "skills"):
+    clear(cfg / d)
+(cfg / "plugins").mkdir()
 installed = load(src / "plugins/installed_plugins.json")
 sp = {k: v for k, v in (installed.get("plugins") or {}).items() if k.startswith("superpowers@")}
 if not sp:
     print("note: superpowers is not installed; the builder-led run has no superpowers", file=sys.stderr)
+for entries in sp.values():
+    for e in entries if isinstance(entries, list) else []:
+        if isinstance(e, dict) and e.get("installPath"):
+            copy_in(e["installPath"])
 (cfg / "plugins/installed_plugins.json").write_text(json.dumps(relink(dict(installed, plugins=sp)), indent=2))
 markets = {k.split("@", 1)[1] for k in sp}
 known = {k: v for k, v in load(src / "plugins/known_marketplaces.json").items() if k in markets}
+for v in known.values():
+    if isinstance(v, dict) and v.get("installLocation"):
+        copy_in(v["installLocation"])
 (cfg / "plugins/known_marketplaces.json").write_text(json.dumps(relink(known), indent=2))
 
-# matchblox hooks: the ones `matchblox setup` wrote for the person, or the same shape if absent.
+gstack = src / "skills/gstack"
+if gstack.is_dir():
+    (cfg / "skills").mkdir()
+    os.symlink(gstack, cfg / "skills/gstack")
+    for d in sorted((src / "skills").iterdir()):
+        if d.name != "gstack" and (d / ".gstack-owned").is_file():
+            shutil.copytree(d, cfg / "skills" / d.name, symlinks=True)
+else:
+    print("note: gstack is not installed; the builder-led run has no gstack", file=sys.stderr)
+
+# The matchblox hooks and status line that `matchblox setup` wrote to the person's settings.
 settings = load(src / "settings.json")
 hooks = {}
 for event, groups in (settings.get("hooks") or {}).items():
@@ -94,11 +136,8 @@ for event, groups in (settings.get("hooks") or {}).items():
         if keep:
             hooks.setdefault(event, []).append(dict(g, hooks=keep))
 status = settings.get("statusLine") if "matchblox hook" in str((settings.get("statusLine") or {}).get("command", "")) else None
-if mbx and not hooks:
-    for event in ("SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "Notification", "Stop", "SessionEnd"):
-        hooks[event] = [{"hooks": [{"type": "command", "command": "%s hook %s" % (mbx, event)}]}]
-if mbx and not status:
-    status = {"type": "command", "command": "%s hook statusline" % mbx}
+if not hooks:
+    print("note: your settings have no matchblox hooks, so the builder-led run has none. Run `matchblox setup` first for a fair run.", file=sys.stderr)
 new = {"enabledPlugins": {k: True for k in sp}, "env": {"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "85"}}
 if hooks:
     new["hooks"] = hooks
@@ -132,14 +171,15 @@ if [ "$dry" -eq 1 ]; then
 fi
 
 # Claude Code keeps its sign-in per config dir. Check it before any model run.
-auth="$(CLAUDE_CONFIG_DIR="$cfg" claude auth status --json 2>&1)"
+auth="$(CLAUDE_CONFIG_DIR="$cfg" claude auth status --json 2>/dev/null)"   # stdout only: a warning on stderr is not JSON
 if ! python3 -c 'import json,sys; sys.exit(0 if json.loads(sys.argv[1]).get("loggedIn") is True else 1)' "$auth" 2>/dev/null; then
   cat >&2 <<EOF
 ✗ parity: Claude Code is not signed in under CLAUDE_CONFIG_DIR=$cfg.
   Claude Code keeps its sign-in per config dir, so your normal sign-in does not carry over.
   This eval never copies credentials. No fixture ran.
-  To fix: pick a folder you keep, sign in there once, and run parity.sh with it:
+  To fix: pick a separate folder you keep, let parity prepare it, sign in there once, and run again:
     export BUILDER_PARITY_CONFIG_DIR=\$HOME/.local/state/builder/parity-config
+    bash tests/evals/parity.sh    # prepares the folder, then stops here
     CLAUDE_CONFIG_DIR=\$BUILDER_PARITY_CONFIG_DIR claude auth login
     bash tests/evals/parity.sh
   claude auth status said: $(tr -s '\n ' ' ' <<<"$auth" | cut -c1-200)

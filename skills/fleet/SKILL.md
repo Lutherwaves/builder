@@ -8,6 +8,7 @@ description: Use when two or more agent sessions work at the same time ("you are
 Many sessions work at the same time. Each session has one role and one lane.
 A session does the work in its lane. It hands all other work to the owner as a brief.
 The builder skill's tenet 4 says "one owner per fact". This skill applies it to sessions.
+The standing rules in the builder soul apply in every session of the fleet.
 
 ## 1. One role per session
 
