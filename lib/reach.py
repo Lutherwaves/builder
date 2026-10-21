@@ -18,28 +18,59 @@ VERDICTS = ("send", "draft", "deny", "skip")
 DEFAULTS = Path(__file__).resolve().parent.parent / "skills" / "reach" / "rules.default.json"
 
 
-def digest(to, text):
-    return hashlib.sha256(("%s|%s" % (to, text)).encode("utf-8")).hexdigest()
+DEDUPE_S = 3600
+PER_HOUR = 6
+
+
+def _norm(text):
+    """Case and spacing do not make a new message."""
+    return " ".join(str(text or "").split()).casefold()
+
+
+def _who(to, recipient=None, channel_name=None):
+    if to == "self":
+        return "self"
+    return _norm(channel_name or recipient if to == "channel" else recipient)
+
+
+def digest(to, text, recipient=None):
+    return hashlib.sha256(("%s|%s|%s" % (to, _who(to, recipient), _norm(text))).encode("utf-8")).hexdigest()
+
+
+def _number(value, default):
+    ok = isinstance(value, (int, float)) and not isinstance(value, bool) and value >= 0
+    return value if ok else default
+
+
+def _names(box, key):
+    value = box.get(key)
+    if not isinstance(value, list):
+        return []
+    return [v for v in value if isinstance(v, str) and v.strip()]
 
 
 def decide(rules, to, kind, channel_name=None):
-    box = rules.get("to_" + to) or {}
-    allowed = kind in (box.get("allow") or [])
+    box = rules.get("to_" + to)
+    box = box if isinstance(box, dict) else {}
+    allowed = kind in _names(box, "allow")
     if to == "channel":
-        return "send" if allowed and channel_name in (box.get("named") or []) else "deny"
+        named = isinstance(channel_name, str) and channel_name.strip() and channel_name in _names(box, "named")
+        return "send" if allowed and named else "deny"
     return "send" if allowed else "draft"
 
 
-def check(rules, log, to, kind, text, now, channel_name=None):
+def check(rules, log, to, kind, text, now, channel_name=None, recipient=None):
+    if to == "channel" and not channel_name:
+        channel_name = recipient
     verdict = decide(rules, to, kind, channel_name)
     if verdict == "deny":
         return {"verdict": "deny", "reason": "channel-not-named"}
     sends = [e for e in log if isinstance(e, dict) and e.get("verdict") == "send"
-             and isinstance(e.get("at"), (int, float))]
-    h = digest(to, text)
-    if any(e.get("sha256") == h and now - e["at"] <= rules.get("dedupe_s", 3600) for e in sends):
+             and isinstance(e.get("at"), (int, float)) and not isinstance(e.get("at"), bool)]
+    h = digest(to, text, channel_name if to == "channel" else recipient)
+    if any(e.get("sha256") == h and now - e["at"] <= _number(rules.get("dedupe_s"), DEDUPE_S) for e in sends):
         return {"verdict": "skip", "reason": "duplicate"}
-    if sum(1 for e in sends if now - e["at"] < 3600) >= rules.get("per_hour", 6):
+    if sum(1 for e in sends if now - e["at"] < 3600) >= _number(rules.get("per_hour"), PER_HOUR):
         return {"verdict": "skip", "reason": "rate"}
     return {"verdict": verdict, "reason": "allowed" if verdict == "send" else "needs-yes"}
 
@@ -119,7 +150,8 @@ def main(argv):
         s.add_argument("--to", required=True, choices=RECIPIENTS)
         s.add_argument("--kind", required=True)
         s.add_argument("--text", required=True)
-        s.add_argument("--channel-name")
+        s.add_argument("--recipient", help="who gets it: a teammate's name, or the room for --to channel")
+        s.add_argument("--channel-name", help="the room for --to channel (same as --recipient)")
         if name == "log":
             s.add_argument("--verdict", required=True, choices=VERDICTS)
             s.add_argument("--reason", default="")
@@ -129,16 +161,24 @@ def main(argv):
     s.add_argument("--text", required=True)
     s.add_argument("--title", default="builder")
     a = p.parse_args(argv[1:])
+    if a.cmd in ("check", "log") and a.to != "self":
+        if a.to == "channel":
+            if a.recipient and a.channel_name and a.recipient != a.channel_name:
+                p.error("--recipient and --channel-name name different rooms; give one room")
+            a.recipient = a.channel_name = a.recipient or a.channel_name
+        if not (a.recipient or "").strip():
+            p.error("--to %s needs --recipient <%s>" % (a.to, "room name" if a.to == "channel" else "teammate's name"))
 
     home = ledger.home()
     rules_path, log_path = home / "reach.json", home / "reach-log.jsonl"
     if a.cmd == "check":
         print(json.dumps(check(load_rules(rules_path), read_log(log_path), a.to, a.kind, a.text,
-                               time.time(), a.channel_name)))
+                               time.time(), a.channel_name, a.recipient)))
         return 0
     if a.cmd == "log":
-        entry = {"at": time.time(), "to": a.to, "kind": a.kind, "verdict": a.verdict, "reason": a.reason,
-                 "sha256": digest(a.to, a.text), "text": a.text}
+        entry = {"at": time.time(), "to": a.to, "recipient": a.recipient if a.to != "self" else "self",
+                 "kind": a.kind, "verdict": a.verdict, "reason": a.reason,
+                 "sha256": digest(a.to, a.text, a.recipient), "text": a.text}
         if a.channel_name:
             entry["channel_name"] = a.channel_name
         try:
@@ -148,7 +188,16 @@ def main(argv):
         print("ok")
         return 0
     if a.cmd == "channel":
-        data = _live(rules_path)
+        data = {}
+        if rules_path.exists():
+            try:
+                data = json.loads(rules_path.read_text())
+            except (OSError, ValueError):
+                data = None
+            if not isinstance(data, dict):
+                print("builder cannot read %s: it is not a JSON object. Fix the file or delete it, then run this again."
+                      % rules_path, file=sys.stderr)
+                return 1
         data["channel"] = None if a.name.lower() in ("none", "null", "") else a.name.lower()
         try:
             ledger.save(rules_path, data)
