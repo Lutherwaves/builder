@@ -45,6 +45,9 @@ grep -qE 'elapsed=.* naive=.* profile_aware=.* reset_in=' <<<"$out" \
   || err "burn-proj.py output shape changed: $out"
 note "✓ burn-proj smoke: $out"
 
+echo "→ unit tests"
+if python3 -m unittest discover -s tests -p 'test_*.py' >/dev/null 2>&1; then note "✓ unittest"; else err "unit tests failed (run: python3 -m unittest discover -s tests -v)"; fi
+
 echo "→ scrub"
 if [ -z "${BUILDER_DENYLIST:-}" ]; then
   note "scrub: skipped (no BUILDER_DENYLIST)"

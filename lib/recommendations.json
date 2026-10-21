@@ -1,0 +1,97 @@
+[
+  {
+    "id": "superpowers",
+    "order": 1,
+    "onboarding": true,
+    "when": {
+      "superpowers": false
+    },
+    "say": "Builder works best with the superpowers plugin, which adds planning, TDD and review skills.",
+    "why": "It gives every task a plan, a test and a review step.",
+    "how": "/plugin marketplace add obra/superpowers-marketplace, then /plugin install superpowers@superpowers-marketplace"
+  },
+  {
+    "id": "gstack",
+    "order": 2,
+    "onboarding": true,
+    "when": {
+      "gstack": false
+    },
+    "say": "Builder pairs well with gstack, a set of skills for browsing, QA and shipping.",
+    "why": "It adds a real browser and ship workflows that builder can route to.",
+    "how": "git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git ~/.claude/skills/gstack && cd ~/.claude/skills/gstack && ./setup"
+  },
+  {
+    "id": "gh",
+    "order": 3,
+    "onboarding": true,
+    "when": {
+      "gh": false
+    },
+    "say": "The GitHub CLI is not signed in, so builder cannot read issues or pull requests for you.",
+    "why": "Intake and review need a signed-in gh.",
+    "how": "gh auth login"
+  },
+  {
+    "id": "channel",
+    "order": 4,
+    "onboarding": true,
+    "when": {
+      "channel": null
+    },
+    "say": "Builder has no channel to reach you when a long task finishes.",
+    "why": "A channel lets builder send you a short note instead of waiting in a terminal.",
+    "how": "Ask me: \"set up reach\" (the reach skill walks you through it)."
+  },
+  {
+    "id": "matchblox",
+    "order": 5,
+    "onboarding": false,
+    "when": {
+      "matchblox": false,
+      "sessions_proc": {
+        ">=": 2
+      }
+    },
+    "say": "You run several Claude sessions at once, and matchblox can show them together with their usage.",
+    "why": "It lists live sessions and limits in one view.",
+    "how": "curl -fsSL https://matchblox.sh | sh"
+  },
+  {
+    "id": "fleet",
+    "order": 6,
+    "onboarding": false,
+    "when": {
+      "sessions": {
+        ">=": 3
+      }
+    },
+    "say": "You have three or more live sessions, so builder can help you run them as a fleet.",
+    "why": "Parallel sessions need one owner per task to avoid clashes.",
+    "how": "Ask me: /builder:fleet"
+  },
+  {
+    "id": "budget",
+    "order": 7,
+    "onboarding": false,
+    "when": {
+      "weekly_pct": {
+        ">=": 80
+      }
+    },
+    "say": "Your weekly usage is at 80% or more, so builder can help you plan the rest of the week.",
+    "why": "A budget stops one big task from using the whole limit.",
+    "how": "Ask me: /builder:budget"
+  },
+  {
+    "id": "canon",
+    "order": 8,
+    "onboarding": false,
+    "when": {
+      "has_canon": false
+    },
+    "say": "This project has no written canon, so builder cannot tell your rules from its own guesses.",
+    "why": "A short canon (DESIGN.md or docs/canon/) gives every session the same rules.",
+    "how": "Ask me: /builder:canon"
+  }
+]
