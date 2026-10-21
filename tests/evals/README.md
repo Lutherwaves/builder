@@ -24,6 +24,8 @@ Each run uses a fresh temp copy of `repo/` as its working directory.
 
 Both use `--output-format text`, `--permission-mode acceptEdits`, and `--disallowedTools "Bash(git push:*)" "Bash(gh:*)" "WebFetch" "WebSearch"`. The agent can edit files in the temp dir. It cannot push or reach the network through these tools. The flag names match `claude --help`. The runner does not use `--bare`, because `--bare` needs an API key and most people sign in with OAuth.
 
+Both runs set `BUILDER_HOME` to a temp dir with an onboarded ledger in which every recommendation is answered "never". The hook then injects only the soul: no setup question and no recommendation reach the agent.
+
 Because the baseline uses your normal setup, plugins you have installed also load in it. Disable plugins that overlap with the skill under test before you run.
 
 ## Transcripts

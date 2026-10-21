@@ -37,12 +37,14 @@ mkdir -p "$tmp/bin"
 cat > "$tmp/bin/claude" <<'FAKE'
 #!/usr/bin/env bash
 echo "ARGS: $*"; echo "STDIN: $(cat)"; echo "fake-stderr" >&2
+echo "HOME_DIR: ${BUILDER_HOME:-unset}"
+echo "HOOK: $("$HOOK" 2>/dev/null)"
 FAKE
 chmod +x "$tmp/bin/claude"
 mkdir -p "$tmp/evals/dash"
 printf -- '- leading dash prompt\n' > "$tmp/evals/dash/prompt.md"
 printf -- '- a\n- b\n- c\n' > "$tmp/evals/dash/expect.md"
-PATH="$tmp/bin:$PATH" BUILDER_EVAL_OUT="$tmp/out2" run dash </dev/null >/dev/null 2>&1
+HOOK="$root/hooks/session-start" PATH="$tmp/bin:$PATH" BUILDER_EVAL_OUT="$tmp/out2" run dash </dev/null >/dev/null 2>&1
 d="$(ls -d "$tmp"/out2/dash/*/ 2>/dev/null | head -1)"
 [ -n "$d" ] && grep -q '^STDIN: - leading dash prompt' "$d/baseline.md" && grep -q '^STDIN: - leading dash prompt' "$d/with.md" \
   && ! grep -q 'leading dash' <(grep '^ARGS:' "$d/baseline.md") \
@@ -50,6 +52,11 @@ d="$(ls -d "$tmp"/out2/dash/*/ 2>/dev/null | head -1)"
 [ -n "$d" ] && grep -q 'fake-stderr' "$d/baseline.err" && grep -q 'fake-stderr' "$d/with.err" \
   && ! grep -q 'fake-stderr' "$d/baseline.md" "$d/with.md" \
   && check "stderr goes to .err files, not the transcript" ok || check "stderr goes to .err files, not the transcript" bad
+# Eval runs use a temp, onboarded builder home: no onboarding text and no recommendation reach the agent.
+[ -n "$d" ] && grep -q '^HOME_DIR: /' "$d/with.md" && ! grep -q "^HOME_DIR: $HOME/.config/builder" "$d/with.md" \
+  && grep -q 'Build the right thing' "$d/with.md" \
+  && ! grep -qi 'onboarding\|builder recommends' "$d/with.md" \
+  && check "eval runs use an onboarded temp BUILDER_HOME" ok || check "eval runs use an onboarded temp BUILDER_HOME" bad
 rm -rf "$tmp/evals/dash"
 
 # An optional allow file adds tool rules to --allowedTools; blank and # lines are skipped.

@@ -55,6 +55,7 @@ show() { printf '%q ' "$@"; echo; }
 
 if [ "$dry" -eq 1 ]; then
   echo "# transcripts: $out/{baseline,with}.md (stderr: .err)"
+  echo "# env: BUILDER_HOME=<temp dir, onboarded, every recommendation answered never>"
   echo "# baseline (cwd: fresh temp copy of $fx/repo; stdin: prompt.md)"; show "${base[@]}"
   echo "# with     (cwd: fresh temp copy of $fx/repo; stdin: prompt.md)"; show "${base[@]}" --plugin-dir "$root"
   exit 0
@@ -67,6 +68,13 @@ workdir() { # $1 = name; makes a fresh copy of repo/ or an empty git repo
   if [ -d "$fx/repo" ]; then cp -R "$fx/repo/." "$tmp/$1/"; else git -C "$tmp/$1" init -q; fi
 }
 workdir baseline; workdir with
+# A temp builder home: onboarded, every recommendation answered "never". The hook then
+# injects only the soul, so no setup question pollutes the transcript.
+export BUILDER_HOME="$tmp/builder-home"
+python3 "$root/lib/ledger.py" onboarded >/dev/null || exit 1
+for id in $(python3 -c 'import json,sys; print(" ".join(i["id"] for i in json.load(open(sys.argv[1]))))' "$root/lib/recommendations.json"); do
+  python3 "$root/lib/ledger.py" answer "$id" never >/dev/null || exit 1
+done
 (cd "$tmp/baseline" && "${base[@]}" < "$fx/prompt.md" > "$out/baseline.md" 2> "$out/baseline.err") \
   || echo "note: baseline run exited non-zero (see $out/baseline.err)" >&2
 (cd "$tmp/with" && "${base[@]}" --plugin-dir "$root" < "$fx/prompt.md" > "$out/with.md" 2> "$out/with.err") \
