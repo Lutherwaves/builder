@@ -17,7 +17,7 @@ Write a rule only when one of these is true:
 - **A repeated correction.** The person corrected the same thing twice. Each correction is a scar. Name both.
 - **A cost you can show.** A review found the same defect in two changes.
 
-No scar, no rule. Put a preference in a style guide or a linter config, not in the canon.
+No scar, no new rule. Put a preference in a style guide or a linter config, not in the canon.
 
 ## The rule file: one home
 
@@ -31,12 +31,19 @@ Agent files (`CLAUDE.md`, `AGENTS.md`, `.cursor/rules`) hold one pointer line, n
 - Rules, with the incident behind each and the check that enforces it: `RULES.md`. Read it before you change <the area>.
 ```
 
-If the pointer line exists, do not add a second one. If an agent file already holds rule bodies, move each one into the rules file and leave the pointer. Report the move under Calls.
+If the pointer line exists, do not add a second one.
+If an agent file already holds rules, sort each line:
+
+- **A rule with a scar.** Move it into the rules file with its incident.
+- **A rule with no scar on record** (breaking it causes harm, but nobody wrote down when). Move it into the rules file with "Why: none recorded — ask the owner". Its Guard says what enforces it, or "none yet — add one".
+- **A convention** (where files live, which command runs the tests). It stays in the agent file under a `## Conventions` heading.
+
+List each move under Calls, and ask the owner for each missing scar.
 Do not copy the rule into the README or the incident write-up. The incident write-up can link to the rule ID.
 
 ## Writing one rule
 
-Copy the block in `rule-template.md`. Fill it in this order:
+Copy the block in `rule-template.md`. Its lines, in order: Rule · Why · Guard · Supersedes. Fill them in this order:
 
 1. **Why first.** Read the evidence: incident notes, the changelog, reverts, git log, the failing change itself.
    Quote the facts: dates, file names, what broke, for whom, for how long.
@@ -70,6 +77,7 @@ If the guard only protects production when CI runs it before deploy, say so. Cha
 In an interactive session, show the rule sentence and the proposed guard. Ask one question with your recommendation: "I recommend this rule and this test. Add both?"
 When nobody answers, write both, run the guard, and list the rule's wording and the file location under Calls.
 End with the builder report from the builder skill.
+Then offer the next step in one line: "Run this guard in the CI step before deploy, or write the next rule?"
 
 ## Common mistakes
 
@@ -85,6 +93,7 @@ End with the builder report from the builder skill.
 | The guard fails on shipped history, so it gets switched off | Pin the shipped changes by name. New changes still fail. |
 | "This can't happen again" | State what the guard checks and what it misses. |
 | A rule for a preference with no scar | Use a linter or a style guide. The canon is for scars. |
+| A scarless rule left in AGENTS.md, or deleted | Move it to the rules file with "Why: none recorded — ask the owner". List it under Calls. |
 | Deleting a replaced rule | Mark it superseded and keep its scar. |
 
 ## Self-check
@@ -98,7 +107,7 @@ Before you report:
 - [ ] I ran the guard on the scar's change and saw it fail.
 - [ ] I ran the suite on today's repository and saw it pass.
 - [ ] The Guard line says what the check does not catch.
-- [ ] Each agent file holds one pointer line and no rule body.
+- [ ] Each agent file holds one pointer line and no rule body. Each rule that had no scar is in the rules file as "none recorded — ask the owner", and is under Calls.
 - [ ] Supersedes is filled: a rule ID, or "none".
 - [ ] Nothing outside the repository changed without a yes.
-- [ ] The reply ends with the builder report.
+- [ ] The reply ends with the builder report, then a one-line offer of the next step.

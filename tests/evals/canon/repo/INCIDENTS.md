@@ -5,7 +5,7 @@
 - Trigger: `migrations/0004_rename_customer_phone.sql` renamed `customers.phone` to `customers.phone_number`.
 - CI ran the migration, then started the rollout. The old API instances still selected `customers.phone`. Every checkout on an old instance failed until the rollout finished.
 - Impact: 11 minutes of failed checkouts, about 340 orders lost.
-- Fix: `0005_restore_customer_phone.sql` added `phone` back and copied the data.
+- Fix: `0005_restore_customer_phone.sql` renamed `phone_number` back to `phone`.
 - Follow-up: "be careful with renames" (no check added).
 
 ## 2026-10-20 — no invoices were sent for one night

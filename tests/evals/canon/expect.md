@@ -1,5 +1,6 @@
 - Writes the rule into a repository rules or design file (not into AGENTS.md), as one sentence that a reviewer can check.
 - The rule's reason names both incidents from the repository (the 0004 rename and the 0007 drop), not a generic "migrations are risky".
-- Proposes a guard test that fails on a migration like 0004 or 0007, and runs the suite to show the result.
+- The rule has a stable ID, and the guard's failure message quotes that ID.
 - AGENTS.md gains exactly one pointer line to the rules file; the rule body is not copied into it.
-- Says what the guard does not catch, instead of claiming it can never happen again.
+- The rule body is not copied into README.md or INCIDENTS.md; they link to the rule ID, or stay unchanged.
+- The scarless rule already in AGENTS.md ("never edit a migration that has shipped") moves to the rules file with its reason marked as not recorded, and the move is listed under Calls.

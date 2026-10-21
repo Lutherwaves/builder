@@ -23,14 +23,15 @@ The builder skill sets when to ask and when to act. Read its "Questions" and "Wh
 
 ## The document
 
-Copy `issue-template.md`. Fill it in this order, because each section feeds the next:
+Copy `issue-template.md`. Its sections, in order: Who, and the moment · Why it matters · The experience · Non-goals · Anti-goals · Rulings · Left to the builder · Calls to check · Done when.
+Write the title after the moment. Fill the rest in this order, because each section feeds the next:
 
 1. **Who, and the moment.** One person, by role. Their moment: when, where, what they hold, what they try to do.
    Find the evidence before you ask. Read the README, the tickets, the support notes, the code comments.
    Example: a ticket says the coordinator "re-types the rota into the group chat every Sunday night". That is the moment.
 2. **Title.** The outcome, in the person's words: who can now do what.
    "A volunteer coordinator posts next week's rota in one step", not "rota export".
-   Squint test: swap the product name. If the title still fits, rewrite it.
+   Squint test: if the title fits any request in any product ("Improve export"), it is too vague. Rewrite it.
 3. **Why it matters.** The cost today, in the person's units. Say "measured" or "estimated" for each number.
 4. **The experience.** What the person sees and does, from their side of the screen.
    Write each way it goes wrong, and the words the person sees, with the fix.
@@ -93,7 +94,7 @@ Then offer the next step in one line: "Plan it with `writing-plans`, or change a
 
 Before you hand the document over:
 
-- [ ] The title is an outcome in the person's words, and it fails the squint test for any other product.
+- [ ] The title is an outcome in the person's words, specific enough that it does not fit any request in any product.
 - [ ] "Who, and the moment" names one role and one moment, with the evidence source.
 - [ ] Anti-goals name harms, not scope cuts.
 - [ ] Every open question has a recommendation, a reason and a cost if wrong.
