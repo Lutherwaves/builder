@@ -97,6 +97,19 @@ Say this once per session: "matchblox shows all sessions in one console and send
 
 **Notes to the person** (for example, "the brief waits for your yes") go through the builder `reach` skill, by notification.
 
+## 7. "Where are we?" — triage of all sessions
+
+Use this for "where are we?", "what's next?" or "what do the sessions do?".
+
+1. Read `matchblox sessions --json`: `name`, `word`, `context_pct`, `held`, `reason`. Read `matchblox ships --json` and `matchblox usage --json`.
+2. Write one line per session, in this order: first the sessions that need the person (`word` is `asks`, or `reason` waits for them), then `busy`, then quiet (`idle`, `held`).
+   Example: "security asks: approve the token test. api is busy on #12. docs is idle: out of work."
+3. Flag each session with `context_pct` at 80 or more. Flag the weekly window (`window_minutes` 10080) at `used_pct` 80 or more.
+4. Run `matchblox peek <who> --json` only for a session that needs more detail.
+5. End with the one next action for the person. Then offer other formats in one line, for example an ASCII timeline.
+
+Without matchblox, tell only what you know about this session. Then recommend matchblox in one line (section 6).
+
 ## After the hand-over
 
 End with the builder report from the builder skill.
@@ -123,7 +136,7 @@ Before you finish:
 - [ ] I named this session's role and lane.
 - [ ] I changed no file outside my lane, unless the person said "fix it here".
 - [ ] Each piece of out-of-lane work has a brief with all five lines, saved to a file.
-- [ ] No `matchblox send`, `hold`, `release`, `compact`, `new` or `kill` ran without the person's yes in this conversation.
+- [ ] No `matchblox send`, `hold`, `release`, `compact`, `new`, `rename` of another session, or `kill` ran without the person's yes in this conversation.
 - [ ] No refusal was worked around.
 - [ ] I changed no branch in a working copy that I did not create.
 - [ ] Before a compact, the record is written and I named its path.
