@@ -1,6 +1,6 @@
 ---
 name: fleet
-description: Use when two or more agent sessions work at the same time ("you are the harness session", "the other session", "the security session owns that"), when a task is outside this session's role, before a /compact, before you change the branch of a checkout, or when the person asks to brief, hold, compact, start or end another session. Use it also when matchblox is installed and the person asks what the sessions do.
+description: Use when two or more agent sessions work at the same time ("you are the harness session", "the other session", "the security session owns that", "where are we?", "what's next?"), when a task is outside this session's role, before a /compact, before you change the branch of a checkout, or when the person asks to brief, hold, compact, start or end another session. Use it also when matchblox is installed and the person asks what the sessions do.
 ---
 
 # fleet — many sessions side by side, one lane each
@@ -104,7 +104,7 @@ Use this for "where are we?", "what's next?" or "what do the sessions do?".
 1. Read `matchblox sessions --json`: `name`, `word`, `context_pct`, `held`, `reason`. Read `matchblox ships --json` and `matchblox usage --json`.
 2. Write one line per session, in this order: first the sessions that need the person (`word` is `asks`, or `reason` waits for them), then `busy`, then quiet (`idle`, `held`).
    Example: "security asks: approve the token test. api is busy on #12. docs is idle: out of work."
-3. Flag each session with `context_pct` at 80 or more. Flag the weekly window (`window_minutes` 10080) at `used_pct` 80 or more.
+3. Flag each session with `context_pct` at 80 or more. Flag each account's `windows` weekly window (`window_minutes` 10080) at `used_pct` 80 or more.
 4. Run `matchblox peek <who> --json` only for a session that needs more detail.
 5. End with the one next action for the person. Then offer other formats in one line, for example an ASCII timeline.
 
