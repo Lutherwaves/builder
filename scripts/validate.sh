@@ -46,16 +46,29 @@ grep -qE 'elapsed=.* naive=.* profile_aware=.* reset_in=' <<<"$out" \
 note "✓ burn-proj smoke: $out"
 
 echo "→ scrub"
-if [ -n "${BUILDER_DENYLIST:-}" ] && [ -f "$BUILDER_DENYLIST" ]; then
-  # Private names must never appear in a tracked file. -F fixed strings, -i case-insensitive.
-  hits="$(git grep -I -i -n -F -f "$BUILDER_DENYLIST" 2>/dev/null | cut -d: -f1 | sort -u || true)"
-  if [ -n "$hits" ]; then
-    while IFS= read -r f; do err "scrub: $f"; done <<<"$hits"
-  else
-    note "✓ no deny-listed names in tracked files"
-  fi
-else
+if [ -z "${BUILDER_DENYLIST:-}" ]; then
   note "scrub: skipped (no BUILDER_DENYLIST)"
+elif [ ! -r "$BUILDER_DENYLIST" ]; then
+  err "scrub: BUILDER_DENYLIST is set but not a readable file"
+else
+  # Private names must never appear in a tracked file. -F fixed strings, -i case-insensitive.
+  # Blank lines are dropped: an empty -F pattern matches every line.
+  pats="$(mktemp)"
+  grep -v '^[[:space:]]*$' "$BUILDER_DENYLIST" > "$pats" || true
+  if [ ! -s "$pats" ]; then
+    err "scrub: BUILDER_DENYLIST has no terms"
+  else
+    rc=0
+    out="$(git grep -I -i -n -F -f "$pats" 2>&1)" || rc=$?
+    if [ "$rc" -eq 0 ]; then
+      while IFS= read -r f; do err "scrub: $f"; done < <(cut -d: -f1 <<<"$out" | sort -u)
+    elif [ "$rc" -eq 1 ]; then
+      note "✓ no deny-listed names in tracked files"
+    else
+      err "scrub: git grep failed (exit $rc)"
+    fi
+  fi
+  rm -f "$pats"
 fi
 
 echo
