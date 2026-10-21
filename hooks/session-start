@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# builder SessionStart hook. Uses bash builtins only until python3 is found,
+# because a hook can start with a broken PATH.
+case "$0" in
+  */*) SCRIPT_DIR="$(cd "${0%/*}" && pwd)" ;;
+  *) SCRIPT_DIR="$(pwd)" ;;
+esac
+PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+export CLAUDE_PLUGIN_ROOT="$PLUGIN_ROOT"
+
+if command -v python3 >/dev/null 2>&1; then
+  out="$(python3 "${SCRIPT_DIR}/session_start.py" 2>/dev/null)"
+  if [ -n "$out" ]; then
+    printf '%s\n' "$out"
+    exit 0
+  fi
+fi
+
+soul="$(<"${PLUGIN_ROOT}/skills/builder/soul-compact.md")" 2>/dev/null
+[ -n "$soul" ] || soul="builder is installed. Load the builder skill for its rules."
+s="${soul//\\/\\\\}"
+s="${s//\"/\\\"}"
+s="${s//$'\n'/\\n}"
+s="${s//$'\r'/\\r}"
+s="${s//$'\t'/\\t}"
+printf '{"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": "%s"}}\n' "$s"
+exit 0

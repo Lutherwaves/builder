@@ -48,6 +48,9 @@ note "✓ burn-proj smoke: $out"
 echo "→ unit tests"
 if ut_out="$(python3 -m unittest discover -s tests -p 'test_*.py' 2>&1)"; then note "✓ unittest"; else printf '%s\n' "$ut_out"; err "unit tests failed"; fi
 
+echo "→ hook tests"
+if hk_out="$(bash tests/test_hook.sh 2>&1)"; then note "✓ hook"; else printf '%s\n' "$hk_out"; err "hook tests failed"; fi
+
 echo "→ scrub"
 if [ -z "${BUILDER_DENYLIST:-}" ]; then
   note "scrub: skipped (no BUILDER_DENYLIST)"

@@ -95,13 +95,23 @@ def main(argv):
             return 1
         print("ok")
         return 0
+    if len(argv) == 2 and argv[1] == "onboarded":
+        data = load(path)
+        data["onboarded"] = True
+        try:
+            save(path, data)
+        except OSError as e:
+            print("builder cannot write %s (%s); set BUILDER_HOME to a writable folder." % (path, e.strerror or e), file=sys.stderr)
+            return 1
+        print("ok")
+        return 0
     if len(argv) == 2 and argv[1] == "next":
         sys.path.insert(0, str(Path(__file__).resolve().parent))
         import signals
         sig = signals.collect(os.getcwd())
         print(json.dumps(next_recommendation(load(path), _catalog(), sig, time.time())))
         return 0
-    print("usage: ledger.py answer <id> yes|later|never | ledger.py next", file=sys.stderr)
+    print("usage: ledger.py answer <id> yes|later|never | ledger.py onboarded | ledger.py next", file=sys.stderr)
     return 2
 
 

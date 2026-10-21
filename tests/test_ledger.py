@@ -94,6 +94,17 @@ class LedgerTest(unittest.TestCase):
         self.assertEqual(ledger.next_recommendation(EMPTY, cat, {"channel": None}, 1.0)["id"], "ch")
         self.assertIsNone(ledger.next_recommendation(EMPTY, cat, {"channel": "slack"}, 1.0))
 
+    def test_onboarded_command_sets_flag_and_keeps_answers(self):
+        import os, subprocess
+        env = dict(os.environ, BUILDER_HOME=str(self.dir))
+        cli = str(Path(ledger.__file__))
+        subprocess.run([sys.executable, cli, "answer", "a", "never"], env=env, check=True, capture_output=True)
+        r = subprocess.run([sys.executable, cli, "onboarded"], env=env, capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0)
+        led = ledger.load(self.dir / "ledger.json")
+        self.assertIs(led["onboarded"], True)
+        self.assertIn("a", led["answers"])
+
 
 if __name__ == "__main__":
     unittest.main()
