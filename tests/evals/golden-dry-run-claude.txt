@@ -1,0 +1,6 @@
+# transcripts: <out>/{baseline,with}.md (stderr: .err)
+# env: BUILDER_HOME=<temp dir, onboarded, every recommendation answered never>
+# baseline (cwd: fresh temp copy of <root>/tests/evals/shape/repo; stdin: prompt.md)
+claude -p --output-format text --permission-mode acceptEdits --disallowedTools Bash\(git\ push:\*\) Bash\(gh:\*\) WebFetch WebSearch Bash\(matchblox\ send:\*\) Bash\(matchblox\ compact:\*\) Bash\(matchblox\ hold:\*\) Bash\(matchblox\ release:\*\) Bash\(matchblox\ kill:\*\) Bash\(matchblox\ new:\*\) Bash\(matchblox\ rename:\*\) Bash\(matchblox\ stoker:\*\) Bash\(tmux\ send-keys:\*\) Bash\(tmux\ kill-session:\*\) CronCreate CronDelete RemoteTrigger Bash\(crontab:\*\) Bash\(claude\ mcp:\*\) 
+# with     (cwd: fresh temp copy of <root>/tests/evals/shape/repo; stdin: prompt.md)
+claude -p --output-format text --permission-mode acceptEdits --disallowedTools Bash\(git\ push:\*\) Bash\(gh:\*\) WebFetch WebSearch Bash\(matchblox\ send:\*\) Bash\(matchblox\ compact:\*\) Bash\(matchblox\ hold:\*\) Bash\(matchblox\ release:\*\) Bash\(matchblox\ kill:\*\) Bash\(matchblox\ new:\*\) Bash\(matchblox\ rename:\*\) Bash\(matchblox\ stoker:\*\) Bash\(tmux\ send-keys:\*\) Bash\(tmux\ kill-session:\*\) CronCreate CronDelete RemoteTrigger Bash\(crontab:\*\) Bash\(claude\ mcp:\*\) --plugin-dir <root> 

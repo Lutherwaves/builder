@@ -39,6 +39,14 @@ Outside:   nothing sent.
 builder needs Python 3 and Bash, on macOS or Linux.
 Its session hook makes no network call and finishes in under one second.
 
+### Harness support
+
+Each row comes from graded eval runs of the same fixtures. A harness without a row has not been graded.
+
+<!-- support:start -->
+No harness has passed its evals yet.
+<!-- support:end -->
+
 ## What happens in your first session
 
 1. You ask for your work as usual. builder adds its thirteen tenets to the session, and the agent does your work first.

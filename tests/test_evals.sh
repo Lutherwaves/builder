@@ -36,6 +36,7 @@ out="$(BUILDER_EVAL_OUT="$tmp/out" run good --dry-run 2>&1)"; rc=$?
 mkdir -p "$tmp/bin"
 cat > "$tmp/bin/claude" <<'FAKE'
 #!/usr/bin/env bash
+[ "$1" = "--version" ] && { echo "9.9.9 (Fake Code)"; exit 0; }
 echo "ARGS: $*"; echo "STDIN: $(cat)"; echo "fake-stderr" >&2
 echo "HOME_DIR: ${BUILDER_HOME:-unset}"
 echo "HOOK: $("$HOOK" 2>/dev/null)"
@@ -81,6 +82,7 @@ mkdir -p "$tmp/real"
 printf '#!/usr/bin/env bash\necho "REAL matchblox $*"\n' > "$tmp/real/matchblox"; chmod +x "$tmp/real/matchblox"
 cat > "$tmp/bin/claude" <<'FAKE'
 #!/usr/bin/env bash
+[ "$1" = "--version" ] && { echo "9.9.9 (Fake Code)"; exit 0; }
 cat >/dev/null
 p() { echo "PROBE $1 => rc=$(shift; "$@" >/dev/null 2>&1; echo $?)"; }
 p flags matchblox --json send x y
@@ -117,6 +119,110 @@ done
 out="$(run good --dry-run 2>&1)"
 ! grep -q -- '--allowedTools' <<<"$out" && check "no allow file, no --allowedTools" ok || check "no allow file, no --allowedTools" bad
 rm -rf "$tmp/evals/allowed"
+
+# Per harness: the claude dry-run stays as it was; each other harness names its own runner.
+# Machine paths and the timestamp are normalised the same way on both sides.
+norm() { sed "s#$root#<root>#g; s#$1/shape/[0-9]\{8\}-[0-9]\{6\}#<out>#g"; }
+gold_run() { BUILDER_EVAL_OUT=/OUT bash "$root/tests/evals/run.sh" "$@" 2>&1 | norm /OUT; }
+[ "$(gold_run shape --dry-run)" = "$(cat "$root/tests/evals/golden-dry-run-claude.txt")" ] \
+  && [ "$(gold_run --harness claude shape --dry-run)" = "$(cat "$root/tests/evals/golden-dry-run-claude.txt")" ] \
+  && check "dry-run for claude is byte-identical to the golden output" ok || check "dry-run for claude is byte-identical to the golden output" bad
+runners_ok=1
+for pair in 'codex:^codex exec ' 'cursor:^agent -p --force ' 'opencode:^opencode run '; do
+  h="${pair%%:*}"; want="${pair#*:}"
+  out="$(BUILDER_EVAL_OUT="$tmp/hout" run --harness "$h" good --dry-run 2>&1)"; rc=$?
+  { [ "$rc" -eq 0 ] && [ "$(grep -c "$want" <<<"$out")" -eq 2 ] && ! grep -q '^claude ' <<<"$out" && [ ! -e "$tmp/hout" ]; } \
+    || { runners_ok=0; echo "    $h: rc=$rc: $out"; }
+done
+out="$(run --harness codex good --dry-run 2>&1)"
+grep -q 'CODEX_HOME' <<<"$out" && grep -q 'auth.json.*symlink' <<<"$out" && grep -q 'codex plugin add builder@builder' <<<"$out" \
+  && grep -q -- '-s workspace-write' <<<"$out" || { runners_ok=0; echo "    codex dry-run lacks env or install lines"; }
+out="$(run --harness cursor good --dry-run 2>&1)"
+grep -q '\.cursor/hooks.json' <<<"$out" && grep -q '\.agents/skills' <<<"$out" || { runners_ok=0; echo "    cursor dry-run lacks the install lines"; }
+out="$(run --harness opencode good --dry-run 2>&1)"
+grep -q 'OPENCODE_CONFIG_DIR' <<<"$out" && grep -q '"plugin"' <<<"$out" || { runners_ok=0; echo "    opencode dry-run lacks the config lines"; }
+[ "$runners_ok" -eq 1 ] && check "dry-run for each harness names its runner and its env" ok || check "dry-run for each harness names its runner and its env" bad
+bad_ok=1
+mkdir -p "$tmp/nopaid"   # a bad call must never reach a real runner: these stubs fail loudly
+for b in claude codex agent opencode; do printf '#!/usr/bin/env bash\necho "PAID-CALL-ATTEMPTED" >&2\nexit 99\n' > "$tmp/nopaid/$b"; done
+chmod +x "$tmp/nopaid/"*
+for args in "--harness vim good" "--harness" "--harness codex" "good --harness"; do
+  # shellcheck disable=SC2086
+  out="$(PATH="$tmp/nopaid:$PATH" BUILDER_EVAL_OUT="$tmp/bad-out" run $args --dry-run 2>&1)"; rc=$?
+  { [ "$rc" -eq 2 ] && grep -q 'usage' <<<"$out"; } || { bad_ok=0; echo "    '$args' exited $rc: $out"; }
+done
+[ "$bad_ok" -eq 1 ] && check "a bad or missing harness exits 2 with usage" ok || check "a bad or missing harness exits 2 with usage" bad
+
+# Real runs with fake runners: the verdict stub, the install, the isolation and the shims per harness.
+mkdir -p "$tmp/hbin" "$tmp/hhome/.codex" "$tmp/real-git"
+echo '{"secret":"do-not-copy"}' > "$tmp/hhome/.codex/auth.json"
+ln -s "$(command -v git)" "$tmp/real-git/git"
+cat > "$tmp/hbin/codex" <<'FAKE'
+#!/usr/bin/env bash
+case "$1 $2 $3" in
+  "--version  ") echo "codex-cli 9.9.9"; exit 0 ;;
+  "plugin marketplace add") echo "MARKETPLACE $4 in $CODEX_HOME" >> "$CODEX_HOME/log"; exit 0 ;;
+  "plugin add builder@builder") echo "PLUGIN $3 in $CODEX_HOME" >> "$CODEX_HOME/log"; exit 0 ;;
+esac
+[ "$1" = "--version" ] && { echo "codex-cli 9.9.9"; exit 0; }
+echo "ARGS: $*"; echo "STDIN: $(cat)"
+echo "AUTH: $([ -L "$CODEX_HOME/auth.json" ] && echo symlink) $(readlink "$CODEX_HOME/auth.json")"
+echo "LOG: $(cat "$CODEX_HOME/log" 2>/dev/null | tr '\n' ' ')"
+echo "CODEX_HOME: $CODEX_HOME"
+FAKE
+cat > "$tmp/hbin/agent" <<'FAKE'
+#!/usr/bin/env bash
+[ "$1" = "--version" ] && { echo "2099.01.01-abc"; exit 0; }
+echo "ARGS: $*"; echo "STDIN: $(cat)"
+echo "HOOKS: $(cat .cursor/hooks.json 2>/dev/null)"
+echo "SKILLS: $(ls .agents/skills 2>/dev/null | tr '\n' ' ')"
+p() { echo "PROBE $1 => rc=$(shift; "$@" >/dev/null 2>&1; echo $?)"; }
+p gh gh pr list
+p push git push origin main
+p push2 git -C . push
+p status git status
+echo "CURSOR_CONFIG_DIR: ${CURSOR_CONFIG_DIR:-unset}"
+FAKE
+cat > "$tmp/hbin/opencode" <<'FAKE'
+#!/usr/bin/env bash
+[ "$1" = "--version" ] && { echo "9.8.7"; exit 0; }
+echo "ARGS: $*"; echo "STDIN: $(cat)"
+echo "CONFIG: $(jq -c . "$OPENCODE_CONFIG_DIR/opencode.json")"
+FAKE
+chmod +x "$tmp/hbin/"*
+mkdir -p "$tmp/evals/h1"; echo "Do it." > "$tmp/evals/h1/prompt.md"
+printf -- '- first thing\n* second thing\n  - third `thing`\n' > "$tmp/evals/h1/expect.md"
+hrun() { # harness
+  env -u CODEX_HOME HOME="$tmp/hhome" PATH="$tmp/hbin:$PATH" BUILDER_EVAL_OUT="$tmp/hout-$1" bash "$root/tests/evals/run.sh" --harness "$1" h1 </dev/null 2>&1
+}
+BUILDER_EVAL_DIR="$tmp/evals" hrun codex >/dev/null
+BUILDER_EVAL_DIR="$tmp/evals" hrun cursor >/dev/null
+BUILDER_EVAL_DIR="$tmp/evals" hrun opencode >/dev/null
+d="$(ls -d "$tmp"/hout-codex/h1/*/ | head -1)"
+{ [ -f "$d/baseline.md" ] && grep -q 'AUTH: symlink '"$tmp/hhome/.codex/auth.json" "$d/baseline.md" \
+  && grep -q 'AUTH: symlink ' "$d/with.md" && ! grep -q "$tmp/hhome/.codex\$" "$d/with.md" \
+  && ! grep -q 'PLUGIN' "$d/baseline.md" && grep -q 'MARKETPLACE '"$root"' in' "$d/with.md" && grep -q 'PLUGIN builder@builder' "$d/with.md" \
+  && grep -q '^STDIN: Do it' "$d/with.md" && ! grep -rq 'do-not-copy' "$d" && [ ! -e "$tmp/hhome/.codex/log" ]; } \
+  && check "codex: temp CODEX_HOME, auth.json symlinked, builder installed only in the with run" ok || check "codex run ($(cat "$d/with.md" 2>&1))" bad
+d="$(ls -d "$tmp"/hout-cursor/h1/*/ | head -1)"
+{ [ "$(grep -c '^HOOKS: ' "$d/baseline.md")" -eq 1 ] && ! grep -q 'session-start' "$d/baseline.md" \
+  && grep -q "^HOOKS: .*$root/hooks/session-start --harness cursor" "$d/with.md" && grep -q '^SKILLS: .*shape' "$d/with.md" \
+  && ! grep -q 'SKILLS: .*shape' "$d/baseline.md" && grep -q '^CURSOR_CONFIG_DIR: unset' "$d/with.md" \
+  && grep -q 'PROBE gh => rc=3' "$d/with.md" && grep -q 'PROBE push => rc=3' "$d/with.md" && grep -q 'PROBE push2 => rc=3' "$d/with.md" \
+  && grep -q 'PROBE status => rc=0' "$d/with.md"; } \
+  && check "cursor: project hooks.json and skills in the with run only, real config dir untouched, gh and git push shimmed" ok || check "cursor run ($(cat "$d/with.md" 2>&1))" bad
+d="$(ls -d "$tmp"/hout-opencode/h1/*/ | head -1)"
+{ grep -q '"plugin":\["'"$root"'"\]' "$d/with.md" && grep -q '"git push\*":"deny"' "$d/baseline.md" && ! grep -q '"plugin"' "$d/baseline.md"; } \
+  && check "opencode: temp OPENCODE_CONFIG_DIR lists the plugin in the with run only" ok || check "opencode run ($(cat "$d/with.md" 2>&1))" bad
+v="$d/verdict.json"
+{ [ "$(jq -r '.harness' "$v")" = opencode ] && [ "$(jq -r '.harness_version' "$v")" = 9.8.7 ] \
+  && [ "$(jq -r '.fixture' "$v")" = h1 ] && jq -e '.date|test("^[0-9]{4}-[0-9]{2}-[0-9]{2}$")' "$v" >/dev/null \
+  && [ "$(jq -c '[.bullets[]|.text]' "$v")" = '["first thing","second thing","third `thing`"]' ] \
+  && [ "$(jq -c '[.bullets[]|[.met,.quote]]|unique' "$v")" = '[[null,null]]' ] \
+  && [ "$(jq -c 'keys' "$v")" = '["bullets","date","fixture","harness","harness_version"]' ] \
+  && ! grep -q "$tmp\|$root\|$HOME" "$v"; } \
+  && check "run writes verdict.json: one stub bullet per expect.md line, no transcript, no path" ok || check "verdict.json ($(cat "$v" 2>&1))" bad
+rm -rf "$tmp/evals/h1"
 
 # parity.sh: the builder-led config, the guards, the auth gate, and two runs per fixture.
 ph="$tmp/phome"; mkdir -p "$ph/.claude/plugins/cache/m/superpowers/1" "$ph/.claude/plugins/cache/m/extra/1" \

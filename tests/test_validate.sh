@@ -178,6 +178,13 @@ if command -v node >/dev/null 2>&1; then
     && check "opencode syntax error fails" ok || check "opencode syntax error fails (got $rc)" bad
 fi
 
+# Case 22 (support_table_drift_fails): a README table that no results file backs fails validation.
+rm -rf "$tmp/man"; mkrepo "$tmp/clean" "$tmp/man"
+sed -i.bak 's/^No harness has passed its evals yet\.$/| Codex CLI | 1 | 2026-10-22 | supported |/' "$tmp/man/README.md" && rm -f "$tmp/man/README.md.bak"
+out="$(run_in "$tmp/man")"; rc=$?
+[ "$rc" -eq 1 ] && grep -q '✗ README support table is out of date' <<<"$out" \
+  && check "support table with no results behind it fails" ok || check "support table with no results behind it fails (got $rc)" bad
+
 # Case 16: the run left the real repo's HEAD, refs and working tree as they were.
 [ "$(snapshot)" = "$before" ] && check "real repo untouched by the test run" ok || check "real repo untouched by the test run" bad
 

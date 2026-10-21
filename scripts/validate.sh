@@ -135,6 +135,7 @@ if hk_out="$(bash tests/test_hook.sh 2>&1)"; then note "✓ hook"; else printf '
 echo "→ eval fixtures"
 if ev_out="$(bash tests/test_evals.sh 2>&1)"; then note "✓ eval runner tests"; else printf '%s\n' "$ev_out"; err "eval runner tests failed"; fi
 if fx_out="$(bash tests/evals/run.sh --check 2>&1)"; then note "✓ $fx_out"; else printf '%s\n' "$fx_out"; err "eval fixtures invalid"; fi
+if st_out="$(python3 scripts/support-table.py check README.md 2>&1)"; then note "✓ $st_out"; else printf '%s\n' "$st_out"; err "README support table is out of date"; fi
 
 echo "→ scrub"
 if [ -z "${BUILDER_DENYLIST:-}" ]; then
