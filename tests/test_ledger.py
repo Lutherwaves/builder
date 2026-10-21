@@ -105,6 +105,15 @@ class LedgerTest(unittest.TestCase):
         self.assertIs(led["onboarded"], True)
         self.assertIn("a", led["answers"])
 
+    def test_signing_item_comes_right_after_gh(self):
+        cat = sorted(ledger._catalog(), key=lambda i: i["order"])
+        ids = [i["id"] for i in cat]
+        self.assertEqual(ids[ids.index("gh") + 1], "signing")
+        self.assertEqual(len({i["order"] for i in cat}), len(cat))
+        signing = cat[ids.index("signing")]
+        self.assertTrue(signing["onboarding"])
+        self.assertEqual(signing["when"], {"signing": False})
+
 
 if __name__ == "__main__":
     unittest.main()

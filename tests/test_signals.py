@@ -107,6 +107,32 @@ fi''')
         self.assertEqual(out["sessions_proc"], 3)
         self.assertIsNone(out["sessions"])
 
+    def fake_git_config(self, values):
+        """A fake git that answers `git config --get KEY` from a dict; exit 1 when unset."""
+        body = 'if [ "$1" = config ] && [ "$2" = --get ]; then\n'
+        for k, v in values.items():
+            body += '  [ "$3" = %s ] && { echo %s; exit 0; }\n' % (k, v)
+        body += '  exit 1\nfi\nexit 1'
+        self.fake("git", body)
+
+    def test_signing_needs_gpgsign_true_and_a_key(self):
+        self.assertFalse(signals.collect(str(self.cwd), timeout=GENEROUS)["signing"])
+        self.fake_git_config({"commit.gpgsign": "true", "user.signingkey": "/k/id.pub"})
+        self.assertTrue(signals.collect(str(self.cwd), timeout=GENEROUS)["signing"])
+        self.fake_git_config({"commit.gpgsign": "true"})
+        self.assertFalse(signals.collect(str(self.cwd), timeout=GENEROUS)["signing"])
+        self.fake_git_config({"commit.gpgsign": "false", "user.signingkey": "/k/id.pub"})
+        self.assertFalse(signals.collect(str(self.cwd), timeout=GENEROUS)["signing"])
+        self.fake_git_config({"user.signingkey": "/k/id.pub"})
+        self.assertFalse(signals.collect(str(self.cwd), timeout=GENEROUS)["signing"])
+
+    def test_hanging_git_config_is_bounded(self):
+        self.fake("git", "/bin/sleep 2")
+        t = time.time()
+        out = signals.collect(str(self.cwd), timeout=0.5)
+        self.assertLess(time.time() - t, 1.0)
+        self.assertFalse(out["signing"])
+
     def test_channel(self):
         self.assertIsNone(signals.collect(str(self.cwd), timeout=GENEROUS)["channel"])
         (self.bhome / "reach.json").write_text('{"channel": "slack"}')

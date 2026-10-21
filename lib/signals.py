@@ -61,6 +61,10 @@ def _json(res):
         return None
 
 
+def _stdout(res):
+    return res[1].strip() if res and res[0] == 0 else ""
+
+
 def _weekly_pct(usage):
     best = None
     if not isinstance(usage, list):
@@ -95,6 +99,8 @@ def collect(cwd, timeout=0.5):
         cmds["pgrep"] = ["pgrep", "-x", "claude"]
     if has["git"]:
         cmds["git"] = ["git", "rev-parse", "--show-toplevel"]
+        cmds["gpgsign"] = ["git", "config", "--get", "commit.gpgsign"]
+        cmds["signkey"] = ["git", "config", "--get", "user.signingkey"]
     res = _run_all(cmds, cwd, timeout) if cmds else {}
 
     try:
@@ -114,6 +120,7 @@ def collect(cwd, timeout=0.5):
         "superpowers": "superpowers@" in plugins,
         "gstack": (home / ".claude/skills/gstack").exists(),
         "gh": bool(res.get("gh")) and res["gh"][0] == 0,
+        "signing": _stdout(res.get("gpgsign")) == "true" and bool(_stdout(res.get("signkey"))),
         "channel": channel,
         "matchblox": has["matchblox"],
         "sessions": len(sessions) if isinstance(sessions, list) else None,

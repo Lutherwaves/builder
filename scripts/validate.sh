@@ -21,6 +21,17 @@ for f in release-please-config.json .release-please-manifest.json; do
   jq -e . "$f" >/dev/null 2>&1 && note "✓ $f" || err "$f is not valid JSON"
 done
 
+echo "→ commit subjects"
+if git rev-parse --verify -q origin/main >/dev/null 2>&1; then
+  if bad="$(git log origin/main..HEAD --format=%s | bash scripts/check-subjects.sh)"; then
+    note "✓ every commit subject in origin/main..HEAD follows Conventional Commits"
+  else
+    while IFS= read -r s; do err "commit subject is not a Conventional Commit: $s"; done <<<"$bad"
+  fi
+else
+  note "commit subjects: skipped (no origin/main)"
+fi
+
 echo "→ skills"
 shopt -s nullglob
 found_skill=0
