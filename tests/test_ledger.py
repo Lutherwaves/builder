@@ -122,6 +122,20 @@ class LedgerTest(unittest.TestCase):
         readme = (Path(ledger.__file__).parent.parent / "README.md").read_text()
         self.assertNotIn("a channel to reach you", readme)
 
+    def test_gstack_install_goes_where_the_signal_looks(self):
+        import os, subprocess
+        cat = json.loads((Path(ledger.__file__).parent / "recommendations.json").read_text())
+        how = next(i for i in cat if i["id"] == "gstack")["how"]
+        self.assertIn("CLAUDE_CONFIG_DIR", how)
+        target = '"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/gstack"'
+        self.assertIn(target, how)
+        for cfg, want in (("/cfg", "/cfg/skills/gstack"), (None, "/h/.claude/skills/gstack")):
+            env = {"HOME": "/h", "PATH": os.environ.get("PATH", "")}
+            if cfg:
+                env["CLAUDE_CONFIG_DIR"] = cfg
+            r = subprocess.run(["bash", "-c", "printf %s " + target], env=env, capture_output=True, text=True)
+            self.assertEqual(r.stdout, want)
+
     def test_signing_item_comes_right_after_gh(self):
         cat = sorted(ledger._catalog(), key=lambda i: i["order"])
         ids = [i["id"] for i in cat]

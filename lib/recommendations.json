@@ -19,7 +19,7 @@
     },
     "say": "Builder pairs well with gstack, a set of skills for browsing, QA and shipping.",
     "why": "It adds a real browser and ship workflows that builder can route to.",
-    "how": "git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git ~/.claude/skills/gstack && cd ~/.claude/skills/gstack && ./setup"
+    "how": "git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/gstack\" && cd \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/gstack\" && ./setup (the folder is ~/.claude/skills/gstack, or $CLAUDE_CONFIG_DIR/skills/gstack when CLAUDE_CONFIG_DIR is set)"
   },
   {
     "id": "gh",
