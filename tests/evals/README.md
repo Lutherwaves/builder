@@ -30,6 +30,6 @@ Because the baseline uses your normal setup, plugins you have installed also loa
 
 ## Transcripts
 
-The runner writes `baseline.md` and `with.md` (stdout) and `baseline.err` and `with.err` (stderr) to `${BUILDER_EVAL_OUT:-$HOME/builder-design/evals}/<skill>/<timestamp>/`. This is outside the repository. Never commit a transcript. The runner prints `expect.md` and both transcripts for you to compare.
+The runner writes `baseline.md` and `with.md` (stdout) and `baseline.err` and `with.err` (stderr) to `${BUILDER_EVAL_OUT:-${XDG_STATE_HOME:-$HOME/.local/state}/builder/evals}/<skill>/<timestamp>/`, your XDG state folder, `~/.local/state/builder/evals` by default. Set `BUILDER_EVAL_OUT` to write somewhere else. This is outside the repository. Never commit a transcript. The runner prints `expect.md` and both transcripts for you to compare.
 
 A skill task is done when the with-skill run shows every `expect.md` bullet.

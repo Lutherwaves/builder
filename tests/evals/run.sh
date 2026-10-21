@@ -36,7 +36,7 @@ fi
 fx="$evals/$skill"
 for f in prompt.md expect.md; do [ -s "$fx/$f" ] || { echo "✗ $skill: $f is missing or empty (try --check)" >&2; exit 2; }; done
 
-out="${BUILDER_EVAL_OUT:-$HOME/builder-design/evals}/$skill/$(date +%Y%m%d-%H%M%S)"
+out="${BUILDER_EVAL_OUT:-${XDG_STATE_HOME:-$HOME/.local/state}/builder/evals}/$skill/$(date +%Y%m%d-%H%M%S)"
 # The prompt goes in on stdin, so a prompt that starts with '-' never parses as an option.
 # acceptEdits lets the agent edit files in the temp dir; the deny list blocks push and network tools.
 # An optional allow file adds tool rules (one per line), e.g. the fixture's test command.
