@@ -1,0 +1,13 @@
+{
+  "name": "builder",
+  "displayName": "builder",
+  "version": "0.1.4",
+  "description": "Builder habits for coding agents: guided setup, decisions with reasons, proof before done, and nothing sent without your yes.",
+  "author": { "name": "Lutherwaves" },
+  "homepage": "https://github.com/Lutherwaves/builder",
+  "repository": "https://github.com/Lutherwaves/builder",
+  "license": "MIT",
+  "keywords": ["claude-code","soul","onboarding","shaping","rulings","peer-messaging","fleet","usage-budget","harness","code-graph","codex","cursor","opencode","agent-skills"],
+  "skills": "./skills/",
+  "hooks": "./hooks/hooks-cursor.json"
+}

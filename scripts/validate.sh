@@ -16,6 +16,35 @@ done
 jq -e '.name and .version' .claude-plugin/plugin.json >/dev/null 2>&1 \
   || err ".claude-plugin/plugin.json missing name/version"
 
+# Every harness manifest and package.json parse and carry the same name, version and description.
+manifests=(.codex-plugin/plugin.json .cursor-plugin/plugin.json .agents/plugins/marketplace.json package.json hooks/hooks-cursor.json)
+for f in "${manifests[@]}"; do
+  if jq -e . "$f" >/dev/null 2>&1; then note "✓ $f"; else err "$f is not valid JSON"; fi
+done
+for f in .codex-plugin/plugin.json .cursor-plugin/plugin.json package.json; do
+  jq -e . "$f" >/dev/null 2>&1 || continue
+  for field in name version description; do
+    want="$(jq -r ".$field" .claude-plugin/plugin.json)"; got="$(jq -r ".$field" "$f")"
+    [ "$want" = "$got" ] || err "$f $field is \"$got\" (.claude-plugin/plugin.json has \"$want\")"
+  done
+done
+# One invalid key disables every hook in a Cursor hooks file.
+if jq -e . hooks/hooks-cursor.json >/dev/null 2>&1; then
+  [ "$(jq -r '.version' hooks/hooks-cursor.json)" = "1" ] || err "hooks/hooks-cursor.json version is not 1"
+  extra="$(jq -r 'keys - ["version","hooks"] | join(", ")' hooks/hooks-cursor.json)"
+  [ -z "$extra" ] || err "hooks/hooks-cursor.json has a key besides version and hooks: $extra"
+fi
+
+echo "→ opencode adapter"
+if command -v node >/dev/null 2>&1; then
+  for js in index.js .opencode/plugins/builder.js; do
+    if chk="$(node --check "$js" 2>&1)"; then note "✓ node --check $js"; else printf '%s\n' "$chk"; err "$js failed node --check"; fi
+  done
+  if oc_out="$(node --test tests/test_opencode.mjs 2>&1)"; then note "✓ opencode adapter tests"; else printf '%s\n' "$oc_out"; err "opencode adapter tests failed"; fi
+else
+  note "opencode adapter: skipped (no node)"
+fi
+
 echo "→ release config"
 for f in release-please-config.json .release-please-manifest.json; do
   jq -e . "$f" >/dev/null 2>&1 && note "✓ $f" || err "$f is not valid JSON"

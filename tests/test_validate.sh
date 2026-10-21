@@ -141,6 +141,43 @@ out="$(run_in "$tmp/guard")"; rc=$?
 [ "$rc" -eq 1 ] && grep -q '✗ guard: lib/recommendations.json: fleet how' <<<"$out" && ! grep -q 'guard: lib/recommendations.json: superpowers' <<<"$out" \
   && check "guard flags slash command in a string how, allows it in a map how" ok || check "guard flags slash command in a string how, allows it in a map how (got $rc)" bad
 
+# Case 17 (manifest_version_drift_fails): a manifest whose version differs from plugin.json fails.
+rm -rf "$tmp/man"; mkrepo "$tmp/clean" "$tmp/man"
+sed -i.bak 's/"version": "[^"]*"/"version": "9.9.9"/' "$tmp/man/.codex-plugin/plugin.json"; rm -f "$tmp/man/.codex-plugin/plugin.json.bak"
+out="$(run_in "$tmp/man")"; rc=$?
+[ "$rc" -eq 1 ] && grep -q '✗ .*codex-plugin/plugin.json version' <<<"$out" \
+  && check "manifest version drift fails" ok || check "manifest version drift fails (got $rc)" bad
+
+# Case 18 (manifest_description_drift_fails): a package.json description that differs fails.
+rm -rf "$tmp/man"; mkrepo "$tmp/clean" "$tmp/man"
+sed -i.bak 's/"description": "[^"]*"/"description": "other"/' "$tmp/man/package.json"; rm -f "$tmp/man/package.json.bak"
+out="$(run_in "$tmp/man")"; rc=$?
+[ "$rc" -eq 1 ] && grep -q '✗ .*package.json description' <<<"$out" \
+  && check "manifest description drift fails" ok || check "manifest description drift fails (got $rc)" bad
+
+# Case 19 (manifest_missing_fails): a missing manifest fails.
+rm -rf "$tmp/man"; mkrepo "$tmp/clean" "$tmp/man"
+git -C "$tmp/man" rm -q -f .cursor-plugin/plugin.json
+out="$(run_in "$tmp/man")"; rc=$?
+[ "$rc" -eq 1 ] && grep -q '✗ .cursor-plugin/plugin.json is not valid JSON' <<<"$out" \
+  && check "missing manifest fails" ok || check "missing manifest fails (got $rc)" bad
+
+# Case 20 (cursor_hooks_extra_key_fails): one invalid key disables every Cursor hook, so the file may hold only version and hooks.
+rm -rf "$tmp/man"; mkrepo "$tmp/clean" "$tmp/man"
+jq '. + {description: "x"}' "$tmp/man/hooks/hooks-cursor.json" > "$tmp/man/h.json" && mv "$tmp/man/h.json" "$tmp/man/hooks/hooks-cursor.json"
+out="$(run_in "$tmp/man")"; rc=$?
+[ "$rc" -eq 1 ] && grep -q '✗ hooks/hooks-cursor.json has a key besides version and hooks: description' <<<"$out" \
+  && check "cursor hooks extra key fails" ok || check "cursor hooks extra key fails (got $rc)" bad
+
+# Case 21 (opencode_syntax_error_fails): a syntax error in the adapter fails node --check.
+if command -v node >/dev/null 2>&1; then
+  rm -rf "$tmp/man"; mkrepo "$tmp/clean" "$tmp/man"
+  echo 'export const = ;' >> "$tmp/man/.opencode/plugins/builder.js"
+  out="$(run_in "$tmp/man")"; rc=$?
+  [ "$rc" -eq 1 ] && grep -q '✗ .*builder.js' <<<"$out" \
+    && check "opencode syntax error fails" ok || check "opencode syntax error fails (got $rc)" bad
+fi
+
 # Case 16: the run left the real repo's HEAD, refs and working tree as they were.
 [ "$(snapshot)" = "$before" ] && check "real repo untouched by the test run" ok || check "real repo untouched by the test run" bad
 

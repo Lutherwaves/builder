@@ -1,6 +1,6 @@
 {
   "name": "builder",
-  "description": "The builder soul for Claude Code: start from the person, decide on the record, prove it, and never write to the world unseen.",
+  "description": "Builder habits for coding agents: guided setup, decisions with reasons, proof before done, and nothing sent without your yes.",
   "version": "0.1.4",
   "author": {
     "name": "Lutherwaves"
@@ -18,6 +18,10 @@
     "fleet",
     "usage-budget",
     "harness",
-    "code-graph"
+    "code-graph",
+    "codex",
+    "cursor",
+    "opencode",
+    "agent-skills"
   ]
 }

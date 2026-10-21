@@ -17,6 +17,8 @@ This guide routes an agent that works on builder itself.
 | An issue or rule template | `skills/shape/issue-template.md`, `skills/canon/rule-template.md` | `python3 -m unittest tests.test_templates` |
 | The parity eval | `tests/evals/parity.sh`, `tests/evals/lib.sh` | `bash tests/evals/parity.sh --dry-run` |
 | The plugin manifest | `.claude-plugin/plugin.json` (description and keywords only) | `bash scripts/validate.sh` |
+| The Codex, Cursor and opencode manifests | `.codex-plugin/plugin.json`, `.cursor-plugin/plugin.json`, `package.json` (description and keywords only; `version` stays equal to `.claude-plugin/plugin.json`) | `bash scripts/validate.sh` |
+| The opencode adapter | `.opencode/plugins/builder.js` | `node --test tests/test_opencode.mjs` |
 
 Before every commit, run `bash scripts/validate.sh`. It runs all of the checks above except the paid eval runs.
 
