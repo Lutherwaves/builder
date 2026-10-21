@@ -23,7 +23,9 @@ done
 
 echo "→ commit subjects"
 if git rev-parse --verify -q origin/main >/dev/null 2>&1; then
-  if bad="$(git log origin/main..HEAD --format=%s | bash scripts/check-subjects.sh)"; then
+  if ! subjects="$(git log origin/main..HEAD --format=%s 2>&1)"; then
+    err "git log origin/main..HEAD failed: $subjects"
+  elif bad="$(bash scripts/check-subjects.sh <<<"$subjects")" || [ -z "$subjects" ]; then
     note "✓ every commit subject in origin/main..HEAD follows Conventional Commits"
   else
     while IFS= read -r s; do err "commit subject is not a Conventional Commit: $s"; done <<<"$bad"

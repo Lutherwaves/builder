@@ -74,14 +74,18 @@ commit_in() { git -C "$1" -c user.name=t -c user.email=t@example.com -c commit.g
 run_in() { (cd "$1" && env -u BUILDER_DENYLIST bash scripts/validate.sh 2>&1); }
 rm -rf "$tmp/cc"; cp -R "$tmp/clean" "$tmp/cc"
 commit_in "$tmp/cc" "feat(scope)!: a person can do a new thing"
-commit_in "$tmp/cc" "Merge pull request #12 from someone/branch"
 commit_in "$tmp/cc" "chore: release 1.2.3"
 out="$(run_in "$tmp/cc")"; rc=$?
-[ "$rc" -eq 0 ] && check "good, merge and release subjects pass" ok || check "good, merge and release subjects pass (got $rc)" bad
+[ "$rc" -eq 0 ] && check "good and release subjects pass" ok || check "good and release subjects pass (got $rc)" bad
 commit_in "$tmp/cc" "wip stuff"
 out="$(run_in "$tmp/cc")"; rc=$?
 [ "$rc" -eq 1 ] && grep -q '✗ commit subject is not a Conventional Commit: wip stuff' <<<"$out" \
   && check "bad subject fails" ok || check "bad subject fails (got $rc)" bad
+
+commit_in "$tmp/cc" "Merge pull request #12 from someone/branch"
+out="$(run_in "$tmp/cc")"; rc=$?
+[ "$rc" -eq 1 ] && grep -q '✗ commit subject is not a Conventional Commit: Merge pull request' <<<"$out" \
+  && check "merge subject fails" ok || check "merge subject fails (got $rc)" bad
 
 # Case 12: without origin/main the commit check skips with a message.
 git -C "$tmp/cc" update-ref -d refs/remotes/origin/main
