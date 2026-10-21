@@ -1,0 +1,2 @@
+CREATE TABLE customers (id BIGSERIAL PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL, phone TEXT);
+CREATE TABLE orders (id BIGSERIAL PRIMARY KEY, customer_id BIGINT NOT NULL REFERENCES customers(id), placed_at TIMESTAMPTZ NOT NULL, legacy_status TEXT);

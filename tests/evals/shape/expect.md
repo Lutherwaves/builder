@@ -1,0 +1,5 @@
+- The title states the outcome in the person's words (who can now do what), not a component such as "CSV export endpoint".
+- Names the person and the moment the export serves, taken from the repository (the shop owner at month end, the accountant).
+- Has an anti-goals section: outcomes that count as failure even if the export works (for example, customer emails leave the shop, or totals do not match the screen).
+- Lists at least one open question, and each open question carries a recommendation that the builder can act on.
+- Has no empty or "n/a" section, and saves the document in docs/specs/, where the repository keeps specs.

@@ -1,0 +1,5 @@
+- Writes the rule into a repository rules or design file (not into AGENTS.md), as one sentence that a reviewer can check.
+- The rule's reason names both incidents from the repository (the 0004 rename and the 0007 drop), not a generic "migrations are risky".
+- Proposes a guard test that fails on a migration like 0004 or 0007, and runs the suite to show the result.
+- AGENTS.md gains exactly one pointer line to the rules file; the rule body is not copied into it.
+- Says what the guard does not catch, instead of claiming it can never happen again.
