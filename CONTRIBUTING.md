@@ -1,13 +1,37 @@
 # Contributing to builder
 
-Thanks for your interest. builder is a Claude Code plugin: eight skills, one SessionStart hook,
-and a small Python library. [AGENTS.md](AGENTS.md) tells you which file to change for each job.
+Thanks for your interest. builder is a plugin for coding agents: eight skills, one session-start hook,
+and a small Python library. It runs on Claude Code, Codex CLI, Cursor CLI and opencode. [AGENTS.md](AGENTS.md) tells you which file to change for each job.
 
 ## Quick start
 
 1. Fork and clone the repository.
-2. Load your checkout in a session: `claude --plugin-dir .`
+2. Load your checkout in a session (see below).
 3. A skill lives in `skills/<name>/SKILL.md`. Its tools sit beside it, for example `skills/budget/burn-proj.py`.
+
+## Load your checkout
+
+Pick your harness. In each case, builder loads from your working copy.
+
+- **Claude Code:** `claude --plugin-dir .`
+- **Codex CLI:** `codex plugin marketplace add .`, then `codex plugin add builder@builder`.
+  Codex copies the plugin at install. After each change, add it again.
+  Trust the plugin's hook when Codex asks.
+- **Cursor CLI:** use the manual project path from the README. Point `.cursor/hooks.json` at `hooks/session-start --harness cursor` in your checkout, and copy `skills/*` into `.agents/skills/` of a test project.
+- **opencode (1.19 or newer):** put the path of your checkout in the `plugin` list of `opencode.json`.
+
+## Add a harness
+
+A new harness needs six things. Do them in this order.
+
+1. **Manifest.** Add the harness's plugin manifest, with the same description and keywords as the other manifests. Keep `version` equal.
+2. **Mapping file.** Add `skills/builder/harnesses/<harness>.md`. It holds the `<!-- hook -->` block and one row per action. A tool you did not verify starts with `not verified:` and names a safe fallback.
+3. **Detection marker.** Add the harness to `lib/harness.py`: its state directory, its plugin-root variable and its process match. Add an environment marker only after you saw a real session set it. Extend `tests/test_harness.py`.
+4. **Eval runner.** Add `eval_base_<harness>`, `eval_notes_<harness>` and `eval_prepare_<harness>` to `tests/evals/lib.sh`, so that `bash tests/evals/run.sh --harness <harness> <skill>` runs every fixture. The runner writes nothing outside its temp dirs.
+5. **Results.** Run the fixtures and commit the result files that `tests/evals/README.md` describes. Never commit a transcript.
+6. **Support table.** Run `python3 scripts/support-table.py render` and paste the block it prints into the README. Never write a support claim by hand. A harness shows as supported only after every fixture passes on it.
+
+Then add its install block to the README, and its state directory to the scope in `SECURITY.md`.
 
 ## Before you open a pull request
 
@@ -34,7 +58,7 @@ It checks that:
 - A skill has the sections `## Common mistakes` and `## Self-check`.
 - Write in ASD-STE100: active voice, present tense, one idea per sentence, short sentences.
 - After an explanation, the skill offers other formats in one line.
-- Refer to a bundled tool through `${CLAUDE_PLUGIN_ROOT}`, so the path works after install.
+- Refer to a bundled tool through `${CLAUDE_PLUGIN_ROOT}`, so the path works after install. The hook gives the agent that path on every harness.
 - Add the skill to the table in the README.
 
 ## Evals
@@ -95,6 +119,6 @@ The release is automated.
 
 1. Merge pull requests with Conventional Commit titles.
 2. release-please opens a release pull request with the next version and the changelog.
-3. Merging that pull request tags the version, cuts a GitHub release, and bumps `.claude-plugin/plugin.json`.
+3. Merging that pull request tags the version, cuts a GitHub release, and bumps the manifest versions.
 
-Never edit `CHANGELOG.md` or the `version` in `plugin.json` by hand.
+Never edit `CHANGELOG.md` or the `version` in a manifest by hand.

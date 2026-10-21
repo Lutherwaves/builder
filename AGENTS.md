@@ -1,6 +1,6 @@
 # builder — agent guide
 
-builder is a Claude Code plugin: eight skills, one SessionStart hook, and a small Python library.
+builder is a plugin for coding agents: eight skills, one session-start hook, and a small Python library. It has adapters for Claude Code, Codex CLI, Cursor CLI and opencode.
 This guide routes an agent that works on builder itself.
 
 ## Where each change goes
@@ -16,9 +16,12 @@ This guide routes an agent that works on builder itself.
 | The graph drift check | `skills/harness/drift.sh` | `bash tests/test_drift.sh` |
 | An issue or rule template | `skills/shape/issue-template.md`, `skills/canon/rule-template.md` | `python3 -m unittest tests.test_templates` |
 | The parity eval | `tests/evals/parity.sh`, `tests/evals/lib.sh` | `bash tests/evals/parity.sh --dry-run` |
-| The plugin manifest | `.claude-plugin/plugin.json` (description and keywords only) | `bash scripts/validate.sh` |
-| The Codex, Cursor and opencode manifests | `.codex-plugin/plugin.json`, `.cursor-plugin/plugin.json`, `package.json` (description and keywords only; `version` stays equal to `.claude-plugin/plugin.json`) | `bash scripts/validate.sh` |
+| Which harness runs builder, and where it keeps its files | `lib/harness.py` | `python3 -m unittest tests.test_harness` |
+| What an action means on one harness (ask, schedule, usage, compact) | `skills/builder/harnesses/<harness>.md` | `bash scripts/validate.sh` |
+| The manifests | `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, `.cursor-plugin/plugin.json`, `package.json` (description and keywords only; `version` stays equal in all four) | `bash scripts/validate.sh` |
 | The opencode adapter | `.opencode/plugins/builder.js` | `node --test tests/test_opencode.mjs` |
+| The support table in the README | `scripts/support-table.py` (never edit the block by hand) | `python3 -m unittest tests.test_support_table` |
+| The eval runner of one harness | `tests/evals/lib.sh` (`eval_base_<harness>`, `eval_prepare_<harness>`) | `bash tests/test_evals.sh`, then `bash tests/evals/run.sh --harness <harness> <skill>` |
 
 Before every commit, run `bash scripts/validate.sh`. It runs all of the checks above except the paid eval runs.
 
@@ -33,7 +36,7 @@ Before every commit, run `bash scripts/validate.sh`. It runs all of the checks a
 - The repository is public. Keep employer, client, product and private repository names out of files, commits and pull requests.
 - Never commit an eval transcript. Transcripts live outside the repository.
 - Commits follow Conventional Commits and are signed. See [CONTRIBUTING.md](CONTRIBUTING.md).
-- Never edit `CHANGELOG.md` or the `version` in `plugin.json`. release-please owns both.
+- Never edit `CHANGELOG.md` or the `version` in a manifest. release-please owns both.
 
 ## Attribution
 

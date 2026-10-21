@@ -4,9 +4,8 @@
 [![Validate](https://github.com/Lutherwaves/builder/actions/workflows/validate.yml/badge.svg)](https://github.com/Lutherwaves/builder/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://www.conventionalcommits.org)
-[![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-8A2BE2)](https://claude.com/claude-code)
 
-Your [Claude Code](https://claude.com/claude-code) agent ends each piece of work with a builder report.
+builder is a plugin for coding agents. Your agent ends each piece of work with a builder report.
 The report names who the work is for, each call the agent made alone, and the test run that proves the work.
 Nothing leaves this machine without a send rule or your yes.
 
@@ -31,17 +30,64 @@ Outside:   nothing sent.
 
 ## Install
 
+builder installs on four harnesses. Pick yours.
+builder needs Python 3 and Bash, on macOS or Linux.
+Its session hook makes no network call and finishes in under one second.
+
+### Claude Code
+
 ```bash
 /plugin marketplace add Lutherwaves/builder
 /plugin install builder@builder
 ```
 
-builder needs Python 3 and Bash, on macOS or Linux.
-Its session hook makes no network call and finishes in under one second.
+In Claude Code, call a skill as `/builder:shape`.
+
+### Codex CLI
+
+```bash
+codex plugin marketplace add Lutherwaves/builder
+codex plugin add builder@builder
+```
+
+Codex runs a plugin's hooks only after you trust them. builder does not work around this step.
+Until you trust the hook, the `builder` skill still loads by name.
+
+### Cursor CLI
+
+A Cursor CLI plugin install is not verified. This manual path works.
+In your project, create `.cursor/hooks.json`:
+
+```json
+{"version":1,"hooks":{"sessionStart":[{"command":"<path to builder>/hooks/session-start --harness cursor"}]}}
+```
+
+Keep only these keys. One invalid key disables every hook in the file.
+Then copy builder's skill folders into `.agents/skills/` in the same project.
+
+A Cursor plugin install (`.cursor-plugin/plugin.json`) also exists for the editor's plugin flow. This README does not claim that the CLI installs it.
+
+As a fallback, add one line to your project's `AGENTS.md`. Cursor CLI reads that file.
+builder never writes `AGENTS.md` itself.
+
+```
+Use the builder skill for the soul of this work: for whom, what it is not, each call with its reason, proof, and what left the machine.
+```
+
+### opencode
+
+Add builder to the `plugin` list in `opencode.json`. Use opencode 1.19 or newer: version 1.1.x crashes on plugins with non-function exports.
+A local checkout works:
+
+```json
+{"plugin": ["/path/to/builder"]}
+```
+
+opencode also takes a git form, as superpowers documents: `"plugin": ["builder@git+https://github.com/Lutherwaves/builder.git"]`. The local path is the form tested for builder.
 
 ### Harness support
 
-Each row comes from graded eval runs of the same fixtures. A harness without a row has not been graded.
+A harness is listed as supported only after every eval fixture passes on it.
 
 <!-- support:start -->
 No harness has passed its evals yet.
@@ -71,10 +117,10 @@ builder keeps your answers in `~/.config/builder/ledger.json`. Set `BUILDER_HOME
 | `reach` | By default, a message to a teammate waits for your yes. Every send passes a duplicate check and a limit of 6 sends per hour. |
 | `fleet` | Many sessions work side by side, one lane each. Work outside a lane goes to its owner as a brief. |
 | `intake` | The day's captured tasks are reconciled against work in motion. Nothing becomes an issue without your marker or your yes. |
-| `budget` | A forecast of the weekly usage limit, and one idle session to compact. |
+| `budget` | A forecast of the weekly usage limit, and one idle session to compact. Where the harness has no usage reading, it says so. |
 | `harness` | A local code graph answers "what calls this?" in one query, and a watcher names stale graphs. |
 
-Call a skill by name, for example `/builder:shape`. The agent also loads a skill when its job comes up.
+Call a skill by name, for example the `shape` skill. The agent also loads a skill when its job comes up.
 
 ## Works with
 
@@ -84,7 +130,7 @@ builder runs on its own. If a partner is missing, builder uses a fallback and sa
 - [gstack](https://github.com/garrytan/gstack): a real browser, QA, security checks and ship workflows.
 - [gh](https://cli.github.com): `intake` checks open pull requests and issues through it.
 - [matchblox](https://matchblox.sh): `budget` reads the plan windows from it, and `fleet` reads the live sessions. Run `matchblox setup` to add its hooks ([docs](https://docs.matchblox.com)).
-- Your channel's MCP server: `reach` sends through it. For Slack, use the claude.ai Slack connector or Slack's official MCP server.
+- Your channel's MCP server: `reach` sends through it. For Slack, use a Slack connector or Slack's official MCP server.
 - [codebase-memory-mcp](https://github.com/DeusData/codebase-memory-mcp): `harness` provisions it. It runs locally and needs no API key.
 
 ## Compare with your own setup
@@ -92,7 +138,7 @@ builder runs on its own. If a partner is missing, builder uses a fallback and sa
 `tests/evals/parity.sh` runs two fixtures twice: once with your setup, and once with builder and its recommendations only.
 The builder run accepts every recommendation.
 It prints both transcripts next to the expected behaviour, so you can compare them.
-It runs `claude -p` four times, so it uses tokens from your plan.
+It runs the agent four times, so it uses tokens from your plan.
 See [tests/evals/README.md](tests/evals/README.md).
 
 ## Standalone use of the budget forecast
@@ -107,7 +153,7 @@ python3 burn-proj.py 19 1783504800 1782990571
 # elapsed=15.0%  naive=127%  profile_aware=100%  reset_in=5.95d
 ```
 
-`--from-matchblox` needs matchblox on your PATH. Without it, read `/usage` and pass the numbers by hand.
+`--from-matchblox` needs matchblox on your PATH. Without it, read your agent's usage view and pass the numbers by hand.
 
 - `naive` draws a straight line from the use so far. It is the worst case.
 - `profile_aware` discounts the hours you do not work: 02:00 to 09:00, and the weekend. Tune them in `mult()`.
