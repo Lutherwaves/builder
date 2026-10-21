@@ -6,23 +6,26 @@
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://www.conventionalcommits.org)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-8A2BE2)](https://claude.com/claude-code)
 
-The builder soul for [Claude Code](https://claude.com/claude-code).
+Your [Claude Code](https://claude.com/claude-code) agent ends each piece of work with a builder report.
+The report names who the work is for, each call the agent made alone, and the test run that proves the work.
+Nothing leaves this machine without a send rule or your yes.
 
-The person decides. The agent proposes, builds inside the repository, and reports.
+builder is the soul behind that report.
+You decide. The agent proposes, builds inside the repository, and reports.
 Correct is not enough: the work must fit one person at one moment.
-Each piece of work starts from that person and ends with a builder report.
-The report names the person, the non-goals and each call the agent made alone, with its reason.
-It quotes a test run from the session as evidence.
-Its last line says what left the machine. Nothing leaves without the person's yes.
+So each piece of work starts from that person and the non-goals.
+Each call the agent makes alone carries its reason.
+The evidence is a test run from the session.
+The last line says what left the machine.
 
-A builder report looks like this:
+Example, invented for illustration:
 
 ```
 For:       a customer who moved — at checkout. Now they can change their email in one step.
 Non-goals: no change to the login flow.
 Calls:
   - The old address gets a notice — because a stolen account changes the email first.
-Evidence:  python3 -m unittest → 14 passed (measured).
+Evidence:  python3 -m unittest → 14 passed (example).
 Outside:   nothing sent.
 ```
 
@@ -39,14 +42,15 @@ Its session hook makes no network call and finishes in under one second.
 ## What happens in your first session
 
 1. You ask for your work as usual. builder adds its thirteen tenets to the session, and the agent does your work first.
-2. At the end of that reply, the agent introduces builder in at most three lines.
+2. At the end of that reply, the agent introduces builder in at most three short lines. This happens even after a one-line request.
 3. The agent offers one setup step and asks: yes, not now, or never.
-4. Each later reply offers the next step, one at a time: superpowers, gstack, a signed-in `gh`, signed commits, and a channel to reach you.
+4. Each later reply offers the next step, one at a time: superpowers, gstack, a signed-in `gh`, signed commits, and a channel to reach you. A step you already did is skipped.
 5. "Not now" stays quiet for 7 days. "Never" stays quiet for good.
 6. When you answer every step, onboarding ends.
 
 After that, a session shows at most one recommendation, and only when a signal fires.
 Examples: you run three or more sessions, your weekly usage reaches 80%, or no code graph is set up.
+The first two signals need matchblox.
 builder keeps your answers in `~/.config/builder/ledger.json`. Set `BUILDER_HOME` to move it.
 
 ## The eight skills
@@ -56,9 +60,9 @@ builder keeps your answers in `~/.config/builder/ledger.json`. Set `BUILDER_HOME
 | `builder` | The soul: thirteen tenets, a routing table to superpowers and gstack, and the builder report at the end of each piece of work. |
 | `shape` | A feature name becomes an issue: the person, the moment, anti-goals, and each open question with a recommendation. |
 | `canon` | A repository rule carries its incident and a check that fails when someone breaks it. |
-| `reach` | A message to a teammate goes out only after your yes, with a duplicate check and a limit of 6 sends per hour. |
+| `reach` | By default, a message to a teammate waits for your yes. Every send passes a duplicate check and a limit of 6 sends per hour. |
 | `fleet` | Many sessions work side by side, one lane each. Work outside a lane goes to its owner as a brief. |
-| `intake` | The day's captured tasks are reconciled against work in motion. Nothing becomes an issue without your marker. |
+| `intake` | The day's captured tasks are reconciled against work in motion. Nothing becomes an issue without your marker or your yes. |
 | `budget` | A forecast of the weekly usage limit, and one idle session to compact. |
 | `harness` | A local code graph answers "what calls this?" in one query, and a watcher names stale graphs. |
 
@@ -66,7 +70,7 @@ Call a skill by name, for example `/builder:shape`. The agent also loads a skill
 
 ## Works with
 
-builder runs on its own. Each routing row names a fallback for a missing partner.
+builder runs on its own. If a partner is missing, builder uses a fallback and says so once.
 
 - [superpowers](https://github.com/obra/superpowers): planning, test-driven development and review. builder routes to these skills.
 - [gstack](https://github.com/garrytan/gstack): a real browser, QA, security checks and ship workflows.
@@ -78,7 +82,9 @@ builder runs on its own. Each routing row names a fallback for a missing partner
 ## Compare with your own setup
 
 `tests/evals/parity.sh` runs two fixtures twice: once with your setup, and once with builder and its recommendations only.
+The builder run accepts every recommendation.
 It prints both transcripts next to the expected behaviour, so you can compare them.
+It runs `claude -p` four times, so it uses tokens from your plan.
 See [tests/evals/README.md](tests/evals/README.md).
 
 ## Standalone use of the budget forecast
@@ -92,6 +98,8 @@ python3 burn-proj.py --from-matchblox [now_epoch]
 python3 burn-proj.py 19 1783504800 1782990571
 # elapsed=15.0%  naive=127%  profile_aware=100%  reset_in=5.95d
 ```
+
+`--from-matchblox` needs matchblox on your PATH. Without it, read `/usage` and pass the numbers by hand.
 
 - `naive` draws a straight line from the use so far. It is the worst case.
 - `profile_aware` discounts the hours you do not work: 02:00 to 09:00, and the weekend. Tune them in `mult()`.

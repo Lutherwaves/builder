@@ -25,7 +25,7 @@ It checks that:
 - the Python tools compile, and `burn-proj.py` keeps its output shape;
 - the unit tests, the hook tests, the drift tests and the eval runner tests pass;
 - every eval fixture is valid;
-- no tracked file holds a deny-listed name (see "Scrub guard").
+- no tracked file holds a deny-listed name, when `BUILDER_DENYLIST` is set (see "Scrub guard").
 
 ## Skill conventions
 
