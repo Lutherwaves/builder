@@ -7,13 +7,14 @@ import tempfile
 import time
 from pathlib import Path
 
+import harness
+
 COOLDOWN_S = 604800  # "not now" stays quiet for 7 days
 VERDICTS = ("yes", "later", "never")
 
 
 def home():
-    env = os.environ.get("BUILDER_HOME")
-    return Path(env) if env else Path.home() / ".config" / "builder"
+    return harness.builder_home(os.environ, Path.home())
 
 
 def _empty():
