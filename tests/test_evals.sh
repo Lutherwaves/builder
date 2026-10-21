@@ -52,4 +52,17 @@ d="$(ls -d "$tmp"/out2/dash/*/ 2>/dev/null | head -1)"
   && check "stderr goes to .err files, not the transcript" ok || check "stderr goes to .err files, not the transcript" bad
 rm -rf "$tmp/evals/dash"
 
+# An optional allow file adds tool rules to --allowedTools; blank and # lines are skipped.
+mkdir -p "$tmp/evals/allowed"
+echo "Do it." > "$tmp/evals/allowed/prompt.md"
+printf -- '- a\n- b\n- c\n' > "$tmp/evals/allowed/expect.md"
+printf '# tests\nBash(python3 -m unittest:*)\n\n' > "$tmp/evals/allowed/allow"
+out="$(run allowed --dry-run 2>&1)"
+[ "$(grep -c -- '--allowedTools Bash\\(python3\\ -m\\ unittest:\\\*\\) --disallowedTools' <<<"$out")" -eq 2 ] \
+  && ! grep -q -- '--allowedTools.*#' <<<"$out" \
+  && check "allow file adds --allowedTools" ok || check "allow file adds --allowedTools ($out)" bad
+out="$(run good --dry-run 2>&1)"
+! grep -q -- '--allowedTools' <<<"$out" && check "no allow file, no --allowedTools" ok || check "no allow file, no --allowedTools" bad
+rm -rf "$tmp/evals/allowed"
+
 exit "$fails"

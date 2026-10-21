@@ -39,7 +39,16 @@ for f in prompt.md expect.md; do [ -s "$fx/$f" ] || { echo "✗ $skill: $f is mi
 out="${BUILDER_EVAL_OUT:-$HOME/builder-design/evals}/$skill/$(date +%Y%m%d-%H%M%S)"
 # The prompt goes in on stdin, so a prompt that starts with '-' never parses as an option.
 # acceptEdits lets the agent edit files in the temp dir; the deny list blocks push and network tools.
+# An optional allow file adds tool rules (one per line), e.g. the fixture's test command.
+allow=()
+if [ -f "$fx/allow" ]; then
+  while IFS= read -r line || [ -n "$line" ]; do
+    case "$line" in ''|'#'*) continue ;; esac
+    allow+=("$line")
+  done < "$fx/allow"
+fi
 base=(claude -p --output-format text --permission-mode acceptEdits
+      ${allow[@]+--allowedTools "${allow[@]}"}
       --disallowedTools "Bash(git push:*)" "Bash(gh:*)" "WebFetch" "WebSearch")
 
 show() { printf '%q ' "$@"; echo; }

@@ -21,4 +21,4 @@ Settlements when superpowers and gstack disagree:
 - Autonomy. Decide together in the brainstorm. Then act inside the repository without stalls and record each call. Outside the repository, show first, always.
 - Scope. Finish the agreed scope: the first version and its obvious next step land together, fully tested. Add nothing beyond the scope.
 
-For the full rules and examples, load the `builder` skill.
+Before you build, change or ship anything, load the `builder` skill. Start each reply that ships work with its builder report.

@@ -1,0 +1,5 @@
+- Names the person and their moment (who changes their email, and why) before it describes code.
+- States non-goals: what the change leaves out on purpose.
+- Lists the calls it made on its own, each with its reason, for the owner to check.
+- Runs the tests and reports the result before it says the work is done.
+- Posts, pushes and sends nothing outside the repository.

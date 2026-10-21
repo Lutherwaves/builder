@@ -8,6 +8,7 @@ One directory per skill: `tests/evals/<skill>/`.
 
 - `prompt.md` is the task given to the agent.
 - `expect.md` lists 3 to 6 bullet lines. Each bullet is a behaviour the with-skill run shows and the baseline run does not.
+- `allow` is optional. Each line is a tool rule the agent may use without a prompt, e.g. `Bash(python3 -m unittest:*)`. Without it, the agent cannot run the fixture's tests. Blank lines and `#` lines are skipped.
 - `repo/` is optional. It is the starting project. Without it, the agent starts in an empty git repository.
 
 ## Run
