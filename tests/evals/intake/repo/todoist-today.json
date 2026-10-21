@@ -1,8 +1,64 @@
 [
-  {"id": "t1", "title": "Fix flaky checkout test", "description": "fails about 1 in 5 runs on CI", "comments": [], "labels": [], "url": "https://todoist.com/showTask?id=t1"},
-  {"id": "t2", "title": "Add CSV export to the monthly report", "description": "see #212 for the format", "comments": [], "labels": [], "url": "https://todoist.com/showTask?id=t2"},
-  {"id": "t3", "title": "Rotate the staging database password", "description": "the old one was in a screenshot in the onboarding deck", "comments": [], "labels": [], "url": "https://todoist.com/showTask?id=t3"},
-  {"id": "t4", "title": "Dark mode for the settings page", "description": "customers ask for it in support", "comments": ["→gh"], "labels": [], "url": "https://todoist.com/showTask?id=t4"},
-  {"id": "t5", "title": "Rewrite the onboarding email copy", "description": "shorter, one call to action", "comments": [], "labels": [], "url": "https://todoist.com/showTask?id=t5"},
-  {"id": "t6", "title": "Add a retry to the webhook sender", "description": "", "comments": ["filed as an issue already"], "labels": ["intake:filed"], "url": "https://todoist.com/showTask?id=t6"}
+  {
+    "id": "t1",
+    "title": "Fix flaky checkout test",
+    "description": "fails about 1 in 5 runs on CI",
+    "comments": [],
+    "labels": [],
+    "url": "https://todoist.com/showTask?id=t1"
+  },
+  {
+    "id": "t2",
+    "title": "Add CSV export to the monthly report",
+    "description": "see #212 for the format",
+    "comments": [],
+    "labels": [],
+    "url": "https://todoist.com/showTask?id=t2"
+  },
+  {
+    "id": "t3",
+    "title": "Rotate the staging database password",
+    "description": "the old one was in a screenshot in the onboarding deck",
+    "comments": [],
+    "labels": [],
+    "url": "https://todoist.com/showTask?id=t3"
+  },
+  {
+    "id": "t4",
+    "title": "Dark mode for the settings page",
+    "description": "customers ask for it in support",
+    "comments": [
+      "→gh"
+    ],
+    "labels": [],
+    "url": "https://todoist.com/showTask?id=t4"
+  },
+  {
+    "id": "t5",
+    "title": "Rewrite the onboarding email copy",
+    "description": "shorter, one call to action",
+    "comments": [],
+    "labels": [],
+    "url": "https://todoist.com/showTask?id=t5"
+  },
+  {
+    "id": "t6",
+    "title": "Add a retry to the webhook sender",
+    "description": "",
+    "comments": [
+      "filed as an issue already"
+    ],
+    "labels": [
+      "intake:filed"
+    ],
+    "url": "https://todoist.com/showTask?id=t6"
+  },
+  {
+    "id": "t7",
+    "title": "acme/warehouse: label printer times out on bulk print",
+    "description": "repo acme/warehouse, the night shift prints 200 labels at once",
+    "comments": [],
+    "labels": [],
+    "url": "https://todoist.com/showTask?id=t7"
+  }
 ]

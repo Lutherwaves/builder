@@ -11,8 +11,10 @@ isn't inflated by charging daytime rates to hours you're asleep or resting.
 It also decays automatically as those low-usage hours accumulate.
 
 --from-matchblox reads `matchblox usage --json` and projects the weekly window
-(window_minutes 10080) of each account: one line per account. With two or more
-accounts, each line ends with `account=<name>`.
+(window_minutes 10080) of each account: one line per account. When matchblox
+lists two or more accounts, each line ends with `account=<name>`. An account
+that is not `measured`, or has a missing or malformed weekly window, is skipped
+with its cause on stderr.
 """
 import json
 import shutil
@@ -83,20 +85,40 @@ def from_matchblox(now):
         accounts = json.loads(r.stdout)
     except ValueError:
         die("matchblox usage --json printed no JSON. Run it by hand to see why.", 1)
+    if not isinstance(accounts, list) or not all(isinstance(a, dict) for a in accounts):
+        die("matchblox usage --json is not a list of accounts. Run it by hand to see why.", 1)
     lines = []
     for acc in accounts:
         name = acc.get("account") or acc.get("provider") or "?"
-        weekly = [w for w in acc.get("windows") or [] if w.get("window_minutes") == WEEKLY_MINUTES]
-        if not weekly:
-            print(f"account {name}: no weekly window in matchblox usage", file=sys.stderr)
-            continue
-        w = weekly[0]
-        reset = int(datetime.fromisoformat(w["resets_at"].replace("Z", "+00:00")).timestamp())
-        lines.append((name, project(float(w["used_pct"]), reset, now)))
+        line = account_line(acc, name, now)
+        if line:
+            lines.append((name, line))
     if not lines:
-        die("no weekly window in matchblox usage: run a Claude Code session so matchblox reads the plan, then try again.", 1)
+        die("no measured weekly window in matchblox usage: run a Claude Code session so matchblox reads the plan, then try again.", 1)
     for name, line in lines:
-        print(f"{line}  account={name}" if len(lines) > 1 else line)
+        # Label by the number of accounts, not lines: a skipped account must not hide the label.
+        print(f"{line}  account={name}" if len(accounts) > 1 else line)
+
+
+def account_line(acc, name, now):
+    """The projection line of one account, or None with the cause on stderr."""
+    def skip(cause):
+        print(f"account {name}: {cause}", file=sys.stderr)
+    state = acc.get("state", "measured")
+    if state != "measured":
+        return skip(f"state is {state}, not measured; no projection")
+    windows = acc.get("windows")
+    weekly = [w for w in windows if isinstance(w, dict) and w.get("window_minutes") == WEEKLY_MINUTES] \
+        if isinstance(windows, list) else []
+    if not weekly:
+        return skip("no weekly window in matchblox usage")
+    w = weekly[0]
+    try:
+        used = float(w["used_pct"])
+        reset = int(datetime.fromisoformat(str(w["resets_at"]).replace("Z", "+00:00")).timestamp())
+    except (KeyError, TypeError, ValueError):
+        return skip(f"malformed weekly window (used_pct={w.get('used_pct')!r}, resets_at={w.get('resets_at')!r})")
+    return project(used, reset, now)
 
 
 def main():

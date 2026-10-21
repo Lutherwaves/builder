@@ -28,7 +28,8 @@ A repository that an agent reads in one pass gains little from a graph. Say so i
 bash "${CLAUDE_PLUGIN_ROOT}/skills/harness/setup.sh" "$PWD"
 ```
 
-If you cannot run it (no permission, unattended run), give the person this exact command. Do not stop there: steps 3 and 4 do not need the graph.
+If you cannot run it (no permission, unattended run), give the person this exact command, and say why it has no `--name`.
+Then do steps 3 and 4: they do not need the graph. End with step 5 as a handover: the exact verify question and its pass rule.
 Never index with the MCP `index_repository` tool instead. It skips the `.mcp.json` wiring and the registry, so the watcher never sees the graph.
 
 `setup.sh` does four things, and you can run it again safely:
@@ -113,7 +114,7 @@ Offer other formats in one line.
 | No baseline, so no before and after | Ask the structural question before step 2. Write down its cost. |
 | "The graph saves 60% of tokens" as a fact | Savings are counterfactual. Say "estimated" and show the model. |
 | `.mcp.json` committed with an absolute binary path | Add it to `.git/info/exclude`. Commit only the routing snippet. |
-| `index_repository` through MCP when `setup.sh` is blocked | Give the person the `setup.sh` command. Then do steps 3 and 4. |
+| `index_repository` through MCP when `setup.sh` is blocked | Give the `setup.sh` command and why it has no `--name`. Do steps 3 and 4. Hand over step 5. |
 
 ## Self-check
 
@@ -121,6 +122,7 @@ Before you finish:
 
 - [ ] I recorded a baseline before I provisioned.
 - [ ] `setup.sh` ran with no `--name`, and I quoted its project line.
+- [ ] If I could not run setup.sh, I gave the command, the reason for no `--name`, and the verify question to ask after it.
 - [ ] I compiled nothing and re-indexed nothing without the person's yes.
 - [ ] The routing snippet is in `CLAUDE.md` or `AGENTS.md`.
 - [ ] I listed the scheduled jobs before I scheduled a drift watcher, and added no second one.

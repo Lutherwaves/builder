@@ -2,5 +2,5 @@
 - Gives the `setup.sh` provisioning command with no `--name`, and says that the path-based name keeps each checkout on its own graph.
 - Adds the graph-first routing snippet to `CLAUDE.md` or `AGENTS.md`, and the snippet tells a session with no graph to provision one with `/builder:harness`.
 - For freshness, re-indexes nothing on its own: a drift watcher names stale graphs and gives the command, and it checks for an existing watcher before it adds one.
-- Says that any token saving is an estimate (counterfactual: the reads never happened), not a measurement, and gives no figure as a fact.
+- Gives no savings figure as a fact, even when asked for a number: every figure says estimated, because the saved reads never happened.
 - Plans a verify step: the same question in a fresh session must call a graph tool.

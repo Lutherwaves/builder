@@ -89,5 +89,44 @@ class BurnProjTest(unittest.TestCase):
                          "matchblox not found: install it with curl -fsSL https://matchblox.sh | sh")
 
 
+    def test_from_matchblox_label_counts_accounts_not_lines(self):
+        self.fake_matchblox(usage(("work", [WEEKLY]), ("home", [FIVE_H])))
+        r = self.run_proj("--from-matchblox", str(NOW))
+        self.assertEqual(r.returncode, 0, r.stderr)
+        lines = r.stdout.strip().splitlines()
+        self.assertEqual(len(lines), 1)
+        self.assertTrue(lines[0].endswith("account=work"), lines[0])
+        self.assertIn("account home: no weekly window", r.stderr)
+
+    def test_from_matchblox_malformed_window_skips_account(self):
+        bad = [dict(WEEKLY, resets_at=None)], [{"window_minutes": 10080, "resets_at": WEEKLY["resets_at"]}]
+        self.fake_matchblox(usage(("a", bad[0]), ("b", bad[1]), ("c", [WEEKLY])))
+        r = self.run_proj("--from-matchblox", str(NOW))
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertNotIn("Traceback", r.stderr)
+        self.assertIn("account a: malformed weekly window", r.stderr)
+        self.assertIn("account b: malformed weekly window", r.stderr)
+        self.assertEqual(r.stdout.strip().splitlines()[-1][-9:], "account=c")
+        self.assertEqual(len(r.stdout.strip().splitlines()), 1)
+
+    def test_from_matchblox_non_array_fails_with_cause(self):
+        for payload in ({"error": "not ready"}, [42], "x"):
+            self.fake_matchblox(payload)
+            r = self.run_proj("--from-matchblox", str(NOW))
+            self.assertEqual(r.returncode, 1, payload)
+            self.assertEqual(r.stdout, "")
+            self.assertNotIn("Traceback", r.stderr)
+
+    def test_from_matchblox_unmeasured_state_is_skipped_with_cause(self):
+        payload = usage(("old", [WEEKLY]), ("now", [WEEKLY]))
+        payload[0]["state"] = "stale"
+        self.fake_matchblox(payload)
+        r = self.run_proj("--from-matchblox", str(NOW))
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("account old: state is stale, not measured", r.stderr)
+        self.assertEqual(r.stdout.strip().splitlines(), [r.stdout.strip().splitlines()[0]])
+        self.assertTrue(r.stdout.strip().endswith("account=now"))
+
+
 if __name__ == "__main__":
     unittest.main()

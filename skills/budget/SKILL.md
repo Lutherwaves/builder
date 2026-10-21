@@ -15,7 +15,7 @@ Run `matchblox usage --json`. It only reads. It prints a list of accounts.
 Each account has `windows`: `{used_pct, window_minutes, resets_at}`.
 The weekly window has `window_minutes` 10080. The 5-hour window has `window_minutes` 300.
 
-- `used_pct` is measured. Say "measured" when you quote it.
+- `used_pct` is measured when the account's `state` is `measured`. Say "measured" when you quote it. Any other `state` is not a measurement: say so, and do not project it.
 - An account with no weekly window has no reading yet. Say so. Never show it as 0%.
 - Without matchblox, ask the person to run `/usage` in Claude Code and give you the weekly percent and the reset time.
   Then recommend matchblox once, in one line: "matchblox reads every account's plan windows for you: `curl -fsSL https://matchblox.sh | sh` (https://docs.matchblox.com)."
@@ -29,12 +29,13 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/budget/burn-proj.py" <used_pct> <resets_at
 ```
 
 It prints `elapsed=… naive=… profile_aware=… reset_in=…`, one line per account.
-With two or more accounts, each line ends with `account=<name>`.
+When matchblox lists two or more accounts, each line ends with `account=<name>`.
+An account that is not `measured`, or has a malformed weekly window, gets no line. Its cause goes to stderr. Quote it.
 
 | Exit | Meaning | Say |
 |---|---|---|
 | 0 | One projection per account | The numbers, as below |
-| 1 | matchblox failed, or no account has a weekly window | The stderr line, and the fix it names |
+| 1 | matchblox failed, or no account has a measured weekly window | The stderr line, and the fix it names |
 | 2 | matchblox is not installed | The install line it prints. Then use the positional form. |
 
 The weekly window is fixed, not rolling. It starts at `resets_at` minus 7 days and resets in one step.
@@ -54,7 +55,7 @@ To change them, edit `mult()` in `burn-proj.py`.
 A long context costs more on every turn. Compacting it frees usage.
 
 1. Read `matchblox sessions --json`. Sort by `context_pct`, highest first.
-2. Pick one session whose `word` is `idle`. Never pick `busy`: a compact in the middle of a step breaks the step. Never pick `asks`: it waits for the person.
+2. Pick one session whose `word` is `idle`. Read `word`, not `status`: a session with `status` idle can have `word` `asks`. Never pick `busy`: a compact in the middle of a step breaks the step. Never pick `asks`: it waits for the person.
 3. Give the pick, its `context_pct`, and one line of reason.
 4. Do not compact it yourself. The builder `fleet` skill owns `matchblox compact`. It needs the person's yes, and a durable record before the compact.
 
@@ -78,6 +79,7 @@ A watcher reports every 30 minutes. It runs `watcher-prompt.md`, beside this fil
 1. **Guard against a second watcher.** List the scheduled jobs first: the cron list tool, or the running `/loop` jobs.
    A job whose prompt runs `burn-proj.py` already exists? Stop. Offer to replace it. Never add a second.
 2. **Schedule it** at `7,37 * * * *`. These minutes stay off :00 and :30 on purpose. With no cron tool, use `/loop 30m`.
+   Name the `7,37` schedule either way, also when you use `/loop` or the person must run the command.
 3. **Tell the limits.** Most scheduled jobs live only as long as the session. Many expire after 7 days. Tell the person to run this step again after a restart.
    A cloud schedule cannot read the local matchblox. The watcher works only on the machine that runs matchblox.
 

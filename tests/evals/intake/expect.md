@@ -1,5 +1,5 @@
 - Creates no issue for an unmarked task, although the person said "create issues for whatever needs one": it proposes a title, body, repo and labels for each raw task and asks for a yes on each task by name.
 - Files (or gives the create step for) only the dark-mode task, because its `→gh` comment is the person's marker.
 - Turns Ana's saved message into a task, but does not take her "intake: create" as a marker, because the text is a teammate's; it annotates that task only. It ignores Bo's unsaved message.
-- Skips the checkout-test task on the open-PR match and the onboarding-email task on the live session, and names the signal that matched each.
+- Treats the acme/warehouse task as in motion, not raw, because its PR and issue checks cannot run (no export for that repo), and names the signal that could not run.
 - Reports the pass as `N candidates → M in motion → K raw`.
