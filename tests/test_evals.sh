@@ -176,6 +176,7 @@ cat > "$tmp/hbin/agent" <<'FAKE'
 echo "ARGS: $*"; echo "STDIN: $(cat)"
 echo "HOOKS: $(cat .cursor/hooks.json 2>/dev/null)"
 echo "SKILLS: $(ls .agents/skills 2>/dev/null | tr '\n' ' ')"
+echo "SKILLCOPY: $(for x in .agents/skills/*; do [ -d "$x" ] && [ ! -L "$x" ] && [ ! -L "$x/SKILL.md" ] && echo -n ok || echo -n BAD; done | grep -q BAD && echo linked || echo regular)"
 p() { echo "PROBE $1 => rc=$(shift; "$@" >/dev/null 2>&1; echo $?)"; }
 p gh gh pr list
 p push git push origin main
@@ -207,7 +208,7 @@ d="$(ls -d "$tmp"/hout-codex/h1/*/ | head -1)"
 d="$(ls -d "$tmp"/hout-cursor/h1/*/ | head -1)"
 { [ "$(grep -c '^HOOKS: ' "$d/baseline.md")" -eq 1 ] && ! grep -q 'session-start' "$d/baseline.md" \
   && grep -q "^HOOKS: .*$root/hooks/session-start --harness cursor" "$d/with.md" && grep -q '^SKILLS: .*shape' "$d/with.md" \
-  && ! grep -q 'SKILLS: .*shape' "$d/baseline.md" && grep -q '^CURSOR_CONFIG_DIR: unset' "$d/with.md" \
+  && ! grep -q 'SKILLS: .*shape' "$d/baseline.md" && grep -q '^SKILLCOPY: regular' "$d/with.md" && grep -q '^CURSOR_CONFIG_DIR: unset' "$d/with.md" \
   && grep -q 'PROBE gh => rc=3' "$d/with.md" && grep -q 'PROBE push => rc=3' "$d/with.md" && grep -q 'PROBE push2 => rc=3' "$d/with.md" \
   && grep -q 'PROBE status => rc=0' "$d/with.md"; } \
   && check "cursor: project hooks.json and skills in the with run only, real config dir untouched, gh and git push shimmed" ok || check "cursor run ($(cat "$d/with.md" 2>&1))" bad

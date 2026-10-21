@@ -38,7 +38,7 @@ Because the baseline uses your normal setup, plugins you have installed also loa
 | --- | --- | --- | --- |
 | claude | `claude -p` | `--plugin-dir <repo root>` | deny list |
 | codex | `codex exec -C . -s workspace-write -c approval_policy="never" --ephemeral -` | `codex plugin marketplace add <repo root>`, then `codex plugin add builder@builder`, in a temp `CODEX_HOME` | sandbox: writes only in the work dir, no network |
-| cursor | `agent -p --force --trust --sandbox enabled` | `.cursor/hooks.json` and `.agents/skills/<name>` symlinks in the work dir (the manual install path) | `.cursor/cli.json` deny rules in the work dir, Cursor sandbox |
+| cursor | `agent -p --force --trust --sandbox enabled` | `.cursor/hooks.json` and copies of the skill folders in `.agents/skills/<name>`, in the work dir (the manual install path; copies, so the agent never writes into your checkout) | `.cursor/cli.json` deny rules in the work dir, Cursor sandbox |
 | opencode | `opencode run --auto` | `"plugin": ["<repo root>"]` in a temp `OPENCODE_CONFIG_DIR` | `permission` deny rules in the temp `opencode.json` |
 
 `--dry-run` prints each command and the env it sets. It never prints a secret.
@@ -65,7 +65,7 @@ After a run, the runner writes `verdict.json` next to the transcripts. It holds 
     python3 scripts/support-table.py render                  # print the README table
     python3 scripts/support-table.py check README.md         # fail when the README table differs
 
-`record` refuses a verdict with a `met` still `null`. It stores counts only. `render` shows a harness only when it has a results file. A harness is `supported` when every graded fixture meets every bullet, and `experimental: <fixture met/total>` otherwise. With no results file, the table is the line "No harness has passed its evals yet." `scripts/validate.sh` runs `check`.
+`record` refuses a verdict with a `met` still `null`. It stores counts only. `render` shows a harness only when it has a results file. A harness is `supported` only when every fixture under `tests/evals/` is graded and meets every bullet. Otherwise it is `experimental: <failed fixture met/total>; <n> not graded`. With no results file, the table is the line "No harness has passed its evals yet." `scripts/validate.sh` runs `check`.
 
 ## Drop-in parity
 

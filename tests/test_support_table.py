@@ -26,9 +26,15 @@ class SupportTable(unittest.TestCase):
         self.addCleanup(self._tmp.cleanup)
         self.dir = Path(self._tmp.name)
         self.results = self.dir / "results"
+        self.evals = self.dir / "evals"
+        for name in ("shape", "builder"):
+            (self.evals / name).mkdir(parents=True)
+            (self.evals / name / "prompt.md").write_text("x")
+        (self.evals / "results").mkdir()
 
     def run_cli(self, *args):
-        return subprocess.run([sys.executable, str(SCRIPT), "--results-dir", str(self.results), *args],
+        return subprocess.run([sys.executable, str(SCRIPT), "--results-dir", str(self.results),
+                               "--evals-dir", str(self.evals), *args],
                               capture_output=True, text=True)
 
     def record(self, v):
@@ -75,15 +81,31 @@ class SupportTable(unittest.TestCase):
         self.assertEqual(self.record(verdict(harness="vim")[0]).returncode, 1)
 
     def test_render_supported_vs_experimental(self):
-        for v in verdict("claude", {"shape": 3}) + verdict("codex", {"shape": 3, "builder": 4}):
+        for v in verdict("claude", {"shape": 3, "builder": 4}) + verdict("codex", {"shape": 3, "builder": 4}):
             self.record(v)
         bad = verdict("codex", {"builder": 4})[0]
+        bad["harness_version"] = "codex-cli 0.163.0"
         bad["bullets"][0]["met"] = False
         self.record(bad)
         out = self.run_cli("render").stdout.splitlines()
         self.assertEqual(out[0], "| Harness | Version | Eval date | Status |")
         self.assertIn("| Claude Code | codex-cli 0.163.0 | 2026-10-22 | supported |", out)
         self.assertIn("| Codex CLI | codex-cli 0.163.0 | 2026-10-22 | experimental: builder 3/4 |", out)
+
+    def test_one_passing_fixture_of_the_suite_is_not_supported(self):
+        self.record(verdict("codex", {"shape": 3})[0])
+        out = self.run_cli("render").stdout
+        self.assertIn("experimental: 1 not graded", out)
+        self.assertNotIn("supported |", out)
+        bad = verdict("codex", {"builder": 4})[0]
+        bad["bullets"][0]["met"] = False
+        self.record(bad)
+        self.assertIn("experimental: builder 3/4", self.run_cli("render").stdout)
+
+    def test_all_fixtures_passing_is_supported(self):
+        for v in verdict("codex", {"shape": 3, "builder": 4}):
+            self.record(v)
+        self.assertIn("| Codex CLI | codex-cli 0.163.0 | 2026-10-22 | supported |", self.run_cli("render").stdout)
 
     def test_no_results_no_row(self):
         r = self.run_cli("render")

@@ -59,22 +59,31 @@ def record(results_dir, source):
     print(f"recorded {verdict['harness']} {verdict['fixture']}: {counts['met']}/{counts['total']}")
 
 
-def render(results_dir):
+def fixtures_of(evals_dir):
+    return sorted(d.name for d in evals_dir.iterdir() if d.is_dir() and (d / "prompt.md").is_file())
+
+
+def render(results_dir, evals_dir):
+    expected = fixtures_of(evals_dir)
     rows = []
     for harness, name in HARNESSES.items():
         path = results_dir / f"{harness}.json"
         if not path.exists():
             continue
         r = json.loads(path.read_text(encoding="utf-8"))
-        short = [f"{f} {c['met']}/{c['total']}" for f, c in r["fixtures"].items() if c["met"] != c["total"]]
-        status = "supported" if r["fixtures"] and not short else "experimental: " + (", ".join(short) or "no fixture graded")
+        graded = {f: c for f, c in r["fixtures"].items() if f in expected}
+        short = [f"{f} {c['met']}/{c['total']}" for f, c in graded.items() if c["met"] != c["total"]]
+        missing = len(expected) - len(graded)
+        if missing:
+            short.append(f"{missing} not graded")
+        status = "experimental: " + "; ".join(short) if short or not expected else "supported"
         rows.append(f"| {name} | {r['harness_version']} | {r['date']} | {status} |")
     if not rows:
         return NONE_NOTE
     return "\n".join(["| Harness | Version | Eval date | Status |", "| --- | --- | --- | --- |", *rows])
 
 
-def check(results_dir, readme):
+def check(results_dir, evals_dir, readme):
     try:
         text = Path(readme).read_text(encoding="utf-8")
     except OSError as e:
@@ -82,7 +91,7 @@ def check(results_dir, readme):
     if START not in text or END not in text or text.index(START) > text.index(END):
         fail(f"{readme} has no {START} ... {END} block")
     block = text.split(START, 1)[1].split(END, 1)[0].strip()
-    if block != render(results_dir):
+    if block != render(results_dir, evals_dir):
         fail(f"the support table in {readme} is out of date: paste the output of `scripts/support-table.py render` between the markers")
     print("support table ok")
 
@@ -91,6 +100,8 @@ def main():
     default = Path(__file__).resolve().parent.parent / "tests" / "evals" / "results"
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--results-dir", type=Path, default=default)
+    parser.add_argument("--evals-dir", type=Path, default=default.parent,
+                        help="where the fixture dirs live; a harness is supported only when all of them pass")
     sub = parser.add_subparsers(dest="cmd", required=True)
     sub.add_parser("record").add_argument("verdict")
     sub.add_parser("render")
@@ -99,9 +110,9 @@ def main():
     if args.cmd == "record":
         record(args.results_dir, args.verdict)
     elif args.cmd == "render":
-        print(render(args.results_dir))
+        print(render(args.results_dir, args.evals_dir))
     else:
-        check(args.results_dir, args.readme)
+        check(args.results_dir, args.evals_dir, args.readme)
 
 
 if __name__ == "__main__":

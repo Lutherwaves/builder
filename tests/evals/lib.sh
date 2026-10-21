@@ -56,7 +56,7 @@ eval_notes_codex() {
 eval_notes_cursor() {
   echo "# env: the real Cursor config dir stays in use and is not written to"
   echo "# with run, in the work dir: .cursor/hooks.json -> $root/hooks/session-start --harness cursor"
-  echo "#                            .agents/skills/<name> -> $root/skills/<name> (symlinks)"
+  echo "#                            .agents/skills/<name> -> $root/skills/<name> (copies, so the agent cannot write into the checkout)"
   echo "# guard: deny rules in the work dir's .cursor/cli.json, --sandbox enabled; PATH shims block gh, git push, matchblox writes and tmux"
 }
 eval_notes_opencode() {
@@ -86,7 +86,7 @@ eval_prepare_cursor() { # the deny rules are best effort; the PATH shims are the
   if [ "$1" = with ]; then
     printf '{"version": 1, "hooks": {"sessionStart": [{"command": "%s/hooks/session-start --harness cursor"}]}}\n' "$root" > "$2/.cursor/hooks.json"
     mkdir -p "$2/.agents/skills" || return 1
-    for s in "$root"/skills/*/; do ln -s "${s%/}" "$2/.agents/skills/$(basename "$s")" || return 1; done
+    for s in "$root"/skills/*/; do cp -R "${s%/}" "$2/.agents/skills/" || return 1; done
   fi
   runenv=()
 }
