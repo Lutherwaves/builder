@@ -79,6 +79,19 @@ class PathsTest(unittest.TestCase):
         self.assertEqual(harness.paths("opencode", {}, HOME)["mcp"],
                          [(HOME / ".config/opencode/opencode.json", "mcp")])
 
+    def test_project_mcp(self):
+        want = {
+            "claude": [(Path(".mcp.json"), "mcpServers")],
+            "codex": [],
+            "cursor": [(Path(".cursor/mcp.json"), "mcpServers")],
+            "opencode": [],
+        }
+        for name, expected in want.items():
+            with self.subTest(name):
+                got = harness.paths(name, {}, HOME)["project_mcp"]
+                self.assertEqual(got, expected)
+                self.assertTrue(all(not f.is_absolute() for f, _ in got))
+
     def test_records_settings_skills(self):
         c = HOME / ".claude"
         p = harness.paths("claude", {}, HOME)

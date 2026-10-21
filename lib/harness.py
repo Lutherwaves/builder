@@ -51,10 +51,12 @@ def paths(harness, env, home):
         "settings": None,
         "process_match": match,
         "plugin_root_var": root_var,
+        "project_mcp": [],
     }
     if harness == "claude":
         state = (config_dir if env.get(override) else home) / ".claude.json"
         p["mcp"] = [(state, "mcpServers")]
+        p["project_mcp"] = [(Path(".mcp.json"), "mcpServers")]
         p["plugins_record"] = config_dir / "plugins" / "installed_plugins.json"
         p["settings"] = config_dir / "settings.json"
     elif harness == "codex":
@@ -63,6 +65,7 @@ def paths(harness, env, home):
         p["skills_dirs"].append(home / ".agents" / "skills")
     elif harness == "cursor":
         p["mcp"] = [(config_dir / "mcp.json", "mcpServers")]
+        p["project_mcp"] = [(Path(".cursor/mcp.json"), "mcpServers")]
         p["settings"] = config_dir / "hooks.json"
     else:
         p["mcp"] = [(config_dir / "opencode.json", "mcp")]
