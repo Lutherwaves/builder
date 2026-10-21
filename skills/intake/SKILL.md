@@ -88,7 +88,7 @@ A converted draft is an issue. It leaves the candidate list by itself.
    Set `default_repo` and `source` (for `github-project`, also `project`).
    Ask the person about `annotate_in_tracker` and `messages`, one question at a time, each with your recommendation.
 2. Check `gh auth status`. `todoist` needs the Todoist MCP. `github-project` needs the `project` scope: `gh auth refresh -h github.com -s project`.
-3. For a recurring pass, put `intake-prompt.md` into a cron job or `/loop` (four passes a day is a good start).
+3. For a recurring pass, put `intake-prompt.md` into a cron job or a recurring check (see your harness mapping; four passes a day is a good start).
    List the scheduled jobs first. An intake job already exists? Replace it. Never add a second.
 
 ## The reply

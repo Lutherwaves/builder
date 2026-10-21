@@ -105,6 +105,8 @@ Use the named skill for the job. If its provider is not installed, use the fallb
 
 superpowers and gstack are separate plugins. If a row names one you lack, say so once and use the fallback.
 
+Skills name actions, not tools. The tool for each action on your harness is in `skills/builder/harnesses/<harness>.md` (`claude`, `codex`, `cursor` or `opencode`).
+
 ## Common mistakes
 
 | Mistake | Fix |

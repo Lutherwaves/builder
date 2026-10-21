@@ -1,6 +1,6 @@
 ---
 name: fleet
-description: Use when two or more agent sessions work at the same time ("you are the harness session", "the other session", "the security session owns that", "where are we?", "what's next?"), when a task is outside this session's role, before a /compact, before you change the branch of a checkout, or when the person asks to brief, hold, compact, start or end another session. Use it also when matchblox is installed and the person asks what the sessions do.
+description: Use when two or more agent sessions work at the same time ("you are the harness session", "the other session", "the security session owns that", "where are we?", "what's next?"), when a task is outside this session's role, before the context is compacted, before you change the branch of a checkout, or when the person asks to brief, hold, compact, start or end another session. Use it also when matchblox is installed and the person asks what the sessions do.
 ---
 
 # fleet — many sessions side by side, one lane each
@@ -47,11 +47,11 @@ Do not touch: <files, branches and checkouts outside the brief>
 - Do not write the fix into the brief as an order. The owner decides how to fix.
 - Keep the brief in the record place (section 4). The file name is `brief-<owner>-<date>.md`.
 
-## 4. The durable record before /compact
+## 4. The durable record before compacting
 
 Scar: sessions lost their place after a compact. They did the same work again, or they lost a hand-over.
 
-Before the person runs `/compact`, write the record, then say: "Record: `<path>`. Ready to compact."
+Before the person compacts the context (see your harness mapping), write the record, then say: "Record: `<path>`. Ready to compact."
 
 - The record holds: role and lane, what is done, what is in progress, each brief and its owner, the next step, the open questions.
 - Use the record place the project already has: the memory directory, a notes file or a ledger.
@@ -125,7 +125,7 @@ Its Outside line names each brief: "Outside: brief to `security` waits for your 
 | A brief with no "done means" or "do not touch" | Use all five lines of the form. |
 | `matchblox send` before the person said yes | Show the exact line. Wait for a yes in this conversation. |
 | A refused send, then `tmux send-keys` | Give the command to the person. Never go around a refusal. |
-| "You can /compact now" with no record | Write the record first. Name its path. |
+| "You can compact now" with no record | Write the record first. Name its path. |
 | `git switch` in a checkout that another session uses | Make your own worktree. Read other branches with `git show`. |
 | `matchblox kill` to clean up idle sessions | Ask for a yes on each session by name. |
 | No role named, so every task looks like yours | Name the role and the lane in the first reply. |

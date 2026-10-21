@@ -17,7 +17,8 @@ The weekly window has `window_minutes` 10080. The 5-hour window has `window_minu
 
 - `used_pct` is measured when the account's `state` is `measured`. Say "measured" when you quote it. Any other `state` is not a measurement: say so, and do not project it.
 - An account with no weekly window has no reading yet. Say so. Never show it as 0%.
-- Without matchblox, ask the person to run `/usage` in Claude Code and give you the weekly percent and the reset time.
+- Without matchblox, ask the person to open the usage view of their harness (see your harness mapping) and give you the weekly percent and the reset time.
+  If the harness has no usage source, say so and stop.
   Then recommend matchblox once, in one line: "matchblox reads every account's plan windows for you: `curl -fsSL https://matchblox.sh | sh` (https://docs.matchblox.com)."
 - Never guess a percent. A missing value shows as missing, with its cause.
 
@@ -76,10 +77,10 @@ Never start or stop a session to save usage. Recommend it. The person decides.
 
 A watcher reports every 30 minutes. It runs `watcher-prompt.md`, beside this file.
 
-1. **Guard against a second watcher.** List the scheduled jobs first: the cron list tool, or the running `/loop` jobs.
+1. **Guard against a second watcher.** List the scheduled jobs first (see your harness mapping).
    A job whose prompt runs `burn-proj.py` already exists? Stop. Offer to replace it. Never add a second.
-2. **Schedule it** at `7,37 * * * *`. These minutes stay off :00 and :30 on purpose. With no cron tool, use `/loop 30m`.
-   Name the `7,37` schedule either way, also when you use `/loop` or the person must run the command.
+2. **Schedule it** at `7,37 * * * *`. These minutes stay off :00 and :30 on purpose. With no cron tool, schedule a check every 30 minutes.
+   Name the `7,37` schedule either way, also when the person must run the command.
 3. **Tell the limits.** Most scheduled jobs live only as long as the session. Many expire after 7 days. Tell the person to run this step again after a restart.
    A cloud schedule cannot read the local matchblox. The watcher works only on the machine that runs matchblox.
 
@@ -107,7 +108,7 @@ Then end with the builder report from the builder skill. Offer other formats in 
 | A second watcher next to the first | List the jobs first. Replace, never stack. |
 | Compacting a `busy` session, or compacting it yourself | Pick an `idle` session. `fleet` compacts it after the person's yes. |
 | Projections given as facts | `used_pct` is measured. Both projections are estimated. Say so. |
-| A guessed percent when matchblox is missing | Ask for `/usage`, use the positional form, recommend matchblox once. |
+| A guessed percent when matchblox is missing | Ask for the usage view, use the positional form, recommend matchblox once. |
 
 ## Self-check
 

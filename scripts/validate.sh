@@ -57,6 +57,17 @@ for skill in skills/*/SKILL.md; do
 done
 [ "$found_skill" -eq 1 ] || err "no skills found under skills/*/SKILL.md"
 
+echo "→ harness words in skills"
+# Skills say the action; skills/builder/harnesses/ maps it to each harness's own tool.
+tools='\b(PushNotification|SendMessage|AskUserQuestion|TodoWrite|ScheduleWakeup|CronCreate|CronDelete|Monitor|Artifact|WebFetch|apply_patch|update_plan)\b'
+slash='(^|[[:space:](`])/(loop|usage|compact|clear|plugin|builder:[a-z-]+)\b'
+guard_hits="$(grep -rnE --exclude-dir=harnesses -e "$tools" -e "$slash" skills || true)"
+if [ -n "$guard_hits" ]; then
+  while IFS= read -r h; do err "guard: $h"; done <<<"$guard_hits"
+else
+  note "✓ no harness tool or slash command names in skills"
+fi
+
 echo "→ python tools"
 for py in $(find . -name '*.py' -not -path './.git/*'); do
   python3 -m py_compile "$py" && note "✓ compiles: $py" || err "$py failed to compile"

@@ -1,6 +1,6 @@
 # Stale-graph watcher — prompt template
 
-Put this prompt into a recurring agent job (`/loop 30m`, or a cron prompt at `22,52 * * * *`).
+Put this prompt into a recurring agent job (every 30 minutes, or a cron prompt at `22,52 * * * *`).
 It needs one run of `setup.sh` first, so the binary exists and `$BUILDER_HOME/code-graph/repos.txt` (default `~/.config/builder/code-graph/repos.txt`) lists the repositories.
 The `harness` skill (`builder:harness`) is the full spec. This prompt drives one pass.
 
@@ -9,7 +9,7 @@ The `harness` skill (`builder:harness`) is the full spec. This prompt drives one
 Run one freshness pass. Only read. Never re-index.
 
 Read `$BUILDER_HOME/code-graph/repos.txt`. If it is missing, read the old `~/.claude/code-graph/repos.txt`. Each line is `<abs-path>\t<project>\t<indexed-sha>`.
-If the file is missing or empty, say "No repository is registered. Run /builder:harness in a repository first." and stop.
+If the file is missing or empty, say "No repository is registered. Run the `harness` skill in a repository first." and stop.
 
 For each line, run:
 

@@ -93,4 +93,26 @@ out="$(run_in "$tmp/cc")"; rc=$?
 [ "$rc" -eq 0 ] && grep -q 'commit subjects: skipped (no origin/main)' <<<"$out" \
   && check "no origin/main skips" ok || check "no origin/main skips (got $rc)" bad
 
+# Case 13 (guard_flags_tool_in_skill): a harness tool name in a skill body fails and names the file.
+rm -rf "$tmp/guard"; cp -R "$tmp/clean" "$tmp/guard"
+printf '%s\n' 'Use the PushNotification tool.' >> "$tmp/guard/skills/reach/SKILL.md"
+printf '%s\n' 'Run /loop 30m now.' >> "$tmp/guard/skills/fleet/SKILL.md"
+out="$(run_in "$tmp/guard")"; rc=$?
+[ "$rc" -eq 1 ] && grep -qE '✗ guard: skills/reach/SKILL.md:[0-9]+' <<<"$out" \
+  && grep -qE '✗ guard: skills/fleet/SKILL.md:[0-9]+' <<<"$out" \
+  && check "guard flags tool and slash command in skill" ok || check "guard flags tool and slash command in skill (got $rc)" bad
+
+# Case 14 (guard_allows_mapping_dir): the mapping files may name harness tools.
+rm -rf "$tmp/guard"; cp -R "$tmp/clean" "$tmp/guard"
+printf '%s\n' '| send a notification | PushNotification, /loop, /usage |' >> "$tmp/guard/skills/builder/harnesses/claude.md"
+out="$(run_in "$tmp/guard")"; rc=$?
+[ "$rc" -eq 0 ] && check "guard allows the mapping dir" ok || check "guard allows the mapping dir (got $rc)" bad
+
+# Case 15 (guard_allows_gh_tmux_matchblox): ordinary tools and paths are not flagged.
+rm -rf "$tmp/guard"; cp -R "$tmp/clean" "$tmp/guard"
+printf '%s\n' 'Run `gh pr list`, `tmux send-keys`, `matchblox usage --json`, see https://example.com/loop and src/usage/x.' \
+  'The monitor of a room and an artifact in prose stay fine in lower case.' >> "$tmp/guard/skills/reach/SKILL.md"
+out="$(run_in "$tmp/guard")"; rc=$?
+[ "$rc" -eq 0 ] && ! grep -q 'guard:' <<<"$out" && check "guard allows gh, tmux, matchblox, paths" ok || check "guard allows gh, tmux, matchblox, paths (got $rc)" bad
+
 exit "$fails"

@@ -1,6 +1,6 @@
 # Intake pass — prompt template
 
-Put this prompt into a recurring job (`/loop`, or a cron prompt).
+Put this prompt into a recurring job (a recurring check, or a cron prompt; see your harness mapping).
 It needs `gh` signed in and `$BUILDER_HOME/intake/config.json` (`default_repo`, `source`; for `github-project` also `project`).
 `todoist` needs the Todoist MCP. `matchblox` adds the live-session signal. `messages.from: reach` adds the person's marked messages.
 The `intake` skill (`builder:intake`) is the full spec. This prompt drives one pass.

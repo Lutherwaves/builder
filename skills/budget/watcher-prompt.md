@@ -1,6 +1,6 @@
 # Usage watcher — prompt template
 
-Put this prompt into a recurring agent job (`/loop 30m`, or a cron prompt at `7,37 * * * *`).
+Put this prompt into a recurring agent job (every 30 minutes, or a cron prompt at `7,37 * * * *`; see your harness mapping).
 It needs `matchblox` on the machine that runs the job.
 The `budget` skill (`builder:budget`) is the full spec. This prompt drives one pass.
 

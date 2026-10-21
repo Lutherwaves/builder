@@ -55,7 +55,7 @@ Add this snippet, as it is, to the repository's `CLAUDE.md` or `AGENTS.md`:
 **Structural questions: ask the graph first.** For "where is X?", "what calls Y?" or "what is the
 architecture?", use the `codebase-memory` graph tools (`search_graph`, `query_graph`, `trace_path`,
 `get_architecture`, `get_code_snippet`) before grep, glob or Explore. If this checkout has no graph,
-provision one first with `/builder:harness` (local, no API key), then ask.
+provision one first with the `harness` skill (local, no API key), then ask.
 ```
 
 Every later session, in every checkout, then asks the graph first. A checkout with no graph provisions one first, so the snippet is safe before step 2 runs.
@@ -82,7 +82,7 @@ A re-index in the middle of another session's task changes the answers under it.
 To watch every registered repository, schedule `watcher-prompt.md` (beside this file) when the person asks:
 
 1. List the scheduled jobs first. A job that runs `drift.sh` already exists? Stop. Offer to replace it. Never add a second.
-2. Schedule it at `22,52 * * * *`. This stays clear of the `budget` watcher at `7,37`. With no cron tool, use `/loop 30m`.
+2. Schedule it at `22,52 * * * *`. This stays clear of the `budget` watcher at `7,37`. With no cron tool, schedule a check every 30 minutes (see your harness mapping).
 3. Most scheduled jobs live only as long as the session. Tell the person to schedule it again after a restart.
 
 ## 5. Verify

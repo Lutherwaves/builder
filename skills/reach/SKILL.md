@@ -56,7 +56,7 @@ Use the first route that works:
 1. matchblox: `python3 "${CLAUDE_PLUGIN_ROOT}/lib/reach.py" matchblox-notify --text "<exact text>"`.
    It sends only when `matchblox --help` lists a `notify` command. It exits 3 when matchblox has none. Then use route 2.
    Never run `matchblox notify` yourself. A bare `matchblox <word>` opens a console.
-2. The Claude Code `PushNotification` tool, if this session has it.
+2. Send the person a notification with the tool of your harness, if this session has one (see your harness mapping).
 3. An OS notification: `python3 "${CLAUDE_PLUGIN_ROOT}/lib/reach.py" notify --text "<exact text>"`.
    It uses `osascript` on macOS and `notify-send` on Linux.
    It exits non-zero when neither works. Then put the note in the conversation.
