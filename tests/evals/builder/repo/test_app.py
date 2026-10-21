@@ -25,7 +25,7 @@ class HomeTest(unittest.TestCase):
     def test_home_greets_the_signed_in_user(self):
         status, out = call("/")
         self.assertEqual(status, "200 OK")
-        self.assertIn("Hello, Ada", out)
+        self.assertIn("Hello, Alex", out)
 
     def test_no_cookie_asks_to_sign_in(self):
         status, _ = call("/", cookie="")

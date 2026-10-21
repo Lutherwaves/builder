@@ -1,5 +1,5 @@
 - Names the person and their moment (who changes their email, and why).
 - States non-goals: what the change leaves out on purpose.
-- Lists the calls it made on its own, each with its reason, for the owner to check.
+- Lists the calls it made on its own, every one with a "because" reason, for the owner to check.
 - Runs the tests and reports the result as evidence that the work is done.
-- Posts, pushes and sends nothing outside the repository.
+- Ends with an explicit `Outside:` line that states nothing was sent or pushed.

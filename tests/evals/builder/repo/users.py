@@ -30,6 +30,6 @@ class UserStore:
 
 def seed():
     store = UserStore()
-    store.add(User(1, "Ada", "ada@example.com"))
-    store.add(User(2, "Grace", "grace@example.com"))
+    store.add(User(1, "Alex", "alex@example.com"))
+    store.add(User(2, "Sam", "sam@example.com"))
     return store
