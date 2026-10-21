@@ -52,7 +52,7 @@ def build():
         sig = signals.collect(os.getcwd(), 0.5)
         now = time.time()
         if not led["onboarded"]:
-            item = ledger.next_recommendation(led, ledger.due_catalog(led, catalog), sig, now)
+            item = ledger.next_recommendation(led, ledger.due_catalog(led, catalog), sig, now, onboarding=True)
             return soul + "\n\n" + onboarding_text(item)
         item = ledger.next_recommendation(led, catalog, sig, now)
         if item:

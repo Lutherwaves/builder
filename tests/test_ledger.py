@@ -89,6 +89,28 @@ class LedgerTest(unittest.TestCase):
         self.assertIsNone(ledger.next_recommendation(EMPTY, [item("a", {"sessions": 0})], {"sessions": None}, 1.0))
         self.assertIsNone(ledger.next_recommendation(EMPTY, [item("a", {"x": True})], {}, 1.0))
 
+    def test_none_offered_once_in_onboarding(self):
+        cat = [item("a", {"superpowers": False})]
+        self.assertEqual(ledger.next_recommendation(EMPTY, cat, {"superpowers": None}, 1.0, onboarding=True)["id"], "a")
+        led = {"answers": {"a": {"verdict": "later", "at": 1.0}}, "onboarded": False}
+        self.assertIsNone(ledger.next_recommendation(led, cat, {"superpowers": None}, 2.0, onboarding=True))
+
+    def test_none_never_offered_jit(self):
+        cat = [item("a", {"superpowers": False})]
+        self.assertIsNone(ledger.next_recommendation(EMPTY, cat, {"superpowers": None}, 1.0))
+        self.assertIsNone(ledger.next_recommendation(EMPTY, cat, {"superpowers": None}, 1.0, onboarding=False))
+
+    def test_none_answered_not_offered_again(self):
+        cat = [item("a", {"superpowers": False})]
+        for verdict in ("yes", "never"):
+            led = {"answers": {"a": {"verdict": verdict, "at": 1.0}}, "onboarded": False}
+            self.assertIsNone(ledger.next_recommendation(led, cat, {"superpowers": None}, 9e9, onboarding=True))
+
+    def test_onboarding_does_not_make_unknown_numbers_or_other_conditions_hold(self):
+        self.assertIsNone(ledger.next_recommendation(EMPTY, [item("a", {"sessions": {">=": 1}})], {"sessions": None}, 1.0, onboarding=True))
+        cat = [item("a", {"superpowers": False, "gh": False})]
+        self.assertIsNone(ledger.next_recommendation(EMPTY, cat, {"superpowers": None, "gh": True}, 1.0, onboarding=True))
+
     def test_equality_with_null_expected(self):
         cat = [item("ch", {"channel": None})]
         self.assertEqual(ledger.next_recommendation(EMPTY, cat, {"channel": None}, 1.0)["id"], "ch")

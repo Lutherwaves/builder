@@ -2,6 +2,7 @@
 """Cheap, offline machine signals. Every external call is bounded by one shared budget."""
 import json
 import os
+import re
 import shutil
 import signal as _signal
 import subprocess
@@ -10,10 +11,17 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import harness as harnesses  # noqa: E402
 import ledger  # noqa: E402
+
+try:
+    import tomllib
+except ImportError:  # Python < 3.11: a line scan reads the few tables builder needs
+    tomllib = None
 
 WEEK_MIN = 10080
 CANON_MARKERS = ("RULES.md", "DESIGN.md", "docs/rules")  # the homes the canon skill finds or creates
+AUTOCOMPACT = "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"
 GRAPH_SERVERS = ("codebase-memory-mcp", "codebase-memory")  # user-wide name; the name harness writes to .mcp.json
 
 
@@ -109,6 +117,7 @@ def _read_json(path):
 
 
 def _hook_commands(settings):
+    """Command strings from {"hooks": {event: [{"hooks": [{"command": ...}]}]}} (Claude Code's shape)."""
     hooks = settings.get("hooks")
     for groups in (hooks.values() if isinstance(hooks, dict) else ()):
         for group in (groups if isinstance(groups, list) else ()):
@@ -118,27 +127,130 @@ def _hook_commands(settings):
                     yield h["command"]
 
 
-def _claude_paths(home):
-    """Claude Code's config dir and its .claude.json; CLAUDE_CONFIG_DIR moves both."""
-    cfg = os.environ.get("CLAUDE_CONFIG_DIR")
-    if cfg:
-        return Path(cfg), Path(cfg) / ".claude.json"
-    return home / ".claude", home / ".claude.json"
+def _flat_hook_commands(settings):
+    """Command strings from {"hooks": {event: [{"command": ...}]}} (Cursor's shape)."""
+    hooks = settings.get("hooks")
+    for entries in (hooks.values() if isinstance(hooks, dict) else ()):
+        for h in (entries if isinstance(entries, list) else ()):
+            if isinstance(h, dict) and isinstance(h.get("command"), str):
+                yield h["command"]
 
 
-def _mcp_servers(state, dirs):
-    """Server names: user scope, local scope (projects.<dir>) for each dir, and each dir's .mcp.json."""
+_TOML_MCP = re.compile(r'^\[mcp_servers\.("?)([^\]."]+)\1\]', re.M)
+_TOML_SUPERPOWERS = re.compile(r'^\[plugins\."superpowers@', re.M)
+
+
+def _toml(path):
+    """(parsed dict or None, raw text). None means the text did not parse: scan it with a regex."""
+    try:
+        text = Path(path).read_text()
+    except OSError:
+        return {}, ""
+    if tomllib is not None:
+        try:
+            return tomllib.loads(text), text
+        except ValueError:
+            pass
+    return None, text
+
+
+def _server_names(path, key):
+    """MCP server names in one config file (JSON object under `key`, or TOML [key.<name>] tables)."""
+    if Path(path).suffix != ".toml":
+        servers = _read_json(path).get(key)
+        return set(servers) if isinstance(servers, dict) else set()
+    data, text = _toml(path)
+    if data is None:
+        return {m.group(2) for m in _TOML_MCP.finditer(text)}
+    servers = data.get(key)
+    return set(servers) if isinstance(servers, dict) else set()
+
+
+def _mcp_servers(spec, harness, dirs):
+    """Server names: the harness's user-level files, its repo-level files in each dir, and (Claude) local scope."""
     names = set()
-    projects = state.get("projects") if isinstance(state.get("projects"), dict) else {}
-    scopes = [state] + [projects.get(str(d)) for d in dirs] + [_read_json(d / ".mcp.json") for d in dirs]
-    for scope in scopes:
-        servers = scope.get("mcpServers") if isinstance(scope, dict) else None
-        names.update(servers if isinstance(servers, dict) else ())
+    for path, key in spec["mcp"]:
+        names |= _server_names(path, key)
+        if harness == "claude":
+            state = _read_json(path)
+            projects = state.get("projects") if isinstance(state.get("projects"), dict) else {}
+            for d in dirs:
+                scope = projects.get(str(d))
+                servers = scope.get(key) if isinstance(scope, dict) else None
+                names.update(servers if isinstance(servers, dict) else ())
+    for d in dirs:
+        for rel, key in spec["project_mcp"]:
+            names |= _server_names(d / rel, key)
     return names
 
 
-def collect(cwd, timeout=0.5):
+def _superpowers(harness, spec):
+    record = spec["plugins_record"]
+    if record is None:
+        return None
+    if harness == "codex":
+        data, text = _toml(record)
+        if data is None:
+            return bool(_TOML_SUPERPOWERS.search(text))
+        plugins = data.get("plugins")
+        return isinstance(plugins, dict) and any(str(k).startswith("superpowers@") for k in plugins)
+    if harness == "opencode":
+        entries = _read_json(record).get("plugin")
+        return isinstance(entries, list) and any(isinstance(e, str) and "superpowers" in e for e in entries)
+    try:
+        return "superpowers@" in Path(record).read_text()
+    except OSError:
+        return False
+
+
+def _gstack(harness, spec):
+    skills = spec["config_dir"] / "skills"
+    if harness == "claude":
+        return (skills / "gstack").exists()
+    return any(skills.glob("gstack-*"))
+
+
+def _matchblox_hooks(harness, spec):
+    if harness == "claude":
+        return any("matchblox hook" in c for c in _hook_commands(_read_json(spec["settings"])))
+    if harness == "cursor":
+        return any("matchblox hook --cursor" in c for c in _flat_hook_commands(_read_json(spec["settings"])))
+    return None
+
+
+def _autocompact(harness, spec):
+    if harness != "claude":
+        return None
+    env = _read_json(spec["settings"]).get("env")
+    return (isinstance(env, dict) and AUTOCOMPACT in env) or AUTOCOMPACT in os.environ
+
+
+def _process_cmds():
+    """One pgrep per harness process match; -a (Linux) or -l (macOS) prints each pid with its args."""
+    show = "-l" if sys.platform == "darwin" else "-a"
+    return {
+        "pgrep:%d" % i: ["pgrep", show, "-" + mode, pattern]
+        for i, (mode, pattern, _) in enumerate(harnesses.all_process_match())
+    }
+
+
+def _count_processes(res):
+    total = 0
+    for i, (_, _, exclude) in enumerate(harnesses.all_process_match()):
+        out = res.get("pgrep:%d" % i)
+        if not out or out[0] != 0:
+            continue
+        total += sum(1 for line in out[1].splitlines() if line.strip() and not (exclude and exclude in line))
+    return total
+
+
+def collect(cwd, timeout=0.5, harness=None):
+    env = os.environ
     home = Path.home()
+    harness = harness or harnesses.detect(env)
+    if harness not in harnesses.HARNESSES:
+        harness = "claude"  # an unknown harness keeps the Claude Code view
+    spec = harnesses.paths(harness, env, home)
     cmds = {}
     has = {n: shutil.which(n) is not None for n in ("matchblox", "gh", "pgrep", "git")}
     if has["matchblox"]:
@@ -147,43 +259,35 @@ def collect(cwd, timeout=0.5):
     if has["gh"]:
         cmds["gh"] = ["gh", "auth", "token"]
     if has["pgrep"]:
-        cmds["pgrep"] = ["pgrep", "-x", "claude"]
+        cmds.update(_process_cmds())
     if has["git"]:
         cmds["git"] = ["git", "rev-parse", "--show-toplevel"]
         cmds["gpgsign"] = ["git", "config", "--get", "commit.gpgsign"]
         cmds["signkey"] = ["git", "config", "--get", "user.signingkey"]
     res = _run_all(cmds, cwd, timeout) if cmds else {}
 
-    cdir, state_path = _claude_paths(home)
-    try:
-        plugins = (cdir / "plugins/installed_plugins.json").read_text()
-    except OSError:
-        plugins = ""
     try:
         channel = json.loads((ledger.home() / "reach.json").read_text()).get("channel")
         channel = channel if isinstance(channel, str) and channel else None
     except (OSError, ValueError, AttributeError):
         channel = None
-    settings = _read_json(cdir / "settings.json")
-    env = settings.get("env") if isinstance(settings.get("env"), dict) else {}
     sessions = _json(res.get("sessions"))
     root = _git_root(cwd, res.get("git"))
-    servers = _mcp_servers(_read_json(state_path), {root, Path(cwd).resolve()})
-    pg = res.get("pgrep")
+    servers = _mcp_servers(spec, harness, {root, Path(cwd).resolve()})
 
     return {
-        "superpowers": "superpowers@" in plugins,
-        "gstack": (cdir / "skills/gstack").exists(),
+        "superpowers": _superpowers(harness, spec),
+        "gstack": _gstack(harness, spec),
         "gh": bool(res.get("gh")) and res["gh"][0] == 0,
         "signing": _stdout(res.get("gpgsign")) == "true" and bool(_stdout(res.get("signkey"))),
         "channel": channel,
         "matchblox": has["matchblox"],
-        "matchblox_hooks": has["matchblox"] and any("matchblox hook" in c for c in _hook_commands(settings)),
+        "matchblox_hooks": _matchblox_hooks(harness, spec) if has["matchblox"] else False,
         "code_graph": any(n in servers for n in GRAPH_SERVERS),
-        "autocompact": "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE" in env or "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE" in os.environ,
+        "autocompact": _autocompact(harness, spec),
         "sessions": len(sessions) if isinstance(sessions, list) else None,
         "weekly_pct": _weekly_pct(_json(res.get("usage"))),
-        "sessions_proc": len(pg[1].split()) if pg and pg[0] == 0 else 0,
+        "sessions_proc": _count_processes(res),
         "has_canon": any((root / m).exists() for m in CANON_MARKERS),
     }
 

@@ -52,10 +52,12 @@ def save(path, data):
         raise
 
 
-def _holds(when, signals):
+def _holds(when, signals, onboarding=False):
     for key, expected in when.items():
         actual = signals.get(key)
         if actual is None and expected is not None:
+            if onboarding and isinstance(expected, bool):
+                continue  # builder cannot see this on this harness: onboarding offers it once
             return False
         if isinstance(expected, dict):
             bound = expected.get(">=")
@@ -73,7 +75,7 @@ def due_catalog(ledger, catalog):
     return [i for i in catalog if i.get("onboarding")]
 
 
-def next_recommendation(ledger, catalog, signals, now, cooldown_s=COOLDOWN_S):
+def next_recommendation(ledger, catalog, signals, now, cooldown_s=COOLDOWN_S, onboarding=False):
     answers = ledger.get("answers", {})
     for item in sorted(catalog, key=lambda i: i.get("order", 0)):
         a = answers.get(item["id"])
@@ -82,7 +84,7 @@ def next_recommendation(ledger, catalog, signals, now, cooldown_s=COOLDOWN_S):
                 continue
             if a.get("verdict") == "later" and now - a.get("at", 0) < cooldown_s:
                 continue
-        if _holds(item.get("when", {}), signals):
+        if _holds(item.get("when", {}), signals, onboarding):
             return item
     return None
 
@@ -118,7 +120,8 @@ def main(argv):
         import signals
         sig = signals.collect(os.getcwd())
         led = load(path)
-        print(json.dumps(next_recommendation(led, due_catalog(led, _catalog()), sig, time.time())))
+        print(json.dumps(next_recommendation(led, due_catalog(led, _catalog()), sig, time.time(),
+                                              onboarding=not led["onboarded"])))
         return 0
     print("usage: ledger.py answer <id> yes|later|never | ledger.py onboarded | ledger.py next", file=sys.stderr)
     return 2

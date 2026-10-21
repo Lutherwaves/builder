@@ -39,6 +39,14 @@ class SignalsTest(unittest.TestCase):
         f.write_text("#!%s\n%s\n" % (BASH, body))
         f.chmod(f.stat().st_mode | stat.S_IEXEC)
 
+    def fake_pgrep(self, answers):
+        """A fake pgrep that answers `pgrep -a -x NAME` and `pgrep -a -f PATTERN` from {key: output}."""
+        body = 'case "$2 $3" in\n'
+        for key, out in answers.items():
+            body += '  "%s") printf %s ;;\n' % (key, json.dumps(out).replace("%", "%%"))
+        body += '  *) exit 1 ;;\nesac'
+        self.fake("pgrep", body)
+
     def test_matchblox_missing_and_slow(self):
         self.assertFalse(signals.collect(str(self.cwd), timeout=GENEROUS)["matchblox"])
         self.assertIsNone(signals.collect(str(self.cwd), timeout=GENEROUS)["sessions"])
@@ -82,7 +90,7 @@ fi''')
         self.assertFalse(signals.collect(str(self.cwd), timeout=GENEROUS)["gh"])
         self.assertEqual(signals.collect(str(self.cwd), timeout=GENEROUS)["sessions_proc"], 0)
         self.fake("gh", "exit 0")
-        self.fake("pgrep", "printf '11\\n22\\n'")
+        self.fake_pgrep({"-x claude": "11 claude\n22 claude\n"})
         out = signals.collect(str(self.cwd), timeout=GENEROUS)
         self.assertTrue(out["gh"])
         self.assertEqual(out["sessions_proc"], 2)
@@ -105,7 +113,7 @@ fi''')
     def test_finished_calls_are_read_after_a_hung_one(self):
         self.fake("matchblox", "/bin/sleep 3")
         self.fake("gh", "exit 0")
-        self.fake("pgrep", "printf '1\\n2\\n3\\n'")
+        self.fake_pgrep({"-x claude": "1 claude\n2 claude\n3 claude\n"})
         # warm the fakes so first-exec cost does not eat the budget
         for n in ("gh", "pgrep"):
             os.system("%s/%s >/dev/null 2>&1" % (self.bin, n))
@@ -267,6 +275,140 @@ fi''')
         self.write_settings(self.home / ".claude", {})
         with mock.patch.dict(os.environ, {"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "85"}):
             self.assertTrue(signals.collect(str(self.cwd), timeout=GENEROUS)["autocompact"])
+
+    def write_json(self, path, data):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(data if isinstance(data, str) else json.dumps(data))
+
+    def sig(self, harness, **env):
+        with mock.patch.dict(os.environ, env):
+            return signals.collect(str(self.cwd), timeout=GENEROUS, harness=harness)
+
+    def test_harness_none_uses_detect(self):
+        (self.home / ".codex").mkdir()
+        (self.home / ".codex" / "config.toml").write_text('[plugins."superpowers@x"]\nenabled = true\n')
+        with mock.patch.dict(os.environ, {"BUILDER_HARNESS": "codex"}):
+            self.assertTrue(signals.collect(str(self.cwd), timeout=GENEROUS)["superpowers"])
+
+    def test_codex_reads_mcp_from_config_toml(self):
+        cfg = self.home / ".codex"
+        cfg.mkdir()
+        (cfg / "config.toml").write_text('model = "x"\n\n[mcp_servers.codebase-memory-mcp]\ncommand = "x"\n')
+        self.assertTrue(self.sig("codex")["code_graph"])
+        (cfg / "config.toml").write_text('[mcp_servers.other]\ncommand = "x"\n')
+        self.assertFalse(self.sig("codex")["code_graph"])
+        (cfg / "config.toml").write_text('[mcp_servers."codebase-memory"]\ncommand = "x"\n')
+        self.assertTrue(self.sig("codex")["code_graph"])
+
+    def test_codex_toml_regex_fallback(self):
+        cfg = self.home / ".codex"
+        cfg.mkdir()
+        (cfg / "config.toml").write_text(
+            '[mcp_servers.codebase-memory-mcp]\ncommand = "x"\n[plugins."superpowers@mk"]\nenabled = true\n')
+        with mock.patch.object(signals, "tomllib", None):
+            out = self.sig("codex")
+        self.assertTrue(out["code_graph"])
+        self.assertTrue(out["superpowers"])
+        (cfg / "config.toml").write_text('[mcp_servers.other]\n[plugins."other@mk"]\n')
+        with mock.patch.object(signals, "tomllib", None):
+            out = self.sig("codex")
+        self.assertFalse(out["code_graph"])
+        self.assertFalse(out["superpowers"])
+
+    def test_codex_bad_toml_is_not_a_crash(self):
+        cfg = self.home / ".codex"
+        cfg.mkdir()
+        (cfg / "config.toml").write_text('[mcp_servers.codebase-memory-mcp]\nbroken = = =\n')
+        self.assertTrue(self.sig("codex")["code_graph"])
+
+    def test_codex_superpowers_needs_a_plugins_table(self):
+        cfg = self.home / ".codex"
+        cfg.mkdir()
+        (cfg / "config.toml").write_text('# superpowers@x\n[plugins."other@x"]\n')
+        self.assertFalse(self.sig("codex")["superpowers"])
+        (cfg / "config.toml").write_text('[plugins."superpowers@x"]\n')
+        self.assertTrue(self.sig("codex", CODEX_HOME=str(cfg))["superpowers"])
+
+    def test_cursor_mcp_json(self):
+        self.fake("git", 'echo "%s"' % self.cwd)
+        self.write_json(self.home / ".cursor" / "mcp.json", {"mcpServers": {"other": {}}})
+        self.assertFalse(self.sig("cursor")["code_graph"])
+        self.write_json(self.home / ".cursor" / "mcp.json", {"mcpServers": {"codebase-memory-mcp": {}}})
+        self.assertTrue(self.sig("cursor")["code_graph"])
+        (self.home / ".cursor" / "mcp.json").unlink()
+        self.write_json(self.cwd / ".cursor" / "mcp.json", {"mcpServers": {"codebase-memory": {}}})
+        self.assertTrue(self.sig("cursor")["code_graph"])
+
+    def test_opencode_mcp_key(self):
+        cfg = self.home / ".config" / "opencode"
+        self.write_json(cfg / "opencode.json", {"mcp": {"codebase-memory-mcp": {"type": "local"}}})
+        self.assertTrue(self.sig("opencode")["code_graph"])
+        self.write_json(cfg / "opencode.json", {"mcp": {"other": {}}})
+        self.assertFalse(self.sig("opencode")["code_graph"])
+
+    def test_opencode_superpowers_from_plugin_list(self):
+        cfg = self.home / ".config" / "opencode"
+        self.write_json(cfg / "opencode.json", {"plugin": ["superpowers@git+https://x/superpowers.git"]})
+        self.assertTrue(self.sig("opencode")["superpowers"])
+        self.write_json(cfg / "opencode.json", {"plugin": ["other"]})
+        self.assertFalse(self.sig("opencode")["superpowers"])
+        self.write_json(cfg / "opencode.json", {"plugin": "superpowers"})
+        self.assertFalse(self.sig("opencode")["superpowers"])
+
+    def test_unknown_signal_is_none(self):
+        out = self.sig("cursor")
+        self.assertIsNone(out["superpowers"])
+        self.assertIsNone(out["autocompact"])
+        for h in ("codex", "cursor", "opencode"):
+            self.assertIsNone(self.sig(h)["autocompact"])
+        self.fake("matchblox", "exit 0")
+        for h in ("codex", "opencode"):
+            self.assertIsNone(self.sig(h)["matchblox_hooks"])
+        self.assertFalse(self.sig("claude")["autocompact"])
+        self.assertFalse(self.sig("claude")["superpowers"])
+
+    def test_gstack_on_other_harnesses_is_any_gstack_dash_skill(self):
+        for h, base in (("codex", ".codex"), ("cursor", ".cursor"), ("opencode", ".config/opencode")):
+            self.assertFalse(self.sig(h)["gstack"])
+            (self.home / base / "skills" / "gstack").mkdir(parents=True)
+            self.assertFalse(self.sig(h)["gstack"])
+            (self.home / base / "skills" / "gstack-qa").mkdir()
+            self.assertTrue(self.sig(h)["gstack"])
+
+    def test_cursor_matchblox_hooks_signal(self):
+        self.fake("matchblox", "exit 0")
+        hooks = self.home / ".cursor" / "hooks.json"
+        self.write_json(hooks, {"version": 1, "hooks": {"stop": [{"command": "matchblox hook --cursor stop"}]}})
+        self.assertTrue(self.sig("cursor")["matchblox_hooks"])
+        self.write_json(hooks, {"version": 1, "hooks": {"stop": [{"command": "matchblox hook stop"}]}})
+        self.assertFalse(self.sig("cursor")["matchblox_hooks"])
+        self.write_json(hooks, "{bad")
+        self.assertFalse(self.sig("cursor")["matchblox_hooks"])
+
+    def test_sessions_proc_counts_all_harnesses(self):
+        self.fake_pgrep({
+            "-x claude": "1 claude\n2 claude\n",
+            "-x codex": "3 codex\n",
+            "-x opencode": "4 opencode\n",
+            "-f /cursor-agent/versions/[^/]+/index\\.js": "5 node /x/cursor-agent/versions/1/index.js\n",
+        })
+        self.assertEqual(self.sig("claude")["sessions_proc"], 5)
+
+    def test_cursor_worker_server_not_counted(self):
+        self.fake_pgrep({"-f /cursor-agent/versions/[^/]+/index\\.js": (
+            "5 node /x/cursor-agent/versions/1/index.js\n"
+            "6 node /x/cursor-agent/versions/1/index.js worker-server\n")})
+        self.assertEqual(self.sig("cursor")["sessions_proc"], 1)
+
+    def test_codex_app_server_not_counted(self):
+        self.fake_pgrep({"-x codex": "3 codex\n4 codex app-server --listen\n"})
+        self.assertEqual(self.sig("codex")["sessions_proc"], 1)
+
+    def test_no_claude_literal(self):
+        src = Path(signals.__file__).read_text()
+        self.assertNotIn("~/.claude", src)
+        self.assertNotIn('".claude', src)
+        self.assertFalse(hasattr(signals, "_claude_paths"))
 
 
 if __name__ == "__main__":
