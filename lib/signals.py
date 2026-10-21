@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import ledger  # noqa: E402
 
 WEEK_MIN = 10080
-CANON_MARKERS = ("DESIGN.md", ".claude/rules", "docs/canon")
+CANON_MARKERS = ("RULES.md", "DESIGN.md", "docs/rules")  # the homes the canon skill finds or creates
 GRAPH_SERVERS = ("codebase-memory-mcp", "codebase-memory")  # user-wide name; the name harness writes to .mcp.json
 
 

@@ -136,7 +136,7 @@
       "has_canon": false
     },
     "say": "This project has no written canon, so builder cannot tell your rules from its own guesses.",
-    "why": "A short canon (DESIGN.md or docs/canon/) gives every session the same rules.",
+    "why": "A short canon (RULES.md, DESIGN.md or docs/rules/) gives every session the same rules.",
     "how": "Ask me: /builder:canon"
   }
 ]

@@ -146,9 +146,26 @@ fi''')
         (self.cwd / "DESIGN.md").write_text("x")
         self.assertTrue(signals.collect(str(self.cwd), timeout=GENEROUS)["has_canon"])
 
+    def test_has_canon_from_rules_md_that_canon_creates(self):
+        (self.cwd / "RULES.md").write_text("x")
+        self.assertTrue(signals.collect(str(self.cwd), timeout=GENEROUS)["has_canon"])
+
+    def test_canon_markers_match_the_canon_skill_and_recommendation(self):
+        root = Path(signals.__file__).resolve().parent.parent
+        skill = (root / "skills" / "canon" / "SKILL.md").read_text()
+        for home in ("RULES.md", "DESIGN.md", "docs/rules"):
+            self.assertIn(home, signals.CANON_MARKERS)
+        for marker in signals.CANON_MARKERS:
+            self.assertIn("`%s" % marker, skill)
+        cat = json.loads((root / "lib" / "recommendations.json").read_text())
+        why = next(i for i in cat if i["id"] == "canon")["why"]
+        self.assertIn("RULES.md", why)
+        for path in ("docs/canon", ".claude/rules"):
+            self.assertNotIn(path, why)
+
     def test_has_canon_at_git_root_from_subdir(self):
         self.fake("git", 'echo "%s"' % self.cwd)
-        (self.cwd / "docs" / "canon").mkdir(parents=True)
+        (self.cwd / "docs" / "rules").mkdir(parents=True)
         sub = self.cwd / "a" / "b"
         sub.mkdir(parents=True)
         self.assertTrue(signals.collect(str(sub), timeout=GENEROUS)["has_canon"])
