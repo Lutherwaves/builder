@@ -61,4 +61,71 @@ e=$(python3 -c 'import time;print(time.time())')
 jq -e . >/dev/null <<<"$out" && check "valid JSON" ok || check "valid JSON" bad
 python3 -c "import sys;sys.exit(0 if $e-$s < 1.0 else 1)" && check "under 1 s" ok || check "under 1 s" bad
 
+echo "test_shape_cursor"
+out="$(run "$hook" --harness cursor)"
+jq -e '.additional_context' >/dev/null <<<"$out" && check "additional_context present" ok || check "additional_context present" bad
+jq -e '.hookSpecificOutput' >/dev/null 2>&1 <<<"$out" && check "no hookSpecificOutput" bad || check "no hookSpecificOutput" ok
+jq -r '.additional_context' <<<"$out" | grep -q 'Build the right thing' && check "soul present" ok || check "soul present" bad
+
+echo "test_shape_codex"
+out="$(run "$hook" --harness codex)"
+jq -er '.hookSpecificOutput.additionalContext' <<<"$out" | grep -q 'Build the right thing' && check "hookSpecificOutput shape" ok || check "hookSpecificOutput shape" bad
+
+echo "test_text_opencode"
+out="$(run "$hook" --harness opencode)"
+jq -e . >/dev/null 2>&1 <<<"$out" && check "not JSON" bad || check "not JSON" ok
+grep -q 'Build the right thing' <<<"$out" && check "soul present" ok || check "soul present" bad
+out="$(run "$hook" --harness claude --format text)"
+jq -e . >/dev/null 2>&1 <<<"$out" && check "--format text on claude is plain" bad || check "--format text on claude is plain" ok
+
+echo "test_cursor_inside_claude_env"
+out="$(CLAUDECODE=1 CURSOR_VERSION=x run "$hook" --harness cursor)"
+jq -e '.additional_context' >/dev/null <<<"$out" && check "cursor shape" ok || check "cursor shape" bad
+out="$(CLAUDECODE=1 CURSOR_VERSION=x run "$hook" --harness auto)"
+jq -e '.additional_context' >/dev/null <<<"$out" && check "auto detects cursor" ok || check "auto detects cursor" bad
+
+echo "test_ledger_path_without_claude_root"
+out="$(env -u CLAUDE_PLUGIN_ROOT HOME="$tmp/home" BUILDER_HOME="$tmp/bh" "$hook" --harness cursor)"
+jq -r '.additional_context' <<<"$out" | grep -qF "$root/lib/ledger.py" && check "ledger path uses root" ok || check "ledger path uses root" bad
+
+echo "test_no_python_each_shape"
+nopy() { HOME="$tmp/home" BUILDER_HOME="$tmp/bh" PATH=/nonexistent /bin/bash "$hook" "$@"; }
+for h in claude codex unknown auto; do
+  out="$(nopy --harness $h)"
+  jq -er '.hookSpecificOutput.additionalContext' <<<"$out" | grep -q 'Build the right thing' && check "$h: hookSpecificOutput" ok || check "$h: hookSpecificOutput" bad
+done
+out="$(nopy --harness cursor)"
+jq -er '.additional_context' <<<"$out" | grep -q 'Build the right thing' && check "cursor: additional_context" ok || check "cursor: additional_context" bad
+out="$(CURSOR_VERSION=x nopy --harness auto)"
+jq -er '.additional_context' <<<"$out" | grep -q 'Build the right thing' && check "auto + CURSOR_VERSION: additional_context" ok || check "auto + CURSOR_VERSION: additional_context" bad
+out="$(nopy --harness opencode)"
+jq -e . >/dev/null 2>&1 <<<"$out" && check "opencode: plain text" bad || { grep -q 'Build the right thing' <<<"$out" && check "opencode: plain text" ok || check "opencode: plain text" bad; }
+out="$(nopy --harness claude --format text)"
+jq -e . >/dev/null 2>&1 <<<"$out" && check "--format text: plain text" bad || check "--format text: plain text" ok
+
+echo "test_root_line"
+text="$(run "$hook" --harness claude | ctx)"
+grep -qF "builder root: $root. Where a builder skill says \${CLAUDE_PLUGIN_ROOT}, use this path." <<<"$text" && check "root line" ok || check "root line" bad
+
+echo "test_mapping_block_max_15"
+for h in claude codex cursor opencode; do
+  f="$root/skills/builder/harnesses/$h.md"
+  n="$(awk '/<!-- hook -->/{on=1;next} /<!-- \/hook -->/{on=0} on' "$f" 2>/dev/null | wc -l | tr -d ' ')"
+  [ "$n" -ge 1 ] && [ "$n" -le 15 ] && check "$h block has $n lines" ok || check "$h block 1-15 lines (got $n)" bad
+  block1="$(awk '/<!-- hook -->/{on=1;next} /<!-- \/hook -->/{on=0} on' "$f" 2>/dev/null | head -1)"
+  [ -n "$block1" ] && grep -qF "$block1" <<<"$(run "$hook" --harness "$h")" && check "$h block in hook output" ok || check "$h block in hook output" bad
+done
+
+echo "test_speed_each_harness"
+for h in claude codex cursor opencode unknown; do
+  s=$(python3 -c 'import time;print(time.time())')
+  run "$hook" --harness $h >/dev/null
+  e=$(python3 -c 'import time;print(time.time())')
+  python3 -c "import sys;sys.exit(0 if $e-$s < 1.0 else 1)" && check "$h under 1 s" ok || check "$h under 1 s" bad
+done
+
+echo "test_hook_manifests"
+jq -e '.hooks.SessionStart[0].hooks[0].command == "\"${CLAUDE_PLUGIN_ROOT}/hooks/session-start\" --harness auto"' "$root/hooks/hooks.json" >/dev/null && check "hooks.json passes --harness auto" ok || check "hooks.json passes --harness auto" bad
+jq -e '. == {"version":1,"hooks":{"sessionStart":[{"command":"./hooks/session-start --harness cursor"}]}}' "$root/hooks/hooks-cursor.json" >/dev/null && check "hooks-cursor.json exact" ok || check "hooks-cursor.json exact" bad
+
 [ "$fails" -eq 0 ] && echo "✓ hook tests passed" || { echo "✗ hook tests failed"; exit 1; }

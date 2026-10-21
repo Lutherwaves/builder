@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""SessionStart hook: print the builder soul and at most one next step as JSON."""
+"""SessionStart hook: print the builder soul and at most one next step, in the shape the harness reads."""
+import argparse
 import json
 import os
 import sys
@@ -8,10 +9,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "lib"))
+import harness as harness_lib  # noqa: E402
 import ledger  # noqa: E402
 import signals  # noqa: E402
 
-LEDGER_PY = '%s/lib/ledger.py' % os.environ.get("CLAUDE_PLUGIN_ROOT", str(ROOT))
+LEDGER_PY = '%s/lib/ledger.py' % ROOT
 ANSWER = 'python3 "%s" answer %%s yes|later|never' % LEDGER_PY
 ONBOARDED = 'python3 "%s" onboarded' % LEDGER_PY
 NEXT = 'python3 "%s" next' % LEDGER_PY
@@ -44,12 +46,20 @@ def onboarding_text(item):
     return "\n".join(lines)
 
 
-def build():
+def mapping_block(harness):
+    try:
+        text = (ROOT / "skills" / "builder" / "harnesses" / ("%s.md" % harness)).read_text()
+        return text.split("<!-- hook -->", 1)[1].split("<!-- /hook -->", 1)[0].strip()
+    except (OSError, IndexError):
+        return ""
+
+
+def build_body(harness):
     soul = (ROOT / "skills" / "builder" / "soul-compact.md").read_text().rstrip("\n")
     try:
         led = ledger.load(ledger.home() / "ledger.json")
         catalog = json.loads((ROOT / "lib" / "recommendations.json").read_text())
-        sig = signals.collect(os.getcwd(), 0.5)
+        sig = signals.collect(os.getcwd(), 0.5, harness=harness if harness in harness_lib.HARNESSES else None)
         now = time.time()
         if not led["onboarded"]:
             item = ledger.next_recommendation(led, ledger.due_catalog(led, catalog), sig, now, onboarding=True)
@@ -63,5 +73,28 @@ def build():
     return soul
 
 
+def build(harness):
+    text = build_body(harness) + "\n\nbuilder root: %s. Where a builder skill says ${CLAUDE_PLUGIN_ROOT}, use this path." % ROOT
+    mapping = mapping_block(harness)
+    return text + "\n\n" + mapping if mapping else text
+
+
+def shape(harness, text):
+    if harness == "cursor":
+        return json.dumps({"additional_context": text})
+    return json.dumps({"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": text}})
+
+
+def main(argv):
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--harness", default="auto")
+    parser.add_argument("--format", choices=("json", "text"))
+    args, _ = parser.parse_known_args(argv)
+    harness = harness_lib.detect(os.environ, args.harness)
+    fmt = args.format or ("text" if harness == "opencode" else "json")
+    text = build(harness)
+    print(text if fmt == "text" else shape(harness, text))
+
+
 if __name__ == "__main__":
-    print(json.dumps({"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": build()}}))
+    main(sys.argv[1:])

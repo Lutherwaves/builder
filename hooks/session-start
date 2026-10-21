@@ -9,19 +9,42 @@ PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 export CLAUDE_PLUGIN_ROOT="$PLUGIN_ROOT"
 
 if command -v python3 >/dev/null 2>&1; then
-  out="$(python3 "${SCRIPT_DIR}/session_start.py" 2>/dev/null)"
+  out="$(python3 "${SCRIPT_DIR}/session_start.py" "$@" 2>/dev/null)"
   if [ -n "$out" ]; then
     printf '%s\n' "$out"
     exit 0
   fi
 fi
 
+harness=auto format=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --harness) harness="${2:-auto}"; shift ;;
+    --harness=*) harness="${1#*=}" ;;
+    --format) format="${2:-}"; shift ;;
+    --format=*) format="${1#*=}" ;;
+  esac
+  shift
+done
+if [ "$harness" = auto ] && [ -n "${CURSOR_VERSION:-}" ]; then harness=cursor; fi
+if [ -z "$format" ]; then
+  if [ "$harness" = opencode ]; then format=text; else format=json; fi
+fi
+
 soul="$(<"${PLUGIN_ROOT}/skills/builder/soul-compact.md")" 2>/dev/null
 [ -n "$soul" ] || soul="builder is installed. Load the builder skill for its rules."
+if [ "$format" = text ]; then
+  printf '%s\n' "$soul"
+  exit 0
+fi
 s="${soul//\\/\\\\}"
 s="${s//\"/\\\"}"
 s="${s//$'\n'/\\n}"
 s="${s//$'\r'/\\r}"
 s="${s//$'\t'/\\t}"
-printf '{"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": "%s"}}\n' "$s"
+if [ "$harness" = cursor ]; then
+  printf '{"additional_context": "%s"}\n' "$s"
+else
+  printf '{"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": "%s"}}\n' "$s"
+fi
 exit 0
