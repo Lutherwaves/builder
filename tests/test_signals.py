@@ -106,6 +106,11 @@ fi''')
         self.assertLess(time.time() - t, 1.0)
         self.assertTrue(out["gh"])  # output goes to a file now, so a child that holds it open cannot block the read
 
+    def test_non_utf8_process_output_does_not_break_collect(self):
+        self.fake("ps", "printf '1 claude claude\\n2 odd \\377bad\\n3 claude claude\\n'")
+        self.assertEqual(signals.collect(str(self.cwd), timeout=GENEROUS)["sessions_proc"], 2)
+        self.assertEqual(signals._run_all({"a": ["/usr/bin/printf", "\\377abc"]}, str(self.cwd), GENEROUS)["a"][0], 0)
+
     def test_finished_calls_are_read_after_a_hung_one(self):
         self.fake("matchblox", "/bin/sleep 3")
         self.fake("gh", "exit 0")

@@ -32,7 +32,7 @@ def _run_all(cmds, cwd, timeout):
     procs = {}
     for name, cmd in cmds.items():
         # Output goes to a file, not a pipe: a long listing (ps) would fill a pipe nobody reads yet.
-        sink = tempfile.TemporaryFile(mode="w+")
+        sink = tempfile.TemporaryFile(mode="w+", errors="replace")
         try:
             procs[name] = (subprocess.Popen(
                 cmd, cwd=cwd, stdin=subprocess.DEVNULL, stdout=sink,
