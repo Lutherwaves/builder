@@ -76,19 +76,41 @@ CLAUDE_CONFIG_DIR="$tmp/cfg" HOME="$tmp/home" HOOK="$root/hooks/session-start" P
   && check "CLAUDE_CONFIG_DIR projects dir is cleaned" ok || check "CLAUDE_CONFIG_DIR projects dir is cleaned" bad
 rm -rf "$tmp/evals/dash"
 
+# PATH shims. A fake "real" matchblox sits on the original PATH; the fake claude runs the probes.
+mkdir -p "$tmp/real"
+printf '#!/usr/bin/env bash\necho "REAL matchblox $*"\n' > "$tmp/real/matchblox"; chmod +x "$tmp/real/matchblox"
+cat > "$tmp/bin/claude" <<'FAKE'
+#!/usr/bin/env bash
+cat >/dev/null
+p() { echo "PROBE $1 => rc=$(shift; "$@" >/dev/null 2>&1; echo $?)"; }
+p flags matchblox --json send x y
+p env env matchblox send x y
+p bashc bash -c "matchblox send x y"
+p tmux tmux send -t x y
+p tmuxL tmux -L s send-keys x
+echo "READ: $(matchblox sessions --json 2>&1)"
+FAKE
+mkdir -p "$tmp/evals/shim"; echo "Do it." > "$tmp/evals/shim/prompt.md"; printf -- '- a\n- b\n- c\n' > "$tmp/evals/shim/expect.md"
+HOME="$tmp/home" PATH="$tmp/bin:$tmp/real:$PATH" BUILDER_EVAL_OUT="$tmp/out4" run shim </dev/null >/dev/null 2>&1
+d="$(ls -d "$tmp"/out4/shim/*/ 2>/dev/null | head -1)"
+[ -n "$d" ] && [ "$(grep -c 'rc=3$' "$d/with.md")" -eq 5 ] && grep -q '^READ: REAL matchblox sessions --json' "$d/with.md" \
+  && check "shims block steering and pass read-only matchblox" ok || check "shims block steering and pass read-only matchblox ($(cat "$d/with.md" 2>&1))" bad
+rm -rf "$tmp/evals/shim"
+
 # An optional allow file adds tool rules to --allowedTools; blank and # lines are skipped.
 mkdir -p "$tmp/evals/allowed"
 echo "Do it." > "$tmp/evals/allowed/prompt.md"
 printf -- '- a\n- b\n- c\n' > "$tmp/evals/allowed/expect.md"
 printf '# tests\nBash(python3 -m unittest:*)\n\n' > "$tmp/evals/allowed/allow"
 out="$(run allowed --dry-run 2>&1)"
+deny_ok=1
 for rule in 'Bash(matchblox send:*)' 'Bash(matchblox compact:*)' 'Bash(matchblox hold:*)' 'Bash(matchblox release:*)' \
   'Bash(matchblox kill:*)' 'Bash(matchblox new:*)' 'Bash(matchblox rename:*)' 'Bash(matchblox stoker:*)' \
   'Bash(tmux send-keys:*)' 'Bash(tmux kill-session:*)' 'Bash(git push:*)' 'WebFetch'; do
   q="$(printf '%q' "$rule")"
-  [ "$(grep -cF -- "$q" <<<"$out")" -eq 2 ] || { check "both runs deny $rule" bad; }
+  [ "$(grep -cF -- "$q" <<<"$out")" -eq 2 ] || { deny_ok=0; echo "    missing: $rule"; }
 done
-check "both runs deny session-steering and existing tools" ok
+[ "$deny_ok" -eq 1 ] && check "both runs deny session-steering and existing tools" ok || check "both runs deny session-steering and existing tools" bad
 [ "$(grep -c -- '--allowedTools Bash\\(python3\\ -m\\ unittest:\\\*\\) --disallowedTools' <<<"$out")" -eq 2 ] \
   && ! grep -q -- '--allowedTools.*#' <<<"$out" \
   && check "allow file adds --allowedTools" ok || check "allow file adds --allowedTools ($out)" bad

@@ -66,7 +66,11 @@ if [ "$dry" -eq 1 ]; then
   exit 0
 fi
 
-tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+tmp="$(mktemp -d)"
+[ -n "$tmp" ] && [ -d "$tmp" ] || { echo "eval: cannot make a temp dir" >&2; exit 1; }
+# Leave nothing behind, also when the run is interrupted.
+trap 'forget_sessions "$tmp/baseline"; forget_sessions "$tmp/with"; rm -rf "$tmp"' EXIT
+trap 'exit 130' INT TERM
 mkdir -p "$out" || exit 1
 workdir() { # $1 = name; a fresh copy of repo/ (or an empty dir), made a git repo with one commit
   mkdir -p "$tmp/$1"
@@ -90,6 +94,28 @@ forget_sessions() { # $1 = work dir
   dir="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects/$s"
   if [ -d "$dir" ] && [ ! -L "$dir" ]; then rm -rf "$dir"; fi
 }
+# PATH shims: the deny list matches command text, so it misses `matchblox --json send`, `env matchblox send`
+# or `bash -c`. The shims stop those at the program. Read-only matchblox commands pass to the real one.
+real_matchblox="$(command -v matchblox 2>/dev/null || true)"
+mkdir -p "$tmp/bin"
+cat > "$tmp/bin/matchblox" <<SHIM
+#!/usr/bin/env bash
+real='$real_matchblox'
+cmd=""
+for a in "\$@"; do case "\$a" in -*) ;; *) cmd="\$a"; break ;; esac; done
+case "\$cmd" in
+  sessions|ships|usage|peek|status|version|help|"")
+    if [ -z "\$cmd" ] && [ "\$#" -gt 0 ]; then
+      for a in "\$@"; do case "\$a" in --help|-h) ;; --json) ;; *) echo "eval: matchblox \$a is blocked in evals" >&2; exit 3 ;; esac; done
+    fi
+    [ -n "\$real" ] && [ -x "\$real" ] || { echo "matchblox not installed" >&2; exit 127; }
+    exec "\$real" "\$@" ;;
+  *) echo "eval: matchblox \$cmd is blocked in evals" >&2; exit 3 ;;
+esac
+SHIM
+printf '#!/usr/bin/env bash\necho "eval: tmux is blocked in evals" >&2\nexit 3\n' > "$tmp/bin/tmux"
+chmod +x "$tmp/bin/matchblox" "$tmp/bin/tmux"
+export PATH="$tmp/bin:$PATH"
 workdir baseline && workdir with || { echo "✗ cannot prepare the work dirs" >&2; exit 1; }
 # A temp builder home: onboarded, every recommendation answered "never". The hook then
 # injects only the soul, so no setup question pollutes the transcript.
