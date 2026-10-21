@@ -40,7 +40,7 @@ for py in $(find . -name '*.py' -not -path './.git/*'); do
   python3 -m py_compile "$py" && note "✓ compiles: $py" || err "$py failed to compile"
 done
 # burn-proj smoke test: fixed inputs → deterministic output shape
-out="$(python3 skills/watch-limits/burn-proj.py 19 1783504800 1782990571)"
+out="$(python3 skills/budget/burn-proj.py 19 1783504800 1782990571)"
 grep -qE 'elapsed=.* naive=.* profile_aware=.* reset_in=' <<<"$out" \
   || err "burn-proj.py output shape changed: $out"
 note "✓ burn-proj smoke: $out"

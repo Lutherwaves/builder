@@ -33,7 +33,7 @@ binary if you want to erase all binary trust.
 
 1. **Provision + index the current repo:**
    ```bash
-   bash "${CLAUDE_PLUGIN_ROOT}/skills/code-graph/setup.sh" "$PWD"
+   bash "${CLAUDE_PLUGIN_ROOT}/skills/harness/setup.sh" "$PWD"
    ```
    This locates the binary, merges a `codebase-memory` server into the repo's
    `.mcp.json` (never clobbering other servers), indexes the tree in ~9s under a
@@ -53,7 +53,7 @@ A graph indexed on branch A returns stale answers after you switch branches or
 land commits. Schedule the drift check so you're told which graphs to refresh:
 
 1. **Guard against duplicates.** List existing scheduled jobs first. If a
-   `22,52 * * * *` watcher running `code-graph/drift.sh` already exists, STOP —
+   `22,52 * * * *` watcher running `harness/drift.sh` already exists, STOP —
    offer to replace it, never add a second.
 2. **Schedule the watcher.** Use the prompt in `watcher-prompt.md` (bundled
    beside this file). Schedule it recurring at `22,52 * * * *` (offset from the
