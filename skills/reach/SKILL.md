@@ -15,7 +15,7 @@ The standing rules in the builder soul apply to every message too.
 | Recipient | Route | Default |
 |---|---|---|
 | **self** — the person you work for | A notification, never the team channel | Send, for kinds `waiting`, `morning`, `needs-yes` |
-| **teammate** — any other person | The team channel, as the person | Draft. Send only after the person's yes |
+| **teammate** — any other person | The team channel, as the person | Draft, unless a send rule allows the kind. Else send only after the person's yes |
 | **channel** — a room such as `#releases` | The team channel | Deny, unless `reach.json` names the room |
 
 A note to the person never goes through Slack or Teams, even when they ask for it.

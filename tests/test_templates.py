@@ -33,5 +33,21 @@ class TemplateOrder(unittest.TestCase):
         self.assertEqual(lines, listed_order(read("canon", "SKILL.md"), "Its lines, in order:"))
 
 
+class SendRuleWording(unittest.TestCase):
+    """reach.py lets a send rule allow a message. Every text that names the gate says so."""
+
+    def test_reach_teammate_row_names_the_send_rule(self):
+        row = next(l for l in read("reach", "SKILL.md").splitlines() if l.startswith("| **teammate**"))
+        self.assertIn("unless a send rule allows the kind", row)
+        self.assertIn("the person's yes", row)
+
+    def test_builder_gate_texts_name_the_send_rule(self):
+        skill = read("builder", "SKILL.md")
+        self.assertIn("without a send rule or the person's yes in this session", skill)
+        self.assertIn("- [ ] Nothing left the repository without a send rule or the person's yes.", skill)
+        self.assertIn("sent by rule: <n>, logged.", skill)
+        self.assertNotIn("Nothing left the repository without a yes.", skill)
+
+
 if __name__ == "__main__":
     unittest.main()

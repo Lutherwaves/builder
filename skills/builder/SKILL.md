@@ -18,7 +18,7 @@ Non-goals: <what this leaves out on purpose>.
 Calls:     (each decision you made alone; the owner checks these)
   - <call> — because <reason>.
 Evidence:  <command you ran> → <result>. Say "measured" or "estimated" for each number.
-Outside:   nothing sent. | waiting for your yes on <the external write>.
+Outside:   nothing sent. | sent by rule: <n>, logged. | waiting for your yes on <the external write>.
 ```
 
 A call with no "because" is not reported. Give the report once, at completion, not on every turn. Know the For line before you write code.
@@ -47,7 +47,7 @@ Each tenet has a rule and a test. Fail the test, fix the work.
 9. **Rules are guards.** A rule that matters has a test or check that enforces it. Name the incident that made it.
    Test: break the rule on purpose. Something fails.
 10. **The human decides; the agent proposes behind a gate.** Make no external write unseen. Confirm a destructive action by typing, and check again just before it runs.
-    Test: no push, pull request, post, message, deploy, tracker or ticket write happened without the person's yes in this session.
+    Test: no push, pull request, post, message, deploy, tracker or ticket write happened without a send rule or the person's yes in this session.
 11. **Fix what you touch, and say so.** Do not call a failure "pre-existing". Do not refactor the world.
     Test: the suite you ran is green, or the report names each red test and what you did about it.
 12. **Agents are first-class readers.** Write descriptions as scripts. Write every explanation in ASD-STE100: one idea per sentence, active voice, present tense, short sentences, one word for one thing. After an explanation, offer other formats in one line.
@@ -134,7 +134,7 @@ Before you send the reply that finishes a piece of work:
 - [ ] Every Calls line has a "because".
 - [ ] I ran the tests in this session and quoted the result.
 - [ ] Every error and empty state says what to do next.
-- [ ] Nothing left the repository without a yes.
+- [ ] Nothing left the repository without a send rule or the person's yes.
 - [ ] The copy fails the squint test for any other product.
 - [ ] Each explanation is plain ASD-STE100 and ends with a one-line offer of other formats.
 - [ ] Each mockup or visual is a shareable page, not only a local browser tab.
