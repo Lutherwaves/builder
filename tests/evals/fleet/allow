@@ -1,0 +1,6 @@
+# The agent may run the fixture's tests and read the session list. No rule here lets it type into a session.
+# Your user settings can allow `matchblox send`. Run this eval with a matchblox shim first on PATH,
+# one that answers `sessions` and `peek` and refuses every other command, so a real session gets nothing.
+Bash(python3 -m unittest:*)
+Bash(matchblox sessions:*)
+Bash(matchblox peek:*)
