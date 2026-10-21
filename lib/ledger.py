@@ -68,6 +68,10 @@ def _holds(when, signals, onboarding=False):
     return True
 
 
+def _unseen(when, signals):
+    return any(signals.get(k) is None and isinstance(v, bool) for k, v in when.items())
+
+
 def due_catalog(ledger, catalog):
     """Until onboarding ends, only onboarding items are due; the hook and `next` agree."""
     if ledger.get("onboarded"):
@@ -79,6 +83,8 @@ def next_recommendation(ledger, catalog, signals, now, cooldown_s=COOLDOWN_S, on
     answers = ledger.get("answers", {})
     for item in sorted(catalog, key=lambda i: i.get("order", 0)):
         a = answers.get(item["id"])
+        if a and onboarding and _unseen(item.get("when", {}), signals):
+            continue  # an unknown step is asked once, whatever the answer
         if a:
             if a.get("verdict") in ("yes", "never"):
                 continue

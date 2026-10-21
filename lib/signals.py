@@ -7,6 +7,7 @@ import shutil
 import signal as _signal
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -26,36 +27,37 @@ GRAPH_SERVERS = ("codebase-memory-mcp", "codebase-memory")  # user-wide name; th
 
 
 def _run_all(cmds, cwd, timeout):
-    """Start every command at once; return {name: stdout or None} within ~timeout in total."""
+    """Start every command at once; return {name: (returncode, stdout) or None} within ~timeout in total."""
     deadline = time.monotonic() + timeout
     procs = {}
     for name, cmd in cmds.items():
+        # Output goes to a file, not a pipe: a long listing (ps) would fill a pipe nobody reads yet.
+        sink = tempfile.TemporaryFile(mode="w+")
         try:
-            procs[name] = subprocess.Popen(
-                cmd, cwd=cwd, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                stderr=subprocess.DEVNULL, text=True, start_new_session=True)
+            procs[name] = (subprocess.Popen(
+                cmd, cwd=cwd, stdin=subprocess.DEVNULL, stdout=sink,
+                stderr=subprocess.DEVNULL, text=True, start_new_session=True), sink)
         except (OSError, ValueError):
+            sink.close()
             procs[name] = None
-    live = [p for p in procs.values() if p is not None]
+    live = [p for p, _ in filter(None, procs.values())]
     while live and time.monotonic() < deadline:
         live = [p for p in live if p.poll() is None]
         if live:
             time.sleep(0.005)
     out = {}
-    for name, p in procs.items():
-        if p is None:
+    for name, entry in procs.items():
+        if entry is None:
             out[name] = None
             continue
+        p, sink = entry
         if p.poll() is not None:
-            try:
-                # Finished: read it within the budget. A child it left behind can hold stdout open.
-                stdout, _ = p.communicate(timeout=max(0.05, deadline - time.monotonic()))
-                out[name] = (p.returncode, stdout)
-                continue
-            except subprocess.TimeoutExpired:
-                pass
-        _kill(p)
-        out[name] = None
+            sink.seek(0)
+            out[name] = (p.returncode, sink.read())
+        else:
+            _kill(p)
+            out[name] = None
+        sink.close()
     return out
 
 
@@ -69,7 +71,7 @@ def _kill(p):
         except OSError:
             pass
     try:
-        p.communicate(timeout=0.2)
+        p.wait(timeout=0.2)
     except Exception:
         pass
 
@@ -225,22 +227,24 @@ def _autocompact(harness, spec):
     return (isinstance(env, dict) and AUTOCOMPACT in env) or AUTOCOMPACT in os.environ
 
 
-def _process_cmds():
-    """One pgrep per harness process match; -a (Linux) or -l (macOS) prints each pid with its args."""
-    show = "-l" if sys.platform == "darwin" else "-a"
-    return {
-        "pgrep:%d" % i: ["pgrep", show, "-" + mode, pattern]
-        for i, (mode, pattern, _) in enumerate(harnesses.all_process_match())
-    }
-
-
 def _count_processes(res):
+    """Count `ps -axo pid=,comm=,args=` rows that match a harness; drop rows whose args hold the exclude."""
+    out = res.get("ps")
+    if not out or out[0] != 0:
+        return 0
+    matches = harnesses.all_process_match()
     total = 0
-    for i, (_, _, exclude) in enumerate(harnesses.all_process_match()):
-        out = res.get("pgrep:%d" % i)
-        if not out or out[0] != 0:
+    for line in out[1].splitlines():
+        parts = line.split(None, 2)
+        if len(parts) < 2:
             continue
-        total += sum(1 for line in out[1].splitlines() if line.strip() and not (exclude and exclude in line))
+        comm = os.path.basename(parts[1])
+        args = parts[2] if len(parts) > 2 else ""
+        for mode, pattern, exclude in matches:
+            hit = comm == pattern if mode == "x" else re.search(pattern, args)
+            if hit and not (exclude and exclude in args):
+                total += 1
+                break
     return total
 
 
@@ -252,14 +256,14 @@ def collect(cwd, timeout=0.5, harness=None):
         harness = "claude"  # an unknown harness keeps the Claude Code view
     spec = harnesses.paths(harness, env, home)
     cmds = {}
-    has = {n: shutil.which(n) is not None for n in ("matchblox", "gh", "pgrep", "git")}
+    has = {n: shutil.which(n) is not None for n in ("matchblox", "gh", "ps", "git")}
     if has["matchblox"]:
         cmds["sessions"] = ["matchblox", "sessions", "--json"]
         cmds["usage"] = ["matchblox", "usage", "--json"]
     if has["gh"]:
         cmds["gh"] = ["gh", "auth", "token"]
-    if has["pgrep"]:
-        cmds.update(_process_cmds())
+    if has["ps"]:
+        cmds["ps"] = ["ps", "-axo", "pid=,comm=,args="]
     if has["git"]:
         cmds["git"] = ["git", "rev-parse", "--show-toplevel"]
         cmds["gpgsign"] = ["git", "config", "--get", "commit.gpgsign"]

@@ -39,13 +39,9 @@ class SignalsTest(unittest.TestCase):
         f.write_text("#!%s\n%s\n" % (BASH, body))
         f.chmod(f.stat().st_mode | stat.S_IEXEC)
 
-    def fake_pgrep(self, answers):
-        """A fake pgrep that answers `pgrep -a -x NAME` and `pgrep -a -f PATTERN` from {key: output}."""
-        body = 'case "$2 $3" in\n'
-        for key, out in answers.items():
-            body += '  "%s") printf %s ;;\n' % (key, json.dumps(out).replace("%", "%%"))
-        body += '  *) exit 1 ;;\nesac'
-        self.fake("pgrep", body)
+    def fake_ps(self, rows):
+        """A fake ps that prints `pid comm args` rows, as `ps -axo pid=,comm=,args=` does."""
+        self.fake("ps", "printf %s" % json.dumps("".join(r + "\n" for r in rows)).replace("%", "%%"))
 
     def test_matchblox_missing_and_slow(self):
         self.assertFalse(signals.collect(str(self.cwd), timeout=GENEROUS)["matchblox"])
@@ -90,7 +86,7 @@ fi''')
         self.assertFalse(signals.collect(str(self.cwd), timeout=GENEROUS)["gh"])
         self.assertEqual(signals.collect(str(self.cwd), timeout=GENEROUS)["sessions_proc"], 0)
         self.fake("gh", "exit 0")
-        self.fake_pgrep({"-x claude": "11 claude\n22 claude\n"})
+        self.fake_ps(["11 claude claude", "22 claude claude --x", "33 vim vim claude"])
         out = signals.collect(str(self.cwd), timeout=GENEROUS)
         self.assertTrue(out["gh"])
         self.assertEqual(out["sessions_proc"], 2)
@@ -108,14 +104,14 @@ fi''')
         t = time.time()
         out = signals.collect(str(self.cwd), timeout=0.5)
         self.assertLess(time.time() - t, 1.0)
-        self.assertFalse(out["gh"])
+        self.assertTrue(out["gh"])  # output goes to a file now, so a child that holds it open cannot block the read
 
     def test_finished_calls_are_read_after_a_hung_one(self):
         self.fake("matchblox", "/bin/sleep 3")
         self.fake("gh", "exit 0")
-        self.fake_pgrep({"-x claude": "1 claude\n2 claude\n3 claude\n"})
+        self.fake_ps(["1 claude claude", "2 claude claude", "3 claude claude"])
         # warm the fakes so first-exec cost does not eat the budget
-        for n in ("gh", "pgrep"):
+        for n in ("gh", "ps"):
             os.system("%s/%s >/dev/null 2>&1" % (self.bin, n))
         t = time.time()
         out = signals.collect(str(self.cwd), timeout=1.0)
@@ -386,22 +382,21 @@ fi''')
         self.assertFalse(self.sig("cursor")["matchblox_hooks"])
 
     def test_sessions_proc_counts_all_harnesses(self):
-        self.fake_pgrep({
-            "-x claude": "1 claude\n2 claude\n",
-            "-x codex": "3 codex\n",
-            "-x opencode": "4 opencode\n",
-            "-f /cursor-agent/versions/[^/]+/index\\.js": "5 node /x/cursor-agent/versions/1/index.js\n",
-        })
+        self.fake_ps([
+            "1 claude claude", "2 /usr/bin/claude /usr/bin/claude",
+            "3 codex codex", "4 opencode opencode",
+            "5 node node /x/cursor-agent/versions/1/index.js",
+            "6 bash bash -c echo claude",
+        ])
         self.assertEqual(self.sig("claude")["sessions_proc"], 5)
 
     def test_cursor_worker_server_not_counted(self):
-        self.fake_pgrep({"-f /cursor-agent/versions/[^/]+/index\\.js": (
-            "5 node /x/cursor-agent/versions/1/index.js\n"
-            "6 node /x/cursor-agent/versions/1/index.js worker-server\n")})
+        self.fake_ps(["5 node node /x/cursor-agent/versions/1/index.js",
+                      "6 node node /x/cursor-agent/versions/1/index.js worker-server"])
         self.assertEqual(self.sig("cursor")["sessions_proc"], 1)
 
     def test_codex_app_server_not_counted(self):
-        self.fake_pgrep({"-x codex": "3 codex\n4 codex app-server --listen\n"})
+        self.fake_ps(["3 /opt/bin/codex codex", "4 /opt/bin/codex codex app-server --listen"])
         self.assertEqual(self.sig("codex")["sessions_proc"], 1)
 
     def test_no_claude_literal(self):

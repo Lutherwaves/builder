@@ -106,6 +106,13 @@ class LedgerTest(unittest.TestCase):
             led = {"answers": {"a": {"verdict": verdict, "at": 1.0}}, "onboarded": False}
             self.assertIsNone(ledger.next_recommendation(led, cat, {"superpowers": None}, 9e9, onboarding=True))
 
+    def test_none_later_not_offered_after_cooldown(self):
+        cat = [item("a", {"superpowers": False})]
+        led = {"answers": {"a": {"verdict": "later", "at": 1.0}}, "onboarded": False}
+        now = 1.0 + ledger.COOLDOWN_S + 1
+        self.assertIsNone(ledger.next_recommendation(led, cat, {"superpowers": None}, now, onboarding=True))
+        self.assertEqual(ledger.next_recommendation(led, cat, {"superpowers": False}, now, onboarding=True)["id"], "a")
+
     def test_onboarding_does_not_make_unknown_numbers_or_other_conditions_hold(self):
         self.assertIsNone(ledger.next_recommendation(EMPTY, [item("a", {"sessions": {">=": 1}})], {"sessions": None}, 1.0, onboarding=True))
         cat = [item("a", {"superpowers": False, "gh": False})]
