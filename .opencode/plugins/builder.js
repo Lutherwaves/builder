@@ -9,7 +9,7 @@
  * every skill with ctx.skill.transform and injects the soul with
  * ctx.session.hook("context").
  *
- * No dependencies. Every named export is a function: older 1.x hosts call each export.
+ * No dependencies. The only exports are BuilderPlugin and the default object: older 1.x hosts call each export.
  */
 
 import path from "path";
@@ -22,11 +22,9 @@ const root = path.resolve(__dirname, "../..");
 const skillsDir = path.join(root, "skills");
 const MARKER = "builder root:";
 
-let spawn = spawnSync;
-
-export function _setSpawn(fn) {
-  spawn = fn;
-}
+// Test seam: tests set globalThis.__builderSpawn. It is not an export, because opencode 1.x calls every export as a plugin factory.
+const spawn = (...args) =>
+  (typeof globalThis.__builderSpawn === "function" ? globalThis.__builderSpawn : spawnSync)(...args);
 
 const readSoul = () => {
   try {

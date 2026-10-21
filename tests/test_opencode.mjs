@@ -8,6 +8,7 @@ import * as mod from "../.opencode/plugins/builder.js";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const soul = fs.readFileSync(path.join(root, "skills/builder/soul-compact.md"), "utf8");
 
+const setSpawn = (fn) => { globalThis.__builderSpawn = fn; };
 let n = 0;
 const sid = () => `ses_test_${++n}`;
 const fakeClient = (parentID) => ({
@@ -35,7 +36,7 @@ const transform = async (plugin, msgs) => {
 
 test("injects_once_per_session", async () => {
   const { fn, calls } = spawnCounter(ok("builder root: /x\nhello soul"));
-  mod._setSpawn(fn);
+  setSpawn(fn);
   const plugin = await mod.BuilderPlugin({ client: fakeClient(), directory: root });
   const id = sid();
   const first = await transform(plugin, messages(id));
@@ -53,7 +54,7 @@ test("injects_once_per_session", async () => {
 
 test("skips_child_session", async () => {
   const { fn, calls } = spawnCounter(ok("builder root: /x"));
-  mod._setSpawn(fn);
+  setSpawn(fn);
   const plugin = await mod.BuilderPlugin({ client: fakeClient("ses_parent"), directory: root });
   const out = await transform(plugin, messages(sid()));
   assert.equal(out[0].parts.length, 1);
@@ -62,7 +63,7 @@ test("skips_child_session", async () => {
 
 test("skips_when_marker_already_present", async () => {
   const { fn, calls } = spawnCounter(ok("builder root: /x"));
-  mod._setSpawn(fn);
+  setSpawn(fn);
   const plugin = await mod.BuilderPlugin({ client: fakeClient(), directory: root });
   const out = await transform(plugin, messages(sid(), "builder root: /x\nrest"));
   assert.equal(out[0].parts.length, 1);
@@ -70,7 +71,7 @@ test("skips_when_marker_already_present", async () => {
 });
 
 test("falls_back_to_soul_without_python", async () => {
-  mod._setSpawn(() => ({ error: new Error("ENOENT"), status: null, stdout: "" }));
+  setSpawn(() => ({ error: new Error("ENOENT"), status: null, stdout: "" }));
   const plugin = await mod.BuilderPlugin({ client: fakeClient(), directory: root });
   const out = await transform(plugin, messages(sid()));
   assert.equal(out[0].parts.length, 2);
@@ -79,7 +80,7 @@ test("falls_back_to_soul_without_python", async () => {
 
 test("falls_back_to_soul_on_failed_exit_or_empty_output", async () => {
   for (const result of [{ status: 1, stdout: "boom" }, { status: 0, stdout: "  \n" }]) {
-    mod._setSpawn(() => result);
+    setSpawn(() => result);
     const plugin = await mod.BuilderPlugin({ client: fakeClient(), directory: root });
     const out = await transform(plugin, messages(sid()));
     assert.equal(out[0].parts[0].text.trim(), soul.trim());
@@ -110,7 +111,7 @@ test("v2_setup_registers_every_skill", async () => {
   assert.equal(typeof contextHook, "function");
 
   const { fn } = spawnCounter(ok("builder root: /x\nv2 soul"));
-  mod._setSpawn(fn);
+  setSpawn(fn);
   const event = { sessionID: sid(), messages: [{ role: "user", content: [{ type: "text", text: "hi" }] }] };
   await contextHook(event);
   assert.match(event.messages[0].content[0].text, /v2 soul/);
@@ -127,8 +128,22 @@ test("default_export_shape", () => {
 });
 
 test("string_exports_absent", () => {
+  assert.deepEqual(Object.keys(mod).sort(), ["BuilderPlugin", "default"]);
+});
+
+test("every_named_export_is_a_plugin_factory", async () => {
+  const { fn, calls } = spawnCounter(ok("builder root: /x\nfactory soul"));
+  setSpawn(fn);
+  const input = { client: fakeClient(), directory: root };
+  let plugin;
   for (const [key, value] of Object.entries(mod)) {
     if (key === "default") continue;
-    assert.equal(typeof value, "function", `export ${key} must be a function`);
+    const hooks = await value(input);
+    assert.equal(typeof hooks, "object", `${key} must return hooks`);
+    assert.ok(hooks, `${key} must return hooks`);
+    plugin = hooks;
   }
+  const out = await transform(plugin, messages(sid()));
+  assert.equal(calls.length, 1);
+  assert.match(out[0].parts[0].text, /factory soul/);
 });
