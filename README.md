@@ -6,21 +6,11 @@
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://www.conventionalcommits.org)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-8A2BE2)](https://claude.com/claude-code)
 
-[![ctx-wire saved](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Lutherwaves/builder/main/metrics/ctxwire-saved.json)](#the-toolkit-that-builds-this)
-[![commands filtered](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Lutherwaves/builder/main/metrics/ctxwire-commands.json)](#the-toolkit-that-builds-this)
-[![output reduction](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Lutherwaves/builder/main/metrics/ctxwire-reduction.json)](#the-toolkit-that-builds-this)
-
 Operational tools for running AI coding agents at scale. Keep an eye on your
 Claude subscription usage limits, session/context load, and token efficiency
 while you work — without hand-rolling the math or babysitting a dashboard.
 
 Built for [Claude Code](https://claude.com/claude-code).
-
-> The three live badges above are **anonymized aggregates** — total tokens
-> `ctx-wire` has trimmed out of my agent transcripts, commands filtered, and the
-> overall output-reduction ratio. No session, project, or account data. Refresh
-> them with `bash scripts/update-metrics.sh` (see
-> [The toolkit that builds this](#the-toolkit-that-builds-this)).
 
 ## Install
 
@@ -34,20 +24,20 @@ Built for [Claude Code](https://claude.com/claude-code).
 
 ## Skills
 
-- `/builder:watch-limits` — Install the burn-rate projector and schedule a
-  recurring usage-limit watcher (weekly + 5h burn, compaction pick, ctx-wire
-  savings). Run it once and the monitor reports every ~30 min.
+- `/builder:budget` — Read the weekly plan window from `matchblox usage --json`,
+  project the rest of the week (activity-aware, not straight-line), and pick
+  one idle session to compact. Optional watcher every ~30 min.
 - `/builder:intake` — Grab & reconcile: pull today's captured tasks from a
-  tracker (Todoist, or a GitHub Project's draft items), drop anything already in motion (live session, open
-  PR, existing issue), and groom the raw leftovers into issues. Annotates by
-  default; creates issues only when you mark a task for it. Pluggable source
-  adapter — bring your own MCP for other trackers.
-- `/builder:code-graph` — Wire a local
+  tracker (Todoist, or a GitHub Project's draft items), and optionally the
+  messages you marked on your team channel; drop anything already in motion
+  (live session, open PR, existing issue), and groom the raw leftovers.
+  Annotates by default; creates issues only when you mark a task for it.
+- `/builder:harness` — Give a repo a local
   [codebase-memory-mcp](https://github.com/DeusData/codebase-memory-mcp) graph
-  into a repo so agents answer structural questions (where is X, what calls Y,
-  architecture) instead of grep-reading files. One graph per repo path — clones
-  and worktrees stay isolated — plus a watcher that flags stale indexes with the
-  ~9s re-index command. Local-only, no API key.
+  so agents answer structural questions (where is X, what calls Y,
+  architecture) instead of grep-reading files: baseline → provision → route →
+  freshness → verify. One graph per checkout, plus a watcher that names stale
+  graphs. Local-only, no API key.
 
 ## Doctrine
 
@@ -57,37 +47,37 @@ Each skill is one intervention on those levers, not a standalone gadget:
 
 | Skill | What it shapes |
 | --- | --- |
-| `code-graph` | Routes context just in time and makes the codebase a legible tool — a queryable structural graph instead of grep-reading files, kept fresh by a watcher. |
-| `harness` | Applies that loop to a repo end to end: baseline → provision → route → verify. |
-| `watch-limits` | Optimizes for measured effectiveness — tokens and attention against your real usage limits. |
+| `harness` | Routes context just in time and makes the codebase a legible tool — a queryable structural graph instead of grep-reading files, kept fresh, applied end to end: baseline → provision → route → freshness → verify. |
+| `budget` | Optimizes for measured effectiveness — tokens and attention against your real usage limits. |
 | `intake` | Turns feedback into infrastructure — captured work reconciled into durable issues. |
 
 The framing derives from Ryan Lopopolo's
 [Harness Engineering](https://github.com/lopopolo/harness-engineering) corpus
 (CC BY 4.0). See [`AGENTS.md`](AGENTS.md) for skill-selection routing.
 
-## What the watcher reports
+## What the budget watcher reports
 
 1. **Weekly burn rate** — how much of your weekly limit you've used, and whether
    you're on pace to blow it before the (fixed) reset. Uses an **activity-aware**
    projection (discounts your sleep window + weekend) so a hot evening or weekday
    start doesn't trigger a false alarm.
-2. **Session/context load** — busy vs idle sessions and total subagents.
-3. **Compaction pick** — the highest-context *idle* session, safe to compact now.
-4. **ctx-wire savings** — cumulative tokens saved + a per-interval delta.
+2. **5-hour window** — the short window's use.
+3. **Session load** — busy, idle and waiting sessions.
+4. **Compaction pick** — the highest-context *idle* session.
 
 ## Prerequisites
 
-- `cctop` on PATH, with its status-line tap writing `~/.claude/cctop/usage.json`
-  (see cctop's usage-limits docs). The watcher has no weekly data without it.
-- `ctx-wire` (optional) — enables the savings section.
+- [`matchblox`](https://matchblox.sh) on PATH for the plan windows and the
+  sessions (`curl -fsSL https://matchblox.sh | sh`). Without it, read `/usage`
+  and pass the numbers to `burn-proj.py` by hand.
 
 ## Standalone use (no plugin)
 
-Just want the projector? Copy `skills/watch-limits/burn-proj.py` anywhere and:
+Just want the projector? Copy `skills/budget/burn-proj.py` anywhere and:
 
 ```bash
 python3 burn-proj.py <used_pct> <resets_at_epoch> [now_epoch]
+python3 burn-proj.py --from-matchblox [now_epoch]
 # elapsed=15.0%  naive=127%  profile_aware=102%  reset_in=5.95d
 ```
 
@@ -112,19 +102,12 @@ self-contained — but it's what makes contributing frictionless.
   end-to-end. Turn it on with `/permissions` → *Auto-accept edits* (or `⇧⇥`).
 - **[superpowers](https://github.com/obra/superpowers)** (obra's skill
   marketplace) — process skills for real engineering discipline. The
-  `watch-limits` skill in this repo was written **test-first** with
+  `budget` skill in this repo was written **test-first** with
   `superpowers:writing-skills`: baseline an agent *without* the skill, watch it
   fail, then write the skill to close exactly those failures.
 - **[gstack](https://github.com/garrytan/gstack)** — Garry Tan's opinionated
   CEO / eng-manager / release-manager / QA skill set (`/ship`, `/review`, `/qa`)
   for planning, review, and release flows.
-
-Refresh the metrics badges (anonymized aggregates only) any time with:
-
-```bash
-bash scripts/update-metrics.sh
-git commit -am "chore: refresh metrics"
-```
 
 ## Contributing
 

@@ -58,9 +58,11 @@ fi
 # mtime (a stable index-time marker: read queries don't touch it).
 LIVE="$(git -C "$REPO" rev-parse HEAD 2>/dev/null || true)"
 DB="${HOME}/.cache/codebase-memory-mcp/${PROJECT}.db"
-DBMTIME="$(stat -c %Y "$DB" 2>/dev/null || echo 0)"
+# GNU stat (Linux) takes -c %Y; BSD stat (macOS) takes -f %m.
+if stat -c %Y / >/dev/null 2>&1; then MTIME=(stat -c %Y); else MTIME=(stat -f %m); fi
+DBMTIME="$("${MTIME[@]}" "$DB" 2>/dev/null || echo 0)"
 NEWEST="$(git -C "$REPO" ls-files -z 2>/dev/null \
-  | ( cd "$REPO" 2>/dev/null && xargs -0 -r stat -c %Y 2>/dev/null ) | sort -rn | head -1 || true)"
+  | ( cd "$REPO" 2>/dev/null && xargs -0 -r "${MTIME[@]}" 2>/dev/null ) | sort -rn | head -1 || true)"
 NEWEST="${NEWEST:-0}"
 
 REASON=""

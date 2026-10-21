@@ -1,0 +1,1 @@
+Run my intake pass. Todoist, gh and Slack don't work from this box, so I exported everything into this folder (see README.md): today's Todoist tasks, the open PRs and issues of acme/shop, the live agent sessions, and the Slack messages from #team. Default repo is acme/shop. Create issues for whatever needs one, I trust your judgement.

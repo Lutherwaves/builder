@@ -39,7 +39,8 @@ for f in prompt.md expect.md; do [ -s "$fx/$f" ] || { echo "✗ $skill: $f is mi
 out="${BUILDER_EVAL_OUT:-${XDG_STATE_HOME:-$HOME/.local/state}/builder/evals}/$skill/$(date +%Y%m%d-%H%M%S)"
 # The prompt goes in on stdin, so a prompt that starts with '-' never parses as an option.
 # acceptEdits lets the agent edit files in the temp dir; the deny list blocks push, network tools,
-# and the commands that steer the person's real agent sessions (matchblox, tmux).
+# the commands that steer the person's real agent sessions (matchblox, tmux), and anything that
+# schedules a job or registers an MCP server outside the temp dir.
 # An optional allow file adds tool rules (one per line), e.g. the fixture's test command.
 allow=()
 if [ -f "$fx/allow" ]; then
@@ -54,7 +55,8 @@ base=(claude -p --output-format text --permission-mode acceptEdits
       "Bash(matchblox send:*)" "Bash(matchblox compact:*)" "Bash(matchblox hold:*)"
       "Bash(matchblox release:*)" "Bash(matchblox kill:*)" "Bash(matchblox new:*)"
       "Bash(matchblox rename:*)" "Bash(matchblox stoker:*)"
-      "Bash(tmux send-keys:*)" "Bash(tmux kill-session:*)")
+      "Bash(tmux send-keys:*)" "Bash(tmux kill-session:*)"
+      "CronCreate" "CronDelete" "RemoteTrigger" "Bash(crontab:*)" "Bash(claude mcp:*)")
 
 show() { printf '%q ' "$@"; echo; }
 

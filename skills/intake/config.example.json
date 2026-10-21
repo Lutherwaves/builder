@@ -6,6 +6,11 @@
     "owner": "owner",
     "number": 1
   },
+  "annotate_in_tracker": false,
+  "messages": {
+    "from": "none",
+    "mark": "saved"
+  },
   "labels": {
     "needs_grooming": "intake:needs-grooming",
     "filed": "intake:filed"

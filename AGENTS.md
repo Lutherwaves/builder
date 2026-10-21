@@ -12,9 +12,8 @@ Pick the skill whose lever matches the gap you observe:
 
 | You need to… | Skill | Lever |
 | --- | --- | --- |
-| Let an agent answer "where is X / what calls Y / architecture" without grep-reading files | `code-graph` | Tools + just-in-time context |
-| Adopt that graph-first workflow in a new repo end to end | `harness` | Both, as a loop |
-| Know whether you'll blow your weekly usage limit, and which idle session to compact | `watch-limits` | Effectiveness / economics |
+| Let agents answer "where is X / what calls Y / architecture" from a local code graph, kept fresh, instead of grep-reading files | `harness` | Tools + just-in-time context, as a loop |
+| Know whether the week's usage limit lasts, and which idle session to compact | `budget` | Effectiveness / economics |
 | Reconcile a task tracker against work already in flight and groom the rest | `intake` | Feedback into infrastructure |
 
 ## Working on builder
@@ -22,8 +21,10 @@ Pick the skill whose lever matches the gap you observe:
 - Skills live in `skills/<name>/SKILL.md`; they are auto-discovered — no manifest
   to edit. Each must open with a `---` frontmatter block carrying `name:` and
   `description:` (see any existing skill).
+- Every skill has the same shape: a `description:` that starts "Use when", 60 to
+  150 lines, and the sections `## Common mistakes` and `## Self-check`.
 - Run `bash scripts/validate.sh` before opening a PR. It checks manifest JSON,
-  skill frontmatter, and Python compilation. CI runs it too.
+  skill frontmatter and shape, Python compilation, and the tests. CI runs it too.
 - Keep skills self-contained and composable: a new application skill should call
   an existing capability skill, not re-implement it.
 - Conventional Commits; release is automated via release-please.

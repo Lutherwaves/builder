@@ -19,5 +19,5 @@ labels: bug
 
 - OS:
 - Claude Code version:
-- `cctop` / `ctx-wire` present? (`command -v cctop ctx-wire`)
+- `matchblox` present? (`command -v matchblox`)
 - `bash scripts/validate.sh` result:

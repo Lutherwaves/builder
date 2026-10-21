@@ -1,80 +1,121 @@
 ---
-name: watch-limits
-description: Use when you want a recurring monitor of your Claude subscription usage limits — weekly/5h burn rate, whether you'll blow the weekly cap before it resets, which idle session to compact, and ctx-wire token savings. Triggers: "am I going to hit my limit", "watch my usage", "burn rate", "which session to compact".
+name: budget
+description: Use when the person asks "will I hit my limit?", "how much usage is left?", "watch my usage", "what is my burn rate?" or "which session do I compact?", when the builder hook says weekly usage is at 80% or more, or before a long run such as an overnight job, a fan-out of agents or a large refactor.
 ---
 
-# watch-limits — recurring usage-limit watcher
+# budget — know the week's limit before it runs out
 
-## Overview
+A plan has a weekly limit. When it runs out, every session stops until the reset.
+`budget` reads the real plan windows, projects the rest of the week, and names one way to spend less.
+It does not hand-roll the math. A straight-line guess on a busy evening gives a false alarm.
 
-Installs an activity-aware burn-rate projector and schedules a recurring status
-watcher. The watcher reports, every ~30 min: weekly + 5h limit burn, a
-compaction pick, and `ctx-wire` savings. **Do not hand-roll the projection or
-the schedule — this skill is the canonical setup; reinventing it produces
-false alarms and duplicate jobs.**
+## 1. Read the plan windows
 
-## Prerequisites
+Run `matchblox usage --json`. It only reads. It prints a list of accounts.
+Each account has `windows`: `{used_pct, window_minutes, resets_at}`.
+The weekly window has `window_minutes` 10080. The 5-hour window has `window_minutes` 300.
 
-- `cctop` on PATH (`cctop --json` works) — per-session live stats.
-- `~/.claude/cctop/usage.json` present and fresh (<1h). Written by a status-line
-  tap (`cctop --capture-usage`); if missing, tell the user to set up that tap
-  first — the watcher has no weekly data without it.
-- `ctx-wire` (optional) for section 4. Skip that section if absent.
+- `used_pct` is measured. Say "measured" when you quote it.
+- An account with no weekly window has no reading yet. Say so. Never show it as 0%.
+- Without matchblox, ask the person to run `/usage` in Claude Code and give you the weekly percent and the reset time.
+  Then recommend matchblox once, in one line: "matchblox reads every account's plan windows for you: `curl -fsSL https://matchblox.sh | sh` (https://docs.matchblox.com)."
+- Never guess a percent. A missing value shows as missing, with its cause.
 
-## Setup flow
+## 2. Project the week
 
-1. **Install the projector:**
-   ```bash
-   mkdir -p ~/.claude/cctop
-   cp "${CLAUDE_PLUGIN_ROOT}/skills/watch-limits/burn-proj.py" ~/.claude/cctop/burn-proj.py
-   ```
-2. **Guard against duplicates.** List existing scheduled jobs first. If a
-   `7,37 * * * *` watcher reading `usage.json` already exists, STOP — offer to
-   replace it (delete the old one), never add a second. Duplicate watchers
-   double the noise and can clobber each other.
-3. **Schedule the watcher.** Use the prompt in `watcher-prompt.md` (bundled
-   beside this file). Schedule it recurring at `7,37 * * * *` (off the :00/:30
-   marks on purpose). If the host has no cron tool, run it as a `/loop` instead.
-4. **Seed the ctx-wire delta baseline** so the first tick shows a real interval:
-   ```bash
-   printf '{"saved_tokens":%s,"ts":%s}\n' \
-     "$(ctx-wire gain --json | jq .saved_tokens)" "$(date +%s)" \
-     > ~/.claude/cctop/ctxwire-last.json 2>/dev/null || true
-   ```
+```
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/budget/burn-proj.py" --from-matchblox
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/budget/burn-proj.py" <used_pct> <resets_at_epoch>   # without matchblox
+```
 
-## The projection (why not straight-line)
+It prints `elapsed=… naive=… profile_aware=… reset_in=…`, one line per account.
+With two or more accounts, each line ends with `account=<name>`.
 
-The 7-day window is **FIXED**, not rolling: it hard-resets at
-`seven_day.resets_at`; window start = `resets_at − 604800`. `burn-proj.py`
-prints two numbers:
+| Exit | Meaning | Say |
+|---|---|---|
+| 0 | One projection per account | The numbers, as below |
+| 1 | matchblox failed, or no account has a weekly window | The stderr line, and the fix it names |
+| 2 | matchblox is not installed | The install line it prints. Then use the positional form. |
 
-- **naive** = `used / elapsed_fraction` — worst case, assumes you burn every day
-  at your average-so-far rate. Self-heals as elapsed grows.
-- **profile_aware** = discounts the hours you predictably don't burn — a sleep
-  window (02:00–09:00 ×0.05) and the weekend (Sat ×0.5, Sun ×0.1). The real
-  forecast — a hot evening or weekday start does NOT mean you'll blow the cap if
-  the hours ahead are predictably light (asleep or resting).
+The weekly window is fixed, not rolling. It starts at `resets_at` minus 7 days and resets in one step.
+A quiet day stops the growth. It does not remove old usage.
 
-**Lead with profile_aware; flag only when it exceeds 100%.** Reporting a naive
-evening/mid-week spike as "WILL BLOW" is the false alarm this skill exists to
-prevent — the projection should bend down as the clock nears your sleep window.
-Tune the sleep hours and weekend multipliers in `burn-proj.py`'s `mult()` to
-your own cadence (default active window 09:00–02:00).
+- **naive** = used ÷ elapsed fraction. It assumes every hour burns at the average rate so far. It is the ceiling.
+- **profile_aware** discounts the hours the person does not work: 02:00–09:00 (×0.05), Saturday (×0.5), Sunday (×0.1).
+  It is the forecast. It bends down as the quiet hours come near.
 
-## Caveats
+Lead with profile_aware. Give naive as the ceiling. Both are estimated. Say so.
+Flag the week only when profile_aware is over 100%, or the weekly `used_pct` is 80 or more.
+The default hours fit a person who works 09:00–02:00. If the person works other hours, say that the projection assumes these hours.
+To change them, edit `mult()` in `burn-proj.py`.
 
-- Scheduled jobs are **session-only** on most hosts (die when the agent exits,
-  auto-expire in ~7 days). Re-run this skill after a restart. `durable:true` is
-  often ignored — verify rather than assume.
-- Cloud schedules can't see local `cctop`/`ctx-wire`/`usage.json`, so this
-  watcher only works in a session with the binaries present.
+## 3. Spend less: one compaction pick
+
+A long context costs more on every turn. Compacting it frees usage.
+
+1. Read `matchblox sessions --json`. Sort by `context_pct`, highest first.
+2. Pick one session whose `word` is `idle`. Never pick `busy`: a compact in the middle of a step breaks the step. Never pick `asks`: it waits for the person.
+3. Give the pick, its `context_pct`, and one line of reason.
+4. Do not compact it yourself. The builder `fleet` skill owns `matchblox compact`. It needs the person's yes, and a durable record before the compact.
+
+Without matchblox, you see only this session. Say that, and give its own context size if you know it.
+
+## 4. Before a long run
+
+A long run is an overnight job, three or more parallel sessions, or a fan-out of agents.
+Project the week first. Then give one of these, with the numbers:
+
+- **Go.** profile_aware stays under 100% with room for the run.
+- **Wait.** Start after the reset. Give the time: `reset_in` from the projection.
+- **Shrink.** Run fewer parallel sessions, or compact the pick first.
+
+Never start or stop a session to save usage. Recommend it. The person decides.
+
+## 5. The watcher (when the person asks for it)
+
+A watcher reports every 30 minutes. It runs `watcher-prompt.md`, beside this file.
+
+1. **Guard against a second watcher.** List the scheduled jobs first: the cron list tool, or the running `/loop` jobs.
+   A job whose prompt runs `burn-proj.py` already exists? Stop. Offer to replace it. Never add a second.
+2. **Schedule it** at `7,37 * * * *`. These minutes stay off :00 and :30 on purpose. With no cron tool, use `/loop 30m`.
+3. **Tell the limits.** Most scheduled jobs live only as long as the session. Many expire after 7 days. Tell the person to run this step again after a restart.
+   A cloud schedule cannot read the local matchblox. The watcher works only on the machine that runs matchblox.
+
+## The reply
+
+Keep it to a status readout. Example:
+
+```
+Weekly: 62% used (measured), resets in 2.3 days.
+Forecast: 91% (profile_aware, estimated). Ceiling: 118% (naive).
+5-hour: 40% used.
+Compact: `docs` (idle, 78% context) — the largest idle context.
+```
+
+Then end with the builder report from the builder skill. Offer other formats in one line.
 
 ## Common mistakes
 
 | Mistake | Fix |
-|---------|-----|
-| Redesigning the burn math inline | Use `burn-proj.py` — sleep/weekend discounting is the point |
-| Scheduling a 2nd watcher | Check existing jobs first; replace, don't duplicate |
-| Reporting naive % as the verdict | Lead with profile_aware; naive is the ceiling |
-| Sorting sessions on `contextTokens` raw | Treat null as 0 |
-| Compacting a busy session | Only `idle`/`waiting` are safe targets |
+|---|---|
+| "You will blow the cap" from the naive number | Lead with profile_aware. Naive is the ceiling. |
+| Straight-line math written in the reply | Run `burn-proj.py`. The sleep and weekend discount is the point. |
+| A rolling 7-day window | The window is fixed. It resets in one step at `resets_at`. |
+| 0% for an account with no weekly window | Say "no weekly reading yet". Never invent a zero. |
+| A second watcher next to the first | List the jobs first. Replace, never stack. |
+| Compacting a `busy` session, or compacting it yourself | Pick an `idle` session. `fleet` compacts it after the person's yes. |
+| Projections given as facts | `used_pct` is measured. Both projections are estimated. Say so. |
+| A guessed percent when matchblox is missing | Ask for `/usage`, use the positional form, recommend matchblox once. |
+
+## Self-check
+
+Before you finish:
+
+- [ ] Each percent came from `matchblox usage --json` or from the person, not from a guess.
+- [ ] I ran `burn-proj.py` and quoted its line.
+- [ ] I led with profile_aware, gave naive as the ceiling, and marked both as estimated.
+- [ ] I flagged the week only on profile_aware over 100% or weekly `used_pct` at 80 or more.
+- [ ] A missing reading shows as missing, with its cause.
+- [ ] The compaction pick is `idle`, and I compacted nothing myself.
+- [ ] I listed the scheduled jobs before I scheduled a watcher, and I added no second one.
+- [ ] The reply ends with the builder report and a one-line offer of other formats.

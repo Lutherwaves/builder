@@ -13,7 +13,7 @@ token-efficiency watchers.
    /plugin install builder@builder
    ```
 3. Skills live under `skills/<skill-name>/SKILL.md` (Markdown + YAML frontmatter).
-   Bundled tools sit beside the skill (e.g. `skills/watch-limits/burn-proj.py`).
+   Bundled tools sit beside the skill (e.g. `skills/budget/burn-proj.py`).
 
 ## Before you open a PR
 
@@ -23,8 +23,10 @@ Run the validator — CI runs the same script and it gates merges:
 bash scripts/validate.sh
 ```
 
-It checks: manifests parse, skills have valid frontmatter, Python tools compile,
-and `burn-proj.py`'s output shape is stable.
+It checks: manifests parse, skills have valid frontmatter and the skill shape
+(description starts "Use when", 60 to 150 lines, `## Common mistakes` and
+`## Self-check`), Python tools compile, `burn-proj.py`'s output shape is stable,
+and the tests pass.
 
 ## Commit convention
 

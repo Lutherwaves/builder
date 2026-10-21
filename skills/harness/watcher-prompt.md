@@ -1,41 +1,29 @@
-# Stale-index watcher — prompt template
+# Stale-graph watcher — prompt template
 
-Drop this into a recurring agent job (Claude Code `/loop`, a cron prompt, etc.).
-It assumes the `code-graph` skill has run at least once, so the
-codebase-memory-mcp binary is discoverable and `~/.claude/code-graph/repos.txt`
-lists the repos to watch. `drift.sh` lives beside this file at
-`${CLAUDE_PLUGIN_ROOT}/skills/code-graph/drift.sh`. Runtime state lives in
-`~/.claude/code-graph/` and is not committed.
+Put this prompt into a recurring agent job (`/loop 30m`, or a cron prompt at `22,52 * * * *`).
+It needs one run of `setup.sh` first, so the binary exists and `~/.claude/code-graph/repos.txt` lists the repositories.
+The `harness` skill (`builder:harness`) is the full spec. This prompt drives one pass.
 
 ---
 
-Read `~/.claude/code-graph/repos.txt` (tab-separated: `<abs-path>\t<project>`,
-one repo per line). If it is missing or empty, say "no repos registered — run
-/builder:code-graph in a repo first" and stop. Otherwise, for EACH line's path
-(the first field), run:
+Run one freshness pass. Only read. Never re-index.
 
-  bash ${CLAUDE_PLUGIN_ROOT}/skills/code-graph/drift.sh <path>
+Read `~/.claude/code-graph/repos.txt`. Each line is `<abs-path>\t<project>\t<indexed-sha>`.
+If the file is missing or empty, say "No repository is registered. Run /builder:harness in a repository first." and stop.
 
-(drift.sh resolves the project name from the registry itself — just pass paths.)
+For each line, run:
 
-Each call prints one `VERDICT=…` line. Produce a tight, scannable report:
+    bash "${CLAUDE_PLUGIN_ROOT}/skills/harness/drift.sh" <abs-path>
 
-1. STALE INDEXES: List every repo whose verdict is `STALE`, showing the short
-   project slug and `reason=` (`commits` = HEAD moved since index; `edits` = a
-   tracked file was modified after the graph was built; or both). These return
-   wrong/old answers until re-indexed. For each, give the exact fix (re-index is
-   ~9s and incremental):
-     <binary> cli index_repository --repo-path <path> --mode moderate
-   Recommend re-indexing the STALE repos that have a LIVE Claude Code session
-   first (cross-reference `cctop --json` session cwds if available) — a stale
-   graph under an active session is the one actively misleading an agent.
+Each call prints one `VERDICT=…` line. Then report:
 
-2. NOT INDEXED / NO BINARY: List repos that report `NOT_INDEXED` (registered but
-   never indexed, or the graph was deleted) or `NO_BINARY` (binary missing —
-   the setup step must run again). One line each with the one-command fix.
+1. **Stale.** Each `STALE` repository: the project, and `reason=` (`commits`: HEAD moved after the index; `edits`: a tracked file changed after the index).
+   A stale graph gives old answers. Give the re-index command for each:
+   `<binary> cli index_repository --repo-path <path> --mode moderate`
+2. **Not indexed, no binary.** Each `NOT_INDEXED` or `NO_BINARY` line, with its one-command fix:
+   run `setup.sh` again, or install the binary.
+3. **Fresh.** Only a count: "N of M fresh".
 
-3. FRESH: Just a count ("N of M fresh"). Do not enumerate them.
-
-Never auto-re-index without the user saying so — indexing is cheap but not free,
-and re-indexing a busy repo mid-task can churn. Surface the picks; let them
-pull the trigger. Keep it to a status readout, not prose.
+Do not re-index. A re-index in the middle of another session's task changes the answers under it.
+The person runs the command, or says yes. Keep the reply to a status readout.
+When all graphs are fresh, say so in one line.

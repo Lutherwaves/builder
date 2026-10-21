@@ -1,0 +1,5 @@
+- Runs `burn-proj.py` on the weekly window (from `matchblox usage --json`, `window_minutes` 10080) and leads with the profile_aware forecast, with naive as the ceiling.
+- Labels the weekly `used_pct` as measured and both projections as estimated.
+- Makes one call for the overnight run (go, wait for the reset with its time, or shrink) and gives the numbers behind it.
+- Names one idle session as the compaction pick, never a busy or asking one, and does not compact it.
+- Before any watcher, lists the scheduled jobs to avoid a second one, names the `7,37 * * * *` schedule, and says the job lives only as long as the session.

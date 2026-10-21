@@ -1,0 +1,4 @@
+[
+  {"name": "onboarding-emails", "word": "busy", "context_pct": 41, "ship": {"repo": "acme/shop", "number": null, "note": "drafting the welcome and day-3 emails"}},
+  {"name": "search", "word": "idle", "context_pct": 12, "ship": null}
+]

@@ -46,4 +46,27 @@ rm -rf "$tmp/nogit"; cp -R "$tmp/clean" "$tmp/nogit"; rm -rf "$tmp/nogit/.git"
 out="$(cd "$tmp/nogit" && GIT_CEILING_DIRECTORIES="$tmp" BUILDER_DENYLIST="$tmp/deny.txt" bash scripts/validate.sh 2>&1)"; rc=$?
 [ "$rc" -eq 1 ] && grep -q '✗ scrub: git grep failed' <<<"$out" && check "git grep error fails" ok || check "git grep error fails" bad
 
+# Case 8 (test_skill_without_self_check_fails): a skill with no "## Self-check" fails the shape check.
+rm -rf "$tmp/shape"; cp -R "$tmp/clean" "$tmp/shape"
+sed -i.bak 's/^## Self-check$/## Checks/' "$tmp/shape/skills/budget/SKILL.md"; rm -f "$tmp/shape/skills/budget/SKILL.md.bak"
+out="$(cd "$tmp/shape" && env -u BUILDER_DENYLIST bash scripts/validate.sh 2>&1)"; rc=$?
+[ "$rc" -eq 1 ] && grep -q '✗ skills/budget/SKILL.md has no "## Self-check"' <<<"$out" \
+  && check "skill without self-check fails" ok || check "skill without self-check fails (got $rc)" bad
+
+# Case 9: a description that does not start "Use when" fails.
+rm -rf "$tmp/shape"; cp -R "$tmp/clean" "$tmp/shape"
+sed -i.bak 's/^description: Use when/description: Handy when/' "$tmp/shape/skills/intake/SKILL.md"; rm -f "$tmp/shape/skills/intake/SKILL.md.bak"
+out="$(cd "$tmp/shape" && env -u BUILDER_DENYLIST bash scripts/validate.sh 2>&1)"; rc=$?
+[ "$rc" -eq 1 ] && grep -q '✗ skills/intake/SKILL.md description does not start "Use when"' <<<"$out" \
+  && check "description without Use when fails" ok || check "description without Use when fails (got $rc)" bad
+
+# Case 10: a skill outside 60 to 150 lines fails; one without "## Common mistakes" fails.
+rm -rf "$tmp/shape"; cp -R "$tmp/clean" "$tmp/shape"
+head -40 "$tmp/clean/skills/harness/SKILL.md" > "$tmp/shape/skills/harness/SKILL.md"
+sed -i.bak 's/^## Common mistakes$/## Pitfalls/' "$tmp/shape/skills/reach/SKILL.md"; rm -f "$tmp/shape/skills/reach/SKILL.md.bak"
+out="$(cd "$tmp/shape" && env -u BUILDER_DENYLIST bash scripts/validate.sh 2>&1)"; rc=$?
+[ "$rc" -eq 1 ] && grep -q '✗ skills/harness/SKILL.md has 40 lines (need 60 to 150)' <<<"$out" \
+  && grep -q '✗ skills/reach/SKILL.md has no "## Common mistakes"' <<<"$out" \
+  && check "short skill and missing common mistakes fail" ok || check "short skill and missing common mistakes fail (got $rc)" bad
+
 exit "$fails"

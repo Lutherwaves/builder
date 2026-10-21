@@ -28,14 +28,13 @@ Security-relevant surfaces:
 
 - `skills/*/SKILL.md` — instructions Claude Code treats as trusted content.
 - `scripts/*.sh` and bundled tools (e.g. `burn-proj.py`) — run locally.
-- Files written under `~/.claude/cctop/` (`burn-proj.py`, `ctxwire-last.json`).
-- Scheduled watcher prompts that read `cctop`, `ctx-wire`, and
-  `~/.claude/cctop/usage.json`.
+- Files written under `~/.claude/code-graph/` (the graph registry) and
+  `~/.claude/intake/` (config and seen messages).
+- Scheduled watcher prompts that read `matchblox usage --json`,
+  `matchblox sessions --json`, and the graph registry.
 
 The tools are **read-only with respect to your account**: they read local files
-and process output. They make no network calls and store no secrets. The
-optional metrics badge publishes only an aggregate token count — no session,
-project, or account data.
+and process output. They make no network calls and store no secrets.
 
-Out of scope: the Claude Code harness itself, `cctop`/`ctx-wire` upstream, and
+Out of scope: the Claude Code harness itself, `matchblox` upstream, and
 user-authored content.

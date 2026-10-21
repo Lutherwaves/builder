@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Validate the builder plugin: manifests parse, skills have frontmatter,
-# Python tools compile. Run locally before opening a PR; CI runs it too.
+# Validate the builder plugin: manifests parse, skills have frontmatter and the
+# skill shape, Python tools compile. Run locally before opening a PR; CI runs it too.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -29,9 +29,18 @@ for skill in skills/*/SKILL.md; do
   # frontmatter must be a leading --- fenced block containing name: and description:
   fm="$(awk 'NR==1&&$0!="---"{exit 1} NR==1{next} $0=="---"{exit} {print}' "$skill" 2>/dev/null || true)"
   if [ -z "$fm" ]; then err "$skill has no YAML frontmatter block"; continue; fi
+  before="$fail"; fail=0
   grep -q '^name:'        <<<"$fm" || err "$skill frontmatter missing name:"
   grep -q '^description:'  <<<"$fm" || err "$skill frontmatter missing description:"
-  [ "${fail}" -eq 0 ] && note "✓ $skill"
+  # Skill shape: a script for agents, short enough to read, with its mistakes and its self-check.
+  grep -q '^description: Use when' <<<"$fm" || err "$skill description does not start \"Use when\""
+  lines="$(wc -l < "$skill" | tr -d ' ')"
+  { [ "$lines" -ge 60 ] && [ "$lines" -le 150 ]; } || err "$skill has $lines lines (need 60 to 150)"
+  for section in "## Common mistakes" "## Self-check"; do
+    grep -qx "$section" "$skill" || err "$skill has no \"$section\""
+  done
+  [ "$fail" -eq 0 ] && note "✓ $skill ($lines lines)"
+  [ "$before" -eq 0 ] || fail=1
 done
 [ "$found_skill" -eq 1 ] || err "no skills found under skills/*/SKILL.md"
 
@@ -47,6 +56,9 @@ note "✓ burn-proj smoke: $out"
 
 echo "→ unit tests"
 if ut_out="$(python3 -m unittest discover -s tests -p 'test_*.py' 2>&1)"; then note "✓ unittest"; else printf '%s\n' "$ut_out"; err "unit tests failed"; fi
+
+echo "→ harness drift tests"
+if dr_out="$(bash tests/test_drift.sh 2>&1)"; then note "✓ drift"; else printf '%s\n' "$dr_out"; err "drift tests failed"; fi
 
 echo "→ hook tests"
 if hk_out="$(bash tests/test_hook.sh 2>&1)"; then note "✓ hook"; else printf '%s\n' "$hk_out"; err "hook tests failed"; fi

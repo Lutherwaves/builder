@@ -1,0 +1,4 @@
+# Read-only pass over local exports. No rule here lets the agent create an issue or write to a tracker:
+# the runner denies gh, and the exports are plain files.
+Bash(cat *)
+Bash(jq *)
