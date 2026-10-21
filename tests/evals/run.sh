@@ -37,17 +37,17 @@ fx="$evals/$skill"
 for f in prompt.md expect.md; do [ -s "$fx/$f" ] || { echo "✗ $skill: $f is missing or empty (try --check)" >&2; exit 2; }; done
 
 out="${BUILDER_EVAL_OUT:-$HOME/builder-design/evals}/$skill/$(date +%Y%m%d-%H%M%S)"
-prompt="$(cat "$fx/prompt.md")"
+# The prompt goes in on stdin, so a prompt that starts with '-' never parses as an option.
 # acceptEdits lets the agent edit files in the temp dir; the deny list blocks push and network tools.
-base=(claude -p "$prompt" --output-format text --permission-mode acceptEdits
+base=(claude -p --output-format text --permission-mode acceptEdits
       --disallowedTools "Bash(git push:*)" "Bash(gh:*)" "WebFetch" "WebSearch")
 
 show() { printf '%q ' "$@"; echo; }
 
 if [ "$dry" -eq 1 ]; then
-  echo "# transcripts: $out/{baseline,with}.md"
-  echo "# baseline (cwd: fresh temp copy of $fx/repo)"; show "${base[@]}"
-  echo "# with     (cwd: fresh temp copy of $fx/repo)"; show "${base[@]}" --plugin-dir "$root"
+  echo "# transcripts: $out/{baseline,with}.md (stderr: .err)"
+  echo "# baseline (cwd: fresh temp copy of $fx/repo; stdin: prompt.md)"; show "${base[@]}"
+  echo "# with     (cwd: fresh temp copy of $fx/repo; stdin: prompt.md)"; show "${base[@]}" --plugin-dir "$root"
   exit 0
 fi
 
@@ -58,8 +58,10 @@ workdir() { # $1 = name; makes a fresh copy of repo/ or an empty git repo
   if [ -d "$fx/repo" ]; then cp -R "$fx/repo/." "$tmp/$1/"; else git -C "$tmp/$1" init -q; fi
 }
 workdir baseline; workdir with
-(cd "$tmp/baseline" && "${base[@]}" > "$out/baseline.md" 2>&1) || echo "note: baseline run exited non-zero" >&2
-(cd "$tmp/with" && "${base[@]}" --plugin-dir "$root" > "$out/with.md" 2>&1) || echo "note: with run exited non-zero" >&2
+(cd "$tmp/baseline" && "${base[@]}" < "$fx/prompt.md" > "$out/baseline.md" 2> "$out/baseline.err") \
+  || echo "note: baseline run exited non-zero (see $out/baseline.err)" >&2
+(cd "$tmp/with" && "${base[@]}" --plugin-dir "$root" < "$fx/prompt.md" > "$out/with.md" 2> "$out/with.err") \
+  || echo "note: with run exited non-zero (see $out/with.err)" >&2
 
 for part in "expect.md:Expected" "$out/baseline.md:Baseline (no skill)" "$out/with.md:With skill"; do
   f="${part%%:*}"; [ "$f" = "expect.md" ] && f="$fx/expect.md"

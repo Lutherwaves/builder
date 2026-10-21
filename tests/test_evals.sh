@@ -32,4 +32,24 @@ out="$(BUILDER_EVAL_OUT="$tmp/out" run good --dry-run 2>&1)"; rc=$?
   && ! grep -q -- '--bare' <<<"$out" && [ ! -e "$tmp/out" ] \
   && check "dry-run prints two commands, writes nothing" ok || check "dry-run prints two commands, writes nothing" bad
 
+# A fake claude on PATH: echoes stdin and its args to stdout, writes a marker to stderr.
+mkdir -p "$tmp/bin"
+cat > "$tmp/bin/claude" <<'FAKE'
+#!/usr/bin/env bash
+echo "ARGS: $*"; echo "STDIN: $(cat)"; echo "fake-stderr" >&2
+FAKE
+chmod +x "$tmp/bin/claude"
+mkdir -p "$tmp/evals/dash"
+printf -- '- leading dash prompt\n' > "$tmp/evals/dash/prompt.md"
+printf -- '- a\n- b\n- c\n' > "$tmp/evals/dash/expect.md"
+PATH="$tmp/bin:$PATH" BUILDER_EVAL_OUT="$tmp/out2" run dash </dev/null >/dev/null 2>&1
+d="$(ls -d "$tmp"/out2/dash/*/ 2>/dev/null | head -1)"
+[ -n "$d" ] && grep -q '^STDIN: - leading dash prompt' "$d/baseline.md" && grep -q '^STDIN: - leading dash prompt' "$d/with.md" \
+  && ! grep -q 'leading dash' <(grep '^ARGS:' "$d/baseline.md") \
+  && check "prompt goes to claude on stdin, not as an argument" ok || check "prompt goes to claude on stdin, not as an argument" bad
+[ -n "$d" ] && grep -q 'fake-stderr' "$d/baseline.err" && grep -q 'fake-stderr' "$d/with.err" \
+  && ! grep -q 'fake-stderr' "$d/baseline.md" "$d/with.md" \
+  && check "stderr goes to .err files, not the transcript" ok || check "stderr goes to .err files, not the transcript" bad
+rm -rf "$tmp/evals/dash"
+
 exit "$fails"

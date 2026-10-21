@@ -18,7 +18,7 @@ One directory per skill: `tests/evals/<skill>/`.
 
 Each run uses a fresh temp copy of `repo/` as its working directory.
 
-- Baseline: `claude -p "<prompt>"` with your normal setup.
+- Baseline: `claude -p` with your normal setup. The runner feeds `prompt.md` on stdin, so a prompt that starts with `-` is safe.
 - With: the same command plus `--plugin-dir <repo root>`.
 
 Both use `--output-format text`, `--permission-mode acceptEdits`, and `--disallowedTools "Bash(git push:*)" "Bash(gh:*)" "WebFetch" "WebSearch"`. The agent can edit files in the temp dir. It cannot push or reach the network through these tools. The flag names match `claude --help`. The runner does not use `--bare`, because `--bare` needs an API key and most people sign in with OAuth.
@@ -27,6 +27,6 @@ Because the baseline uses your normal setup, plugins you have installed also loa
 
 ## Transcripts
 
-The runner writes `baseline.md` and `with.md` to `${BUILDER_EVAL_OUT:-$HOME/builder-design/evals}/<skill>/<timestamp>/`. This is outside the repository. Never commit a transcript. The runner prints `expect.md` and both transcripts for you to compare.
+The runner writes `baseline.md` and `with.md` (stdout) and `baseline.err` and `with.err` (stderr) to `${BUILDER_EVAL_OUT:-$HOME/builder-design/evals}/<skill>/<timestamp>/`. This is outside the repository. Never commit a transcript. The runner prints `expect.md` and both transcripts for you to compare.
 
 A skill task is done when the with-skill run shows every `expect.md` bullet.
