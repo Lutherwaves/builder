@@ -18,6 +18,8 @@ grep -q 'builder onboarding' <<<"$text" && check "onboarding marker present" ok 
 grep -q 'builder recommends' <<<"$text" && check "no recommendation block" bad || check "no recommendation block" ok
 grep -q 'Build the right thing' <<<"$text" && check "soul present" ok || check "soul present" bad
 grep -q 'ledger.py" onboarded' <<<"$text" && check "onboarded command named" ok || check "onboarded command named" bad
+grep -qF "To find the next due step, run: python3 \"$root/lib/ledger.py\" next" <<<"$text" && check "next-step command named" ok || check "next-step command named" bad
+grep -qF 'Never invent a step' <<<"$text" && check "no invented steps" ok || check "no invented steps" bad
 grep -qF 'This is required, even when the request is one line.' <<<"$text" && check "intro is required" ok || check "intro is required" bad
 grep -qF 'builder: you decide. I propose, build, and end each piece of work with a report.' <<<"$text" && check "literal intro given" ok || check "literal intro given" bad
 

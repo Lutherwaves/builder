@@ -65,6 +65,13 @@ def _holds(when, signals):
     return True
 
 
+def due_catalog(ledger, catalog):
+    """Until onboarding ends, only onboarding items are due; the hook and `next` agree."""
+    if ledger.get("onboarded"):
+        return list(catalog)
+    return [i for i in catalog if i.get("onboarding")]
+
+
 def next_recommendation(ledger, catalog, signals, now, cooldown_s=COOLDOWN_S):
     answers = ledger.get("answers", {})
     for item in sorted(catalog, key=lambda i: i.get("order", 0)):
@@ -109,7 +116,8 @@ def main(argv):
         sys.path.insert(0, str(Path(__file__).resolve().parent))
         import signals
         sig = signals.collect(os.getcwd())
-        print(json.dumps(next_recommendation(load(path), _catalog(), sig, time.time())))
+        led = load(path)
+        print(json.dumps(next_recommendation(led, due_catalog(led, _catalog()), sig, time.time())))
         return 0
     print("usage: ledger.py answer <id> yes|later|never | ledger.py onboarded | ledger.py next", file=sys.stderr)
     return 2

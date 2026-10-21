@@ -105,6 +105,12 @@ class LedgerTest(unittest.TestCase):
         self.assertIs(led["onboarded"], True)
         self.assertIn("a", led["answers"])
 
+    def test_due_catalog_holds_only_onboarding_items_until_onboarded(self):
+        cat = [dict(item("a"), onboarding=True), item("b")]
+        self.assertEqual([i["id"] for i in ledger.due_catalog(EMPTY, cat)], ["a"])
+        done = {"answers": {}, "onboarded": True}
+        self.assertEqual([i["id"] for i in ledger.due_catalog(done, cat)], ["a", "b"])
+
     def test_signing_item_comes_right_after_gh(self):
         cat = sorted(ledger._catalog(), key=lambda i: i["order"])
         ids = [i["id"] for i in cat]

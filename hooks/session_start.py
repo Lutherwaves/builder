@@ -14,6 +14,7 @@ import signals  # noqa: E402
 LEDGER_PY = '%s/lib/ledger.py' % os.environ.get("CLAUDE_PLUGIN_ROOT", str(ROOT))
 ANSWER = 'python3 "%s" answer %%s yes|later|never' % LEDGER_PY
 ONBOARDED = 'python3 "%s" onboarded' % LEDGER_PY
+NEXT = 'python3 "%s" next' % LEDGER_PY
 
 
 def block(item):
@@ -36,6 +37,8 @@ def onboarding_text(item):
             "Then offer this first setup step and ask: yes, not now, or never.",
             block(item).replace("builder recommends:", "Step:", 1),
             "Offer one step per reply. After each answer, offer the next due step in a later reply.",
+            "To find the next due step, run: %s (it prints the step as JSON, or null when no step is due)." % NEXT,
+            "Never invent a step. Offer only the step that this command prints.",
         ]
     lines.append("When all setup steps are answered, run: %s" % ONBOARDED)
     return "\n".join(lines)
@@ -49,7 +52,7 @@ def build():
         sig = signals.collect(os.getcwd(), 0.5)
         now = time.time()
         if not led["onboarded"]:
-            item = ledger.next_recommendation(led, [i for i in catalog if i.get("onboarding")], sig, now)
+            item = ledger.next_recommendation(led, ledger.due_catalog(led, catalog), sig, now)
             return soul + "\n\n" + onboarding_text(item)
         item = ledger.next_recommendation(led, catalog, sig, now)
         if item:
