@@ -50,7 +50,7 @@ grep -q 'Build the right thing' <<<"$text" && check "soul present" ok || check "
 
 echo "test_without_plugin_root"
 out="$(env -u CLAUDE_PLUGIN_ROOT HOME="$tmp/home" BUILDER_HOME="$tmp/bh" bash "$hook")"
-jq -er '.hookSpecificOutput.additionalContext' <<<"$out" | grep -q 'Build the right thing' && check "works from \$0" ok || check "works from \$0" bad
+grep -q 'Build the right thing' <<<"$(jq -er '.hookSpecificOutput.additionalContext' <<<"$out")" && check "works from \$0" ok || check "works from \$0" bad
 
 echo "test_hook_fast"
 mkdir -p "$tmp/fakebin"
@@ -65,11 +65,11 @@ echo "test_shape_cursor"
 out="$(run "$hook" --harness cursor)"
 jq -e '.additional_context' >/dev/null <<<"$out" && check "additional_context present" ok || check "additional_context present" bad
 jq -e '.hookSpecificOutput' >/dev/null 2>&1 <<<"$out" && check "no hookSpecificOutput" bad || check "no hookSpecificOutput" ok
-jq -r '.additional_context' <<<"$out" | grep -q 'Build the right thing' && check "soul present" ok || check "soul present" bad
+grep -q 'Build the right thing' <<<"$(jq -r '.additional_context' <<<"$out")" && check "soul present" ok || check "soul present" bad
 
 echo "test_shape_codex"
 out="$(run "$hook" --harness codex)"
-jq -er '.hookSpecificOutput.additionalContext' <<<"$out" | grep -q 'Build the right thing' && check "hookSpecificOutput shape" ok || check "hookSpecificOutput shape" bad
+grep -q 'Build the right thing' <<<"$(jq -er '.hookSpecificOutput.additionalContext' <<<"$out")" && check "hookSpecificOutput shape" ok || check "hookSpecificOutput shape" bad
 
 echo "test_text_opencode"
 out="$(run "$hook" --harness opencode)"
@@ -86,18 +86,18 @@ jq -e '.additional_context' >/dev/null <<<"$out" && check "auto detects cursor" 
 
 echo "test_ledger_path_without_claude_root"
 out="$(env -u CLAUDE_PLUGIN_ROOT HOME="$tmp/home" BUILDER_HOME="$tmp/bh" "$hook" --harness cursor)"
-jq -r '.additional_context' <<<"$out" | grep -qF "$root/lib/ledger.py" && check "ledger path uses root" ok || check "ledger path uses root" bad
+grep -qF "$root/lib/ledger.py" <<<"$(jq -r '.additional_context' <<<"$out")" && check "ledger path uses root" ok || check "ledger path uses root" bad
 
 echo "test_no_python_each_shape"
 nopy() { HOME="$tmp/home" BUILDER_HOME="$tmp/bh" PATH=/nonexistent /bin/bash "$hook" "$@"; }
 for h in claude codex unknown auto; do
   out="$(nopy --harness $h)"
-  jq -er '.hookSpecificOutput.additionalContext' <<<"$out" | grep -q 'Build the right thing' && check "$h: hookSpecificOutput" ok || check "$h: hookSpecificOutput" bad
+  grep -q 'Build the right thing' <<<"$(jq -er '.hookSpecificOutput.additionalContext' <<<"$out")" && check "$h: hookSpecificOutput" ok || check "$h: hookSpecificOutput" bad
 done
 out="$(nopy --harness cursor)"
-jq -er '.additional_context' <<<"$out" | grep -q 'Build the right thing' && check "cursor: additional_context" ok || check "cursor: additional_context" bad
+grep -q 'Build the right thing' <<<"$(jq -er '.additional_context' <<<"$out")" && check "cursor: additional_context" ok || check "cursor: additional_context" bad
 out="$(CURSOR_VERSION=x nopy --harness auto)"
-jq -er '.additional_context' <<<"$out" | grep -q 'Build the right thing' && check "auto + CURSOR_VERSION: additional_context" ok || check "auto + CURSOR_VERSION: additional_context" bad
+grep -q 'Build the right thing' <<<"$(jq -er '.additional_context' <<<"$out")" && check "auto + CURSOR_VERSION: additional_context" ok || check "auto + CURSOR_VERSION: additional_context" bad
 out="$(nopy --harness opencode)"
 jq -e . >/dev/null 2>&1 <<<"$out" && check "opencode: plain text" bad || { grep -q 'Build the right thing' <<<"$out" && check "opencode: plain text" ok || check "opencode: plain text" bad; }
 out="$(nopy --harness claude --format text)"

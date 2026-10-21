@@ -6,10 +6,23 @@ tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
 fails=0
 check() { if [ "$2" = "ok" ]; then echo "  ✓ $1"; else echo "  ✗ $1"; fails=1; fi; }
 
+# Every temp repo gets its own gitdir: copy the tree without .git (a worktree's .git is a pointer
+# to the shared gitdir), init, commit, and give it the origin/main that validate.sh looks for.
+mkrepo() {
+  mkdir -p "$2"
+  (cd "$1" && tar --exclude=.git -cf - .) | tar -xf - -C "$2"
+  git -C "$2" init -q
+  git -C "$2" add -A
+  git -C "$2" -c user.name=t -c user.email=t@example.com -c commit.gpgsign=false commit -q -m "chore: base"
+  git -C "$2" update-ref refs/remotes/origin/main HEAD
+}
+snapshot() { { git -C "$root" rev-parse HEAD; git -C "$root" for-each-ref; git -C "$root" status --porcelain; } 2>&1; }
+before="$(snapshot)"
+
 term="secret""corp"; printf '%s\n' "$term" > "$tmp/deny.txt"
 
 # Case 1: a deny-listed term in a tracked file fails the scrub.
-cp -R "$root" "$tmp/dirty"
+mkrepo "$root" "$tmp/dirty"
 echo "$term" >> "$tmp/dirty/README.md"
 git -C "$tmp/dirty" add -A >/dev/null
 out="$(cd "$tmp/dirty" && BUILDER_DENYLIST="$tmp/deny.txt" bash scripts/validate.sh 2>&1)"; rc=$?
@@ -17,7 +30,7 @@ out="$(cd "$tmp/dirty" && BUILDER_DENYLIST="$tmp/deny.txt" bash scripts/validate
 grep -q '✗ scrub: README.md' <<<"$out" && check "output names README.md" ok || check "output names README.md" bad
 
 # Case 2: the clean repo passes.
-rm -rf "$tmp/clean"; cp -R "$root" "$tmp/clean"
+rm -rf "$tmp/clean"; mkrepo "$root" "$tmp/clean"
 git -C "$tmp/clean" add -A >/dev/null
 out="$(cd "$tmp/clean" && BUILDER_DENYLIST="$tmp/deny.txt" bash scripts/validate.sh 2>&1)"; rc=$?
 [ "$rc" -eq 0 ] && check "clean repo exits 0" ok || check "clean repo exits 0 (got $rc)" bad
@@ -42,26 +55,26 @@ out="$(cd "$tmp/clean" && BUILDER_DENYLIST="$tmp/empty.txt" bash scripts/validat
 [ "$rc" -eq 1 ] && check "blank-only deny-list fails" ok || check "blank-only deny-list fails" bad
 
 # Case 7: a real git grep error (not a git repo) fails instead of passing.
-rm -rf "$tmp/nogit"; cp -R "$tmp/clean" "$tmp/nogit"; rm -rf "$tmp/nogit/.git"
+rm -rf "$tmp/nogit"; mkrepo "$tmp/clean" "$tmp/nogit"; rm -rf "$tmp/nogit/.git"
 out="$(cd "$tmp/nogit" && GIT_CEILING_DIRECTORIES="$tmp" BUILDER_DENYLIST="$tmp/deny.txt" bash scripts/validate.sh 2>&1)"; rc=$?
 [ "$rc" -eq 1 ] && grep -q '✗ scrub: git grep failed' <<<"$out" && check "git grep error fails" ok || check "git grep error fails" bad
 
 # Case 8 (test_skill_without_self_check_fails): a skill with no "## Self-check" fails the shape check.
-rm -rf "$tmp/shape"; cp -R "$tmp/clean" "$tmp/shape"
+rm -rf "$tmp/shape"; mkrepo "$tmp/clean" "$tmp/shape"
 sed -i.bak 's/^## Self-check$/## Checks/' "$tmp/shape/skills/budget/SKILL.md"; rm -f "$tmp/shape/skills/budget/SKILL.md.bak"
 out="$(cd "$tmp/shape" && env -u BUILDER_DENYLIST bash scripts/validate.sh 2>&1)"; rc=$?
 [ "$rc" -eq 1 ] && grep -q '✗ skills/budget/SKILL.md has no "## Self-check"' <<<"$out" \
   && check "skill without self-check fails" ok || check "skill without self-check fails (got $rc)" bad
 
 # Case 9: a description that does not start "Use when" fails.
-rm -rf "$tmp/shape"; cp -R "$tmp/clean" "$tmp/shape"
+rm -rf "$tmp/shape"; mkrepo "$tmp/clean" "$tmp/shape"
 sed -i.bak 's/^description: Use when/description: Handy when/' "$tmp/shape/skills/intake/SKILL.md"; rm -f "$tmp/shape/skills/intake/SKILL.md.bak"
 out="$(cd "$tmp/shape" && env -u BUILDER_DENYLIST bash scripts/validate.sh 2>&1)"; rc=$?
 [ "$rc" -eq 1 ] && grep -q '✗ skills/intake/SKILL.md description does not start "Use when"' <<<"$out" \
   && check "description without Use when fails" ok || check "description without Use when fails (got $rc)" bad
 
 # Case 10: a skill outside 60 to 150 lines fails; one without "## Common mistakes" fails.
-rm -rf "$tmp/shape"; cp -R "$tmp/clean" "$tmp/shape"
+rm -rf "$tmp/shape"; mkrepo "$tmp/clean" "$tmp/shape"
 head -40 "$tmp/clean/skills/harness/SKILL.md" > "$tmp/shape/skills/harness/SKILL.md"
 sed -i.bak 's/^## Common mistakes$/## Pitfalls/' "$tmp/shape/skills/reach/SKILL.md"; rm -f "$tmp/shape/skills/reach/SKILL.md.bak"
 out="$(cd "$tmp/shape" && env -u BUILDER_DENYLIST bash scripts/validate.sh 2>&1)"; rc=$?
@@ -72,7 +85,7 @@ out="$(cd "$tmp/shape" && env -u BUILDER_DENYLIST bash scripts/validate.sh 2>&1)
 # Case 11: commit subjects in origin/main..HEAD must follow Conventional Commits.
 commit_in() { git -C "$1" -c user.name=t -c user.email=t@example.com -c commit.gpgsign=false commit -q --allow-empty -m "$2"; }
 run_in() { (cd "$1" && env -u BUILDER_DENYLIST bash scripts/validate.sh 2>&1); }
-rm -rf "$tmp/cc"; cp -R "$tmp/clean" "$tmp/cc"
+rm -rf "$tmp/cc"; mkrepo "$tmp/clean" "$tmp/cc"
 commit_in "$tmp/cc" "feat(scope)!: a person can do a new thing"
 commit_in "$tmp/cc" "chore: release 1.2.3"
 out="$(run_in "$tmp/cc")"; rc=$?
@@ -94,7 +107,7 @@ out="$(run_in "$tmp/cc")"; rc=$?
   && check "no origin/main skips" ok || check "no origin/main skips (got $rc)" bad
 
 # Case 13 (guard_flags_tool_in_skill): a harness tool name in a skill body fails and names the file.
-rm -rf "$tmp/guard"; cp -R "$tmp/clean" "$tmp/guard"
+rm -rf "$tmp/guard"; mkrepo "$tmp/clean" "$tmp/guard"
 printf '%s\n' 'Use the PushNotification tool.' >> "$tmp/guard/skills/reach/SKILL.md"
 printf '%s\n' 'Run /loop 30m now.' >> "$tmp/guard/skills/fleet/SKILL.md"
 out="$(run_in "$tmp/guard")"; rc=$?
@@ -103,16 +116,19 @@ out="$(run_in "$tmp/guard")"; rc=$?
   && check "guard flags tool and slash command in skill" ok || check "guard flags tool and slash command in skill (got $rc)" bad
 
 # Case 14 (guard_allows_mapping_dir): the mapping files may name harness tools.
-rm -rf "$tmp/guard"; cp -R "$tmp/clean" "$tmp/guard"
+rm -rf "$tmp/guard"; mkrepo "$tmp/clean" "$tmp/guard"
 printf '%s\n' '| send a notification | PushNotification, /loop, /usage |' >> "$tmp/guard/skills/builder/harnesses/claude.md"
 out="$(run_in "$tmp/guard")"; rc=$?
 [ "$rc" -eq 0 ] && check "guard allows the mapping dir" ok || check "guard allows the mapping dir (got $rc)" bad
 
 # Case 15 (guard_allows_gh_tmux_matchblox): ordinary tools and paths are not flagged.
-rm -rf "$tmp/guard"; cp -R "$tmp/clean" "$tmp/guard"
+rm -rf "$tmp/guard"; mkrepo "$tmp/clean" "$tmp/guard"
 printf '%s\n' 'Run `gh pr list`, `tmux send-keys`, `matchblox usage --json`, see https://example.com/loop and src/usage/x.' \
   'The monitor of a room and an artifact in prose stay fine in lower case.' >> "$tmp/guard/skills/reach/SKILL.md"
 out="$(run_in "$tmp/guard")"; rc=$?
 [ "$rc" -eq 0 ] && ! grep -q 'guard:' <<<"$out" && check "guard allows gh, tmux, matchblox, paths" ok || check "guard allows gh, tmux, matchblox, paths (got $rc)" bad
+
+# Case 16: the run left the real repo's HEAD, refs and working tree as they were.
+[ "$(snapshot)" = "$before" ] && check "real repo untouched by the test run" ok || check "real repo untouched by the test run" bad
 
 exit "$fails"
