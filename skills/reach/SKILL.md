@@ -53,7 +53,9 @@ A send with no check before it is a defect. A send with no log after it is a def
 
 Use the first route that works:
 
-1. `matchblox notify`, if `matchblox notify --help` exits 0.
+1. matchblox: `python3 "${CLAUDE_PLUGIN_ROOT}/lib/reach.py" matchblox-notify --text "<exact text>"`.
+   It sends only when `matchblox --help` lists a `notify` command. It exits 3 when matchblox has none. Then use route 2.
+   Never run `matchblox notify` yourself. A bare `matchblox <word>` opens a console.
 2. The Claude Code `PushNotification` tool, if this session has it.
 3. An OS notification: `python3 "${CLAUDE_PLUGIN_ROOT}/lib/reach.py" notify --text "<exact text>"`.
    It uses `osascript` on macOS and `notify-send` on Linux.

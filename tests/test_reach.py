@@ -220,6 +220,44 @@ class ReachTest(unittest.TestCase):
         self.assertNotIn("Traceback", r.stderr)
         self.assertIn("draft", r.stderr)
 
+    def matchblox_shim(self, commands):
+        """A fake matchblox: logs every call; --help lists only the given commands."""
+        bin_dir = self.dir / "mbbin"
+        bin_dir.mkdir()
+        help_text = "Usage: matchblox [command] [flags]\n\nCommands:\n" + "".join(
+            "  matchblox %s    does %s\n" % (c, c) for c in commands)
+        (self.dir / "help.txt").write_text(help_text)
+        tool = bin_dir / "matchblox"
+        tool.write_text('#!/bin/sh\nprintf "%%s\\n" "$*" >> "%s/calls"\n'
+                        '[ "$1" = --help ] && cat "%s/help.txt"\nexit 0\n' % (self.dir, self.dir))
+        tool.chmod(0o755)
+        return str(bin_dir) + os.pathsep + "/usr/bin:/bin"
+
+    def calls(self):
+        f = self.dir / "calls"
+        return f.read_text().splitlines() if f.exists() else []
+
+    def test_matchblox_without_notify_falls_through(self):
+        path = self.matchblox_shim(["<host>", "send <who> \"<text>\"", "usage"])
+        r = self.cli("matchblox-notify", "--text", "Waiting for you.", path=path)
+        self.assertEqual(r.returncode, 3)
+        self.assertIn("next route", r.stderr)
+        self.assertEqual(self.calls(), ["--help"])
+
+    def test_matchblox_with_notify_sends(self):
+        path = self.matchblox_shim(["<host>", "notify \"<text>\"", "usage"])
+        r = self.cli("matchblox-notify", "--text", "Waiting for you.", path=path)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(r.stdout.strip(), "matchblox")
+        self.assertEqual(self.calls(), ["--help", "notify Waiting for you."])
+
+    def test_no_matchblox_falls_through(self):
+        empty = self.dir / "empty"
+        empty.mkdir()
+        r = self.cli("matchblox-notify", "--text", "Waiting for you.", path=str(empty))
+        self.assertEqual(r.returncode, 3)
+        self.assertNotIn("Traceback", r.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

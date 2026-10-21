@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -136,6 +137,35 @@ def notify(title, text, platform=sys.platform, path=None):
     return name if r.returncode == 0 else None
 
 
+NO_ROUTE = 3  # exit code: this route does not work here; use the next route
+
+
+def matchblox_has_notify(path=None):
+    """True only when `matchblox --help` lists a notify command. Runs nothing else."""
+    tool = shutil.which("matchblox", path=path)
+    if not tool:
+        return None
+    try:
+        r = subprocess.run([tool, "--help"], stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=3)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    help_text = (r.stdout or "") + (r.stderr or "")
+    return tool if re.search(r"^\s*(matchblox\s+)?notify\b", help_text, re.M) else None
+
+
+def matchblox_notify(text, path=None):
+    """Send a note to the person through `matchblox notify`. Return True on success."""
+    tool = matchblox_has_notify(path)
+    if not tool:
+        return False
+    try:
+        r = subprocess.run([tool, "notify", text], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                           stderr=subprocess.DEVNULL, timeout=10)
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return r.returncode == 0
+
+
 def _unwritable(path, e):
     print("builder cannot write %s (%s); set BUILDER_HOME to a writable folder." % (path, e.strerror or e),
           file=sys.stderr)
@@ -157,6 +187,8 @@ def main(argv):
             s.add_argument("--reason", default="")
     s = sub.add_parser("channel")
     s.add_argument("name", help='where the team talks, e.g. slack, teams; "none" for draft only')
+    s = sub.add_parser("matchblox-notify")
+    s.add_argument("--text", required=True)
     s = sub.add_parser("notify")
     s.add_argument("--text", required=True)
     s.add_argument("--title", default="builder")
@@ -205,6 +237,12 @@ def main(argv):
             return _unwritable(rules_path, e)
         print("ok")
         return 0
+    if a.cmd == "matchblox-notify":
+        if matchblox_notify(a.text):
+            print("matchblox")
+            return 0
+        print("matchblox has no notify command here; use the next route.", file=sys.stderr)
+        return NO_ROUTE
     tool = notify(a.title, a.text)
     if tool is None:
         print("builder found no notification tool (osascript on macOS, notify-send on Linux). "
