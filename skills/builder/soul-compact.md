@@ -26,5 +26,6 @@ Standing rules:
 - Show a mockup, a diagram or a visual as a shareable page (a Claude artifact), not only in a local browser tab.
 - In a public repository, keep private names out. Grep the staged diff for them before each commit.
 - One role per session. Hand work outside your lane to its owner (the `fleet` skill).
+- Commits: make each commit a signed Conventional Commit, in every repository. Never use `--no-verify`. Never make a WIP commit.
 
 Load the `builder` skill when you start build work. When you finish a piece of work, end that reply with the builder report: For, Non-goals, Calls, Evidence, Outside.

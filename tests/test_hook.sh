@@ -33,6 +33,8 @@ text="$(run "$hook" | ctx)"
 grep -q 'Build the right thing' <<<"$text" && check "soul present" ok || check "soul present" bad
 grep -q 'builder recommends' <<<"$text" && check "no recommendation" bad || check "no recommendation" ok
 grep -q 'builder onboarding' <<<"$text" && check "no onboarding" bad || check "no onboarding" ok
+grep -qF 'Conventional Commit' <<<"$text" && grep -qF -- '--no-verify' <<<"$text" && grep -qF 'WIP' <<<"$text" && grep -qiF 'signed' <<<"$text" \
+  && check "commit rules in the soul" ok || check "commit rules in the soul" bad
 
 echo "test_recommendation_block"
 printf '{"onboarded": true, "answers": {}}' > "$tmp/bh/ledger.json"
