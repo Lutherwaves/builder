@@ -27,15 +27,19 @@ def _run_all(cmds, cwd, timeout):
                 stderr=subprocess.DEVNULL, text=True, start_new_session=True)
         except (OSError, ValueError):
             procs[name] = None
+    live = [p for p in procs.values() if p is not None]
+    while live and time.monotonic() < deadline:
+        live = [p for p in live if p.poll() is None]
+        if live:
+            time.sleep(0.005)
     out = {}
     for name, p in procs.items():
         if p is None:
             out[name] = None
-            continue
-        try:
-            stdout, _ = p.communicate(timeout=max(0.0, deadline - time.monotonic()))
+        elif p.poll() is not None:
+            stdout, _ = p.communicate()  # finished: read it, however late we are
             out[name] = (p.returncode, stdout)
-        except subprocess.TimeoutExpired:
+        else:
             try:
                 os.killpg(p.pid, _signal.SIGKILL)
             except OSError:

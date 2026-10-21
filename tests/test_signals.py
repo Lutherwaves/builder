@@ -93,6 +93,20 @@ fi''')
         self.assertLess(time.time() - t, 1.0)
         self.assertFalse(out["gh"])
 
+    def test_finished_calls_are_read_after_a_hung_one(self):
+        self.fake("matchblox", "/bin/sleep 3")
+        self.fake("gh", "exit 0")
+        self.fake("pgrep", "printf '1\\n2\\n3\\n'")
+        # warm the fakes so first-exec cost does not eat the budget
+        for n in ("gh", "pgrep"):
+            os.system("%s/%s >/dev/null 2>&1" % (self.bin, n))
+        t = time.time()
+        out = signals.collect(str(self.cwd), timeout=1.0)
+        self.assertLess(time.time() - t, 1.6)
+        self.assertTrue(out["gh"])
+        self.assertEqual(out["sessions_proc"], 3)
+        self.assertIsNone(out["sessions"])
+
     def test_channel(self):
         self.assertIsNone(signals.collect(str(self.cwd), timeout=GENEROUS)["channel"])
         (self.bhome / "reach.json").write_text('{"channel": "slack"}')

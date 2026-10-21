@@ -46,7 +46,7 @@ grep -qE 'elapsed=.* naive=.* profile_aware=.* reset_in=' <<<"$out" \
 note "✓ burn-proj smoke: $out"
 
 echo "→ unit tests"
-if python3 -m unittest discover -s tests -p 'test_*.py' >/dev/null 2>&1; then note "✓ unittest"; else err "unit tests failed (run: python3 -m unittest discover -s tests -v)"; fi
+if ut_out="$(python3 -m unittest discover -s tests -p 'test_*.py' 2>&1)"; then note "✓ unittest"; else printf '%s\n' "$ut_out"; err "unit tests failed"; fi
 
 echo "→ scrub"
 if [ -z "${BUILDER_DENYLIST:-}" ]; then

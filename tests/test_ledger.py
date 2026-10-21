@@ -28,6 +28,25 @@ class LedgerTest(unittest.TestCase):
         p.write_text("{not json")
         self.assertEqual(ledger.load(p), EMPTY)
 
+    def test_wrong_structure_is_dropped(self):
+        p = self.dir / "ledger.json"
+        p.write_text(json.dumps({"answers": {"a": "yes", "b": {"verdict": "later", "at": "x"}, "c": {"verdict": "maybe", "at": 1},
+                                             "d": {"verdict": "never", "at": 5}}, "onboarded": "yes"}))
+        led = ledger.load(p)
+        self.assertEqual(list(led["answers"]), ["d"])
+        self.assertIs(led["onboarded"], True)
+        self.assertIsNone(ledger.next_recommendation(led, [item("d")], {}, 10.0))
+
+    def test_answer_unwritable_home_exits_nonzero(self):
+        import os, subprocess
+        f = self.dir / "file"
+        f.write_text("x")
+        r = subprocess.run([sys.executable, str(Path(ledger.__file__)), "answer", "a", "yes"],
+                           env=dict(os.environ, BUILDER_HOME=str(f / "sub")), capture_output=True, text=True)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertNotIn("Traceback", r.stderr)
+        self.assertIn("BUILDER_HOME", r.stderr)
+
     def test_missing_ledger_is_empty(self):
         self.assertEqual(ledger.load(self.dir / "none.json"), EMPTY)
 

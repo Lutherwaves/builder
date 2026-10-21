@@ -27,7 +27,12 @@ def load(path):
         return _empty()
     if not isinstance(data, dict) or not isinstance(data.get("answers"), dict):
         return _empty()
-    return {"answers": data["answers"], "onboarded": bool(data.get("onboarded", False))}
+    answers = {
+        k: v for k, v in data["answers"].items()
+        if isinstance(v, dict) and v.get("verdict") in VERDICTS
+        and isinstance(v.get("at"), (int, float)) and not isinstance(v.get("at"), bool)
+    }
+    return {"answers": answers, "onboarded": bool(data.get("onboarded", False))}
 
 
 def save(path, data):
@@ -83,7 +88,11 @@ def main(argv):
     if len(argv) == 4 and argv[1] == "answer" and argv[3] in VERDICTS:
         data = load(path)
         data["answers"][argv[2]] = {"verdict": argv[3], "at": time.time()}
-        save(path, data)
+        try:
+            save(path, data)
+        except OSError as e:
+            print("builder cannot write %s (%s); set BUILDER_HOME to a writable folder." % (path, e.strerror or e), file=sys.stderr)
+            return 1
         print("ok")
         return 0
     if len(argv) == 2 and argv[1] == "next":
