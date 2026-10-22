@@ -155,7 +155,10 @@
     },
     "say": "No code graph is set up, so agents read file after file to find callers and structure.",
     "why": "A code graph answers \"who calls this?\" in one query and keeps the context window small.",
-    "how": "Ask me for the harness skill (it provisions the codebase-memory-mcp graph and keeps it fresh)"
+    "how": "Ask me for the harness skill (it provisions the codebase-memory-mcp graph and keeps it fresh)",
+    "harnesses": [
+      "claude"
+    ]
   },
   {
     "id": "canon",

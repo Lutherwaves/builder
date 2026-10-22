@@ -241,10 +241,16 @@ class ForHarnessTest(unittest.TestCase):
         for h in ("codex", "cursor", "opencode"):
             self.assertNotIn("autocompact", [i["id"] for i in ledger.for_harness(ledger._catalog(), h)])
 
+    def test_code_graph_claude_only_until_other_harnesses_wire_it(self):
+        by = {i["id"]: i for i in ledger._catalog()}
+        self.assertEqual(by["code-graph"]["harnesses"], ["claude"])
+        for h in ("codex", "cursor", "opencode"):
+            self.assertNotIn("code-graph", [i["id"] for i in ledger.for_harness(ledger._catalog(), h)])
+
     def test_per_harness_items(self):
         for h in harness.HARNESSES:
             ids = [i["id"] for i in ledger.for_harness(ledger._catalog(), h)]
-            for need in ("superpowers", "gstack", "matchblox-setup", "code-graph", "fleet", "budget", "canon"):
+            for need in ("superpowers", "gstack", "matchblox-setup", "fleet", "budget", "canon"):
                 self.assertIn(need, ids, (h, need))
         by = {i["id"]: i for i in ledger.for_harness(ledger._catalog(), "cursor")}
         self.assertIn("/add-plugin superpowers", by["superpowers"]["how"])
