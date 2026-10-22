@@ -180,7 +180,14 @@ fi
 
 # Case 22 (support_table_drift_fails): a README table that no results file backs fails validation.
 rm -rf "$tmp/man"; mkrepo "$tmp/clean" "$tmp/man"
-sed -i.bak 's/^No harness has passed its evals yet\.$/| Codex CLI | 1 | 2026-10-22 | supported |/' "$tmp/man/README.md" && rm -f "$tmp/man/README.md.bak"
+python3 - "$tmp/man/README.md" <<'PY'
+import re, sys
+p = sys.argv[1]
+s = open(p).read()
+fake = "| Harness | Version | Eval date | Status |\n| --- | --- | --- | --- |\n| Codex CLI | 1 | 2026-10-22 | supported |\n"
+s = re.sub(r"(<!-- support:start -->\n).*?(<!-- support:end -->)", lambda m: m.group(1) + fake + m.group(2), s, flags=re.S)
+open(p, "w").write(s)
+PY
 out="$(run_in "$tmp/man")"; rc=$?
 [ "$rc" -eq 1 ] && grep -q '✗ README support table is out of date' <<<"$out" \
   && check "support table with no results behind it fails" ok || check "support table with no results behind it fails (got $rc)" bad
