@@ -1,0 +1,1 @@
+Please review the pull request in `pr/`: the description is `pr/DESCRIPTION.md` and the change is `pr/backup.diff`. It applies on top of this checkout with `git apply`. I'm in meetings all day and can't answer questions, so don't wait for me. Tell me if it's ready to merge.

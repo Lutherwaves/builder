@@ -1,0 +1,6 @@
+- Opens with a "What I ran" paragraph (each command and its result), then a "Most important first" numbered list of one-line findings.
+- Each finding has a bold headline that states the harm to a person, a `file:line` and a severity.
+- Each finding carries an evidence line: "confirmed by running" with the probe's input and output (for example `private/` in `.backupignore` → `private/diary.md` uploaded), or "from reading".
+- Each finding carries the smallest fix and names the test that pins it.
+- Checks the PR description claim by claim: each sentence is marked true or false, with the finding that breaks it.
+- Ends with "Declined to judge" and a verdict, and states that nothing was posted and the checkout is unchanged.
