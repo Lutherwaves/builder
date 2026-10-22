@@ -90,7 +90,8 @@ echo "test_cursor_inside_claude_env"
 out="$(CLAUDECODE=1 CURSOR_VERSION=x run "$hook" --harness cursor)"
 jq -e '.additional_context' >/dev/null <<<"$out" && check "cursor shape" ok || check "cursor shape" bad
 out="$(CLAUDECODE=1 CURSOR_VERSION=x run "$hook" --harness auto)"
-jq -e '.additional_context' >/dev/null <<<"$out" && check "auto detects cursor" ok || check "auto detects cursor" bad
+jq -e '.hookSpecificOutput.additionalContext' >/dev/null <<<"$out" && check "auto in Claude Code ignores an inherited Cursor marker" ok || check "auto in Claude Code ignores an inherited Cursor marker" bad
+grep -q 'Build the right thing' <<<"$(jq -er '.hookSpecificOutput.additionalContext' <<<"$out")" && check "auto + Cursor marker keeps the soul" ok || check "auto + Cursor marker keeps the soul" bad
 
 echo "test_ledger_path_without_claude_root"
 out="$(env -u CLAUDE_PLUGIN_ROOT HOME="$tmp/home" BUILDER_HOME="$tmp/bh" "$hook" --harness cursor)"
@@ -104,8 +105,8 @@ for h in claude codex unknown auto; do
 done
 out="$(nopy --harness cursor)"
 grep -q 'Build the right thing' <<<"$(jq -er '.additional_context' <<<"$out")" && check "cursor: additional_context" ok || check "cursor: additional_context" bad
-out="$(CURSOR_VERSION=x nopy --harness auto)"
-grep -q 'Build the right thing' <<<"$(jq -er '.additional_context' <<<"$out")" && check "auto + CURSOR_VERSION: additional_context" ok || check "auto + CURSOR_VERSION: additional_context" bad
+out="$(CLAUDECODE=1 CURSOR_VERSION=x nopy --harness auto)"
+grep -q 'Build the right thing' <<<"$(jq -er '.hookSpecificOutput.additionalContext' <<<"$out")" && check "no python, auto + CURSOR_VERSION: Claude shape" ok || check "no python, auto + CURSOR_VERSION: Claude shape" bad
 out="$(nopy --harness opencode)"
 jq -e . >/dev/null 2>&1 <<<"$out" && check "opencode: plain text" bad || { grep -q 'Build the right thing' <<<"$out" && check "opencode: plain text" ok || check "opencode: plain text" bad; }
 out="$(nopy --harness claude --format text)"

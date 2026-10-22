@@ -15,12 +15,9 @@ _SPEC = {
     "opencode": ("OPENCODE_CONFIG_DIR", (".config", "opencode"), None, (("x", "opencode", None),)),
 }
 
-# Cursor first: a Cursor hook started from a Claude Code session inherits CLAUDE* vars.
-# Codex and opencode have no verified env marker; they arrive via explicit or BUILDER_HARNESS.
-_ENV_MARKERS = (
-    ("cursor", ("CURSOR_VERSION", "CURSOR_PLUGIN_ROOT")),
-    ("claude", ("CLAUDECODE", "CLAUDE_PLUGIN_ROOT")),
-)
+# Cursor, Codex and opencode arrive via an explicit flag or BUILDER_HARNESS.
+# A Cursor env marker is ignored: a Claude Code session can inherit it from its parent shell.
+_ENV_MARKERS = (("claude", ("CLAUDECODE", "CLAUDE_PLUGIN_ROOT")),)
 
 
 def detect(env, explicit=None):

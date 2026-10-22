@@ -26,7 +26,6 @@ while [ $# -gt 0 ]; do
   esac
   shift
 done
-if [ "$harness" = auto ] && [ -n "${CURSOR_VERSION:-}" ]; then harness=cursor; fi
 if [ -z "$format" ]; then
   if [ "$harness" = opencode ]; then format=text; else format=json; fi
 fi

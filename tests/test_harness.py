@@ -36,12 +36,16 @@ class DetectTest(unittest.TestCase):
     def test_invalid_builder_harness_falls_through(self):
         self.assertEqual(harness.detect({"BUILDER_HARNESS": "vim", "CLAUDECODE": "1"}), "claude")
 
-    def test_cursor_inside_claude_is_cursor(self):
+    def test_inherited_cursor_marker_does_not_hide_claude(self):
         env = {"CLAUDECODE": "1", "CLAUDE_PROJECT_DIR": "/p", "CURSOR_VERSION": "1.0"}
-        self.assertEqual(harness.detect(env), "cursor")
+        self.assertEqual(harness.detect(env, "auto"), "claude")
 
-    def test_cursor_plugin_root_is_cursor(self):
-        self.assertEqual(harness.detect({"CURSOR_PLUGIN_ROOT": "/x", "CLAUDE_PLUGIN_ROOT": "/y"}), "cursor")
+    def test_cursor_marker_alone_is_unknown(self):
+        self.assertEqual(harness.detect({"CURSOR_PLUGIN_ROOT": "/x"}), "unknown")
+
+    def test_cursor_arrives_only_explicitly(self):
+        self.assertEqual(harness.detect({"CLAUDECODE": "1", "CURSOR_VERSION": "1"}, "cursor"), "cursor")
+        self.assertEqual(harness.detect({"BUILDER_HARNESS": "cursor", "CLAUDECODE": "1"}), "cursor")
 
     def test_claude_plugin_root_is_claude(self):
         self.assertEqual(harness.detect({"CLAUDE_PLUGIN_ROOT": "/x"}), "claude")
