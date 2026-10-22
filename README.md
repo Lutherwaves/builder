@@ -94,7 +94,9 @@ opencode also takes a git form, as superpowers documents: `"plugin": ["builder@g
 A harness is listed as supported only after every eval fixture passes on it.
 
 <!-- support:start -->
-No harness has passed its evals yet.
+| Harness | Version | Eval date | Status |
+| --- | --- | --- | --- |
+| Claude Code | 2.1.308 (Claude Code) | 2026-10-22 | experimental: canon 5/6; fleet 3/4; harness 4/6; reach 3/4; shape 2/6; 2 not graded |
 <!-- support:end -->
 
 ## What happens in your first session

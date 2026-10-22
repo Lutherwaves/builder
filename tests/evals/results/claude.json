@@ -1,0 +1,31 @@
+{
+  "harness": "claude",
+  "harness_version": "2.1.308 (Claude Code)",
+  "date": "2026-10-22",
+  "fixtures": {
+    "canon": {
+      "met": 5,
+      "total": 6
+    },
+    "fleet": {
+      "met": 3,
+      "total": 4
+    },
+    "harness": {
+      "met": 4,
+      "total": 6
+    },
+    "intake": {
+      "met": 5,
+      "total": 5
+    },
+    "reach": {
+      "met": 3,
+      "total": 4
+    },
+    "shape": {
+      "met": 2,
+      "total": 6
+    }
+  }
+}
