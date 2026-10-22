@@ -23,6 +23,14 @@ grep -qF 'Never invent a step' <<<"$text" && check "no invented steps" ok || che
 grep -qF 'This is required, even when the request is one line.' <<<"$text" && check "intro is required" ok || check "intro is required" bad
 grep -qF 'builder: you decide. I propose, build, and end each piece of work with a report.' <<<"$text" && check "literal intro given" ok || check "literal intro given" bad
 
+echo "test_next_command_names_the_harness"
+for h in claude codex cursor opencode; do
+  text="$(run "$hook" --harness "$h" --format text)"
+  grep -qF "ledger.py\" next --harness $h" <<<"$text" && check "$h: next command carries --harness $h" ok || check "$h: next command carries --harness $h" bad
+done
+text="$(run "$hook" --harness unknown --format text)"
+grep -qF 'ledger.py" next --harness claude' <<<"$text" && check "unknown: next command carries --harness claude" ok || check "unknown: next command carries --harness claude" bad
+
 echo "test_onboarded_quiet"
 ids="$(jq -r '.[].id' "$root/lib/recommendations.json")"
 { printf '{"onboarded": true, "answers": {'; sep=''

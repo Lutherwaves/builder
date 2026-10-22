@@ -16,7 +16,7 @@ import signals  # noqa: E402
 LEDGER_PY = '%s/lib/ledger.py' % ROOT
 ANSWER = 'python3 "%s" answer %%s yes|later|never' % LEDGER_PY
 ONBOARDED = 'python3 "%s" onboarded' % LEDGER_PY
-NEXT = 'python3 "%s" next' % LEDGER_PY
+NEXT = 'python3 "%s" next --harness %%s' % LEDGER_PY
 
 
 def block(item):
@@ -24,7 +24,7 @@ def block(item):
         item["say"], item["why"].rstrip("."), item["how"].rstrip("."), ANSWER % item["id"])
 
 
-def onboarding_text(item):
+def onboarding_text(item, harness):
     lines = [
         "builder onboarding: this person is new to builder.",
         "Answer the person's request first. Do the work before anything else.",
@@ -39,7 +39,7 @@ def onboarding_text(item):
             "Then offer this first setup step and ask: yes, not now, or never.",
             block(item).replace("builder recommends:", "Step:", 1),
             "Offer one step per reply. After each answer, offer the next due step in a later reply.",
-            "To find the next due step, run: %s (it prints the step as JSON, or null when no step is due)." % NEXT,
+            "To find the next due step, run: %s (it prints the step as JSON, or null when no step is due)." % (NEXT % harness),
             "Never invent a step. Offer only the step that this command prints.",
         ]
     lines.append("When all setup steps are answered, run: %s" % ONBOARDED)
@@ -57,14 +57,14 @@ def mapping_block(harness):
 def build_body(harness):
     soul = (ROOT / "skills" / "builder" / "soul-compact.md").read_text().rstrip("\n")
     try:
+        effective = harness if harness in harness_lib.HARNESSES else "claude"
         led = ledger.load(ledger.home() / "ledger.json")
-        catalog = ledger.for_harness(json.loads((ROOT / "lib" / "recommendations.json").read_text()),
-                                     harness if harness in harness_lib.HARNESSES else "claude")
-        sig = signals.collect(os.getcwd(), 0.5, harness=harness if harness in harness_lib.HARNESSES else None)
+        catalog = ledger.for_harness(json.loads((ROOT / "lib" / "recommendations.json").read_text()), effective)
+        sig = signals.collect(os.getcwd(), 0.5, harness=effective)
         now = time.time()
         if not led["onboarded"]:
             item = ledger.next_recommendation(led, ledger.due_catalog(led, catalog), sig, now, onboarding=True)
-            return soul + "\n\n" + onboarding_text(item)
+            return soul + "\n\n" + onboarding_text(item, effective)
         item = ledger.next_recommendation(led, catalog, sig, now)
         if item:
             return (soul + "\n\nAnswer the person's request first. Put this as one short block at the end of your reply. Never put it before the work.\n"

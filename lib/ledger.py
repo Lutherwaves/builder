@@ -142,7 +142,7 @@ def main(argv):
             name = "claude"
         sys.path.insert(0, str(Path(__file__).resolve().parent))
         import signals
-        sig = signals.collect(os.getcwd())
+        sig = signals.collect(os.getcwd(), harness=name)
         led = load(path)
         print(json.dumps(next_recommendation(led, due_catalog(led, for_harness(_catalog(), name)), sig, time.time(),
                                               onboarding=not led["onboarded"])))

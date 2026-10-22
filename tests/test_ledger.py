@@ -267,6 +267,22 @@ class ForHarnessTest(unittest.TestCase):
             self.assertIn("/plugin install", out["claude"]["how"])
             self.assertEqual(out["unknown"], out["claude"])
 
+    def test_next_cli_reads_the_signals_of_its_harness(self):
+        import os, subprocess
+        with tempfile.TemporaryDirectory() as d:
+            env = {"PATH": os.environ["PATH"], "HOME": d, "BUILDER_HOME": d + "/b"}
+            (Path(d) / ".codex").mkdir()
+            (Path(d) / ".codex" / "config.toml").write_text('[plugins."superpowers@x"]\nenabled = true\n')
+            lp = str(Path(ledger.__file__))
+            subprocess.run(["python3", lp, "onboarded"], env=env, check=True, capture_output=True)
+            for i in ledger._catalog():
+                if i["id"] != "superpowers":
+                    subprocess.run(["python3", lp, "answer", i["id"], "never"], env=env, check=True, capture_output=True)
+            codex = subprocess.run(["python3", lp, "next", "--harness", "codex"], env=env, capture_output=True, text=True, cwd=d)
+            claude = subprocess.run(["python3", lp, "next", "--harness", "claude"], env=env, capture_output=True, text=True, cwd=d)
+            self.assertIsNone(json.loads(codex.stdout))
+            self.assertEqual(json.loads(claude.stdout)["id"], "superpowers")
+
 
 if __name__ == "__main__":
     unittest.main()
