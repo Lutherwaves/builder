@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Validate the builder plugin: manifests parse, skills have frontmatter,
-# Python tools compile. Run locally before opening a PR; CI runs it too.
+# Validate the builder plugin: manifests parse, skills have frontmatter and the
+# skill shape, Python tools compile. Run locally before opening a PR; CI runs it too.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -16,10 +16,52 @@ done
 jq -e '.name and .version' .claude-plugin/plugin.json >/dev/null 2>&1 \
   || err ".claude-plugin/plugin.json missing name/version"
 
+# Every harness manifest and package.json parse and carry the same name, version and description.
+manifests=(.codex-plugin/plugin.json .cursor-plugin/plugin.json .agents/plugins/marketplace.json package.json hooks/hooks-cursor.json)
+for f in "${manifests[@]}"; do
+  if jq -e . "$f" >/dev/null 2>&1; then note "✓ $f"; else err "$f is not valid JSON"; fi
+done
+for f in .codex-plugin/plugin.json .cursor-plugin/plugin.json package.json; do
+  jq -e . "$f" >/dev/null 2>&1 || continue
+  for field in name version description; do
+    want="$(jq -r ".$field" .claude-plugin/plugin.json)"; got="$(jq -r ".$field" "$f")"
+    [ "$want" = "$got" ] || err "$f $field is \"$got\" (.claude-plugin/plugin.json has \"$want\")"
+  done
+done
+# One invalid key disables every hook in a Cursor hooks file.
+if jq -e . hooks/hooks-cursor.json >/dev/null 2>&1; then
+  [ "$(jq -r '.version' hooks/hooks-cursor.json)" = "1" ] || err "hooks/hooks-cursor.json version is not 1"
+  extra="$(jq -r 'keys - ["version","hooks"] | join(", ")' hooks/hooks-cursor.json)"
+  [ -z "$extra" ] || err "hooks/hooks-cursor.json has a key besides version and hooks: $extra"
+fi
+
+echo "→ opencode adapter"
+if command -v node >/dev/null 2>&1; then
+  for js in index.js .opencode/plugins/builder.js; do
+    if chk="$(node --check "$js" 2>&1)"; then note "✓ node --check $js"; else printf '%s\n' "$chk"; err "$js failed node --check"; fi
+  done
+  if oc_out="$(node --test tests/test_opencode.mjs 2>&1)"; then note "✓ opencode adapter tests"; else printf '%s\n' "$oc_out"; err "opencode adapter tests failed"; fi
+else
+  note "opencode adapter: skipped (no node)"
+fi
+
 echo "→ release config"
 for f in release-please-config.json .release-please-manifest.json; do
   jq -e . "$f" >/dev/null 2>&1 && note "✓ $f" || err "$f is not valid JSON"
 done
+
+echo "→ commit subjects"
+if git rev-parse --verify -q origin/main >/dev/null 2>&1; then
+  if ! subjects="$(git log origin/main..HEAD --format=%s 2>&1)"; then
+    err "git log origin/main..HEAD failed: $subjects"
+  elif bad="$(bash scripts/check-subjects.sh <<<"$subjects")" || [ -z "$subjects" ]; then
+    note "✓ every commit subject in origin/main..HEAD follows Conventional Commits"
+  else
+    while IFS= read -r s; do err "commit subject is not a Conventional Commit: $s"; done <<<"$bad"
+  fi
+else
+  note "commit subjects: skipped (no origin/main)"
+fi
 
 echo "→ skills"
 shopt -s nullglob
@@ -29,21 +71,97 @@ for skill in skills/*/SKILL.md; do
   # frontmatter must be a leading --- fenced block containing name: and description:
   fm="$(awk 'NR==1&&$0!="---"{exit 1} NR==1{next} $0=="---"{exit} {print}' "$skill" 2>/dev/null || true)"
   if [ -z "$fm" ]; then err "$skill has no YAML frontmatter block"; continue; fi
+  before="$fail"; fail=0
   grep -q '^name:'        <<<"$fm" || err "$skill frontmatter missing name:"
   grep -q '^description:'  <<<"$fm" || err "$skill frontmatter missing description:"
-  [ "${fail}" -eq 0 ] && note "✓ $skill"
+  # Skill shape: a script for agents, short enough to read, with its mistakes and its self-check.
+  grep -q '^description: Use when' <<<"$fm" || err "$skill description does not start \"Use when\""
+  lines="$(wc -l < "$skill" | tr -d ' ')"
+  { [ "$lines" -ge 60 ] && [ "$lines" -le 150 ]; } || err "$skill has $lines lines (need 60 to 150)"
+  for section in "## Common mistakes" "## Self-check"; do
+    grep -qx "$section" "$skill" || err "$skill has no \"$section\""
+  done
+  [ "$fail" -eq 0 ] && note "✓ $skill ($lines lines)"
+  [ "$before" -eq 0 ] || fail=1
 done
 [ "$found_skill" -eq 1 ] || err "no skills found under skills/*/SKILL.md"
+
+echo "→ harness words in skills"
+# Skills say the action; skills/builder/harnesses/ maps it to each harness's own tool.
+tools='\b(PushNotification|SendMessage|AskUserQuestion|TodoWrite|ScheduleWakeup|CronCreate|CronDelete|Monitor|Artifact|WebFetch|apply_patch|update_plan)\b'
+slash='(^|[[:space:](`])/(loop|usage|compact|clear|plugin|builder:[a-z-]+)\b'
+guard_hits="$(grep -rnE --exclude-dir=harnesses -e "$tools" -e "$slash" skills || true)"
+if [ -n "$guard_hits" ]; then
+  while IFS= read -r h; do err "guard: $h"; done <<<"$guard_hits"
+else
+  note "✓ no harness tool or slash command names in skills"
+fi
+
+# A string-valued `how` runs on every harness, so it names no slash command. A map-valued `how` is per harness.
+how_hits="$(python3 - <<'PY'
+import json, re, sys
+rx = re.compile(r"(^|[\s(`])/(loop|usage|compact|clear|plugin|builder:[a-z-]+)\b")
+for i in json.load(open("lib/recommendations.json")):
+    if isinstance(i.get("how"), str) and rx.search(i["how"]):
+        print("lib/recommendations.json: %s how names a slash command" % i["id"])
+PY
+)"
+if [ -n "$how_hits" ]; then
+  while IFS= read -r h; do err "guard: $h"; done <<<"$how_hits"
+else
+  note "✓ no slash commands in string-valued recommendation steps"
+fi
 
 echo "→ python tools"
 for py in $(find . -name '*.py' -not -path './.git/*'); do
   python3 -m py_compile "$py" && note "✓ compiles: $py" || err "$py failed to compile"
 done
 # burn-proj smoke test: fixed inputs → deterministic output shape
-out="$(python3 skills/watch-limits/burn-proj.py 19 1783504800 1782990571)"
+out="$(python3 skills/budget/burn-proj.py 19 1783504800 1782990571)"
 grep -qE 'elapsed=.* naive=.* profile_aware=.* reset_in=' <<<"$out" \
   || err "burn-proj.py output shape changed: $out"
 note "✓ burn-proj smoke: $out"
+
+echo "→ unit tests"
+if ut_out="$(python3 -m unittest discover -s tests -p 'test_*.py' 2>&1)"; then note "✓ unittest"; else printf '%s\n' "$ut_out"; err "unit tests failed"; fi
+
+echo "→ harness drift tests"
+if dr_out="$(bash tests/test_drift.sh 2>&1)"; then note "✓ drift"; else printf '%s\n' "$dr_out"; err "drift tests failed"; fi
+if sp_out="$(bash tests/test_state_paths.sh 2>&1)"; then note "✓ state paths"; else printf '%s\n' "$sp_out"; err "state path tests failed"; fi
+
+echo "→ hook tests"
+if hk_out="$(bash tests/test_hook.sh 2>&1)"; then note "✓ hook"; else printf '%s\n' "$hk_out"; err "hook tests failed"; fi
+
+echo "→ eval fixtures"
+if ev_out="$(bash tests/test_evals.sh 2>&1)"; then note "✓ eval runner tests"; else printf '%s\n' "$ev_out"; err "eval runner tests failed"; fi
+if fx_out="$(bash tests/evals/run.sh --check 2>&1)"; then note "✓ $fx_out"; else printf '%s\n' "$fx_out"; err "eval fixtures invalid"; fi
+if st_out="$(python3 scripts/support-table.py check README.md 2>&1)"; then note "✓ $st_out"; else printf '%s\n' "$st_out"; err "README support table is out of date"; fi
+
+echo "→ scrub"
+if [ -z "${BUILDER_DENYLIST:-}" ]; then
+  note "scrub: skipped (no BUILDER_DENYLIST)"
+elif [ ! -r "$BUILDER_DENYLIST" ]; then
+  err "scrub: BUILDER_DENYLIST is set but not a readable file"
+else
+  # Private names must never appear in a tracked file. -F fixed strings, -i case-insensitive.
+  # Blank lines are dropped: an empty -F pattern matches every line.
+  pats="$(mktemp)"
+  grep -v '^[[:space:]]*$' "$BUILDER_DENYLIST" > "$pats" || true
+  if [ ! -s "$pats" ]; then
+    err "scrub: BUILDER_DENYLIST has no terms"
+  else
+    rc=0
+    out="$(git grep -I -i -n -F -f "$pats" 2>&1)" || rc=$?
+    if [ "$rc" -eq 0 ]; then
+      while IFS= read -r f; do err "scrub: $f"; done < <(cut -d: -f1 <<<"$out" | sort -u)
+    elif [ "$rc" -eq 1 ]; then
+      note "✓ no deny-listed names in tracked files"
+    else
+      err "scrub: git grep failed (exit $rc)"
+    fi
+  fi
+  rm -f "$pats"
+fi
 
 echo
 if [ "$fail" -eq 0 ]; then echo "✓ all checks passed"; else echo "✗ validation failed"; exit 1; fi

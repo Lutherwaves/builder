@@ -4,152 +4,182 @@
 [![Validate](https://github.com/Lutherwaves/builder/actions/workflows/validate.yml/badge.svg)](https://github.com/Lutherwaves/builder/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://www.conventionalcommits.org)
-[![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-8A2BE2)](https://claude.com/claude-code)
 
-[![ctx-wire saved](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Lutherwaves/builder/main/metrics/ctxwire-saved.json)](#the-toolkit-that-builds-this)
-[![commands filtered](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Lutherwaves/builder/main/metrics/ctxwire-commands.json)](#the-toolkit-that-builds-this)
-[![output reduction](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Lutherwaves/builder/main/metrics/ctxwire-reduction.json)](#the-toolkit-that-builds-this)
+builder is a plugin for coding agents. Your agent ends each piece of work with a builder report.
+The report names who the work is for, each call the agent made alone, and the test run that proves the work.
+Nothing leaves this machine without a send rule or your yes.
 
-Operational tools for running AI coding agents at scale. Keep an eye on your
-Claude subscription usage limits, session/context load, and token efficiency
-while you work — without hand-rolling the math or babysitting a dashboard.
+builder is the soul behind that report.
+You decide. The agent proposes, builds inside the repository, and reports.
+Correct is not enough: the work must fit one person at one moment.
+So each piece of work starts from that person and the non-goals.
+Each call the agent makes alone carries its reason.
+The evidence is a test run from the session.
+The last line says what left the machine.
 
-Built for [Claude Code](https://claude.com/claude-code) +
-[`cctop`](https://github.com/) + [`ctx-wire`](https://github.com/).
+Example, invented for illustration:
 
-> The three live badges above are **anonymized aggregates** — total tokens
-> `ctx-wire` has trimmed out of my agent transcripts, commands filtered, and the
-> overall output-reduction ratio. No session, project, or account data. Refresh
-> them with `bash scripts/update-metrics.sh` (see
-> [The toolkit that builds this](#the-toolkit-that-builds-this)).
+```
+For:       a customer who moved — at checkout. Now they can change their email in one step.
+Non-goals: no change to the login flow.
+Calls:
+  - The old address gets a notice — because a stolen account changes the email first.
+Evidence:  python3 -m unittest → 14 passed (example).
+Outside:   nothing sent.
+```
 
 ## Install
 
-```bash
-# Step 1: Add the marketplace
-/plugin marketplace add Lutherwaves/builder
+builder installs on four harnesses. Pick yours.
+builder needs Python 3 and Bash, on macOS or Linux.
+Its session hook makes no network call and finishes in under one second.
 
-# Step 2: Install the plugin
+### Claude Code
+
+```bash
+/plugin marketplace add Lutherwaves/builder
 /plugin install builder@builder
 ```
 
-## Skills
+In Claude Code, call a skill as `/builder:shape`.
 
-- `/builder:watch-limits` — Install the burn-rate projector and schedule a
-  recurring usage-limit watcher (weekly + 5h burn, compaction pick, ctx-wire
-  savings). Run it once and the monitor reports every ~30 min.
-- `/builder:intake` — Grab & reconcile: pull today's captured tasks from a
-  tracker (Todoist, or a GitHub Project's draft items), drop anything already in motion (live session, open
-  PR, existing issue), and groom the raw leftovers into issues. Annotates by
-  default; creates issues only when you mark a task for it. Pluggable source
-  adapter — bring your own MCP for other trackers.
-- `/builder:code-graph` — Wire a local
-  [codebase-memory-mcp](https://github.com/DeusData/codebase-memory-mcp) graph
-  into a repo so agents answer structural questions (where is X, what calls Y,
-  architecture) instead of grep-reading files. One graph per repo path — clones
-  and worktrees stay isolated — plus a watcher that flags stale indexes with the
-  ~9s re-index command. Local-only, no API key.
+### Codex CLI
 
-## Doctrine
+```bash
+codex plugin marketplace add Lutherwaves/builder
+codex plugin add builder@builder
+```
 
-builder is the applied side of **harness engineering** — improving a fixed
-coding agent by shaping its two external levers, **context** and **tools**.
-Each skill is one intervention on those levers, not a standalone gadget:
+Codex runs a plugin's hooks only after you trust them. builder does not work around this step.
+Until you trust the hook, the `builder` skill still loads by name.
+Until Codex detection lands (issue #17), builder's session start on Codex uses the Claude Code step list and mapping.
+The marketplace add was proven with a local path. The `Lutherwaves/builder` form is the git form that Codex documents.
 
-| Skill | What it shapes |
+### Cursor CLI
+
+A Cursor CLI plugin install is not verified. This manual path works.
+In your project, create `.cursor/hooks.json`:
+
+```json
+{"version":1,"hooks":{"sessionStart":[{"command":"<path to builder>/hooks/session-start --harness cursor"}]}}
+```
+
+`<path to builder>` must be an absolute path.
+
+Keep only these keys. One invalid key disables every hook in the file.
+Then copy builder's skill folders into `.agents/skills/` in the same project.
+
+A Cursor plugin install (`.cursor-plugin/plugin.json`) also exists for the editor's plugin flow. This README does not claim that the CLI installs it.
+
+As a fallback, add one line to your project's `AGENTS.md`. Cursor CLI reads that file.
+builder never writes `AGENTS.md` itself.
+
+```
+Use the builder skill for the soul of this work: for whom, what it is not, each call with its reason, proof, and what left the machine.
+```
+
+### opencode
+
+Add builder to the `plugin` list in `opencode.json`. Use opencode 1.19 or newer: version 1.1.x crashes on plugins with non-function exports.
+A local checkout works:
+
+```json
+{"plugin": ["/path/to/builder"]}
+```
+
+opencode also takes a git form, as superpowers documents: `"plugin": ["builder@git+https://github.com/Lutherwaves/builder.git"]`. Only the local path was proven, with `opencode debug skill`: the skills load. No live opencode session has run builder yet.
+
+### Harness support
+
+A harness is listed as supported only after every eval fixture passes on it.
+
+<!-- support:start -->
+| Harness | Version | Eval date | Status |
+| --- | --- | --- | --- |
+| Claude Code | 2.1.308 (Claude Code) | 2026-10-22 | experimental: canon 5/6; fleet 3/4; harness 4/6; reach 3/4; shape 2/6; 2 not graded |
+<!-- support:end -->
+
+## What happens in your first session
+
+1. You ask for your work as usual. builder adds its thirteen tenets to the session, and the agent does your work first.
+2. At the end of that reply, the agent introduces builder in at most three short lines. This happens even after a one-line request.
+3. The agent offers one setup step and asks: yes, not now, or never.
+4. Each later reply offers the next step, one at a time: superpowers, gstack, a signed-in `gh`, signed commits, and the channel where your team talks (for messages to teammates; notes to you go by notification). A step you already did is skipped.
+5. "Not now" stays quiet for 7 days. "Never" stays quiet for good.
+6. When you answer every step, onboarding ends.
+
+After that, a session shows at most one recommendation, and only when a signal fires.
+Examples: you run three or more sessions, your weekly usage reaches 80%, or no code graph is set up.
+The first two signals need matchblox.
+builder keeps your answers in `~/.config/builder/ledger.json`. Set `BUILDER_HOME` to move it.
+
+## The eight skills
+
+| Skill | What you get |
 | --- | --- |
-| `code-graph` | Routes context just in time and makes the codebase a legible tool — a queryable structural graph instead of grep-reading files, kept fresh by a watcher. |
-| `harness` | Applies that loop to a repo end to end: baseline → provision → route → verify. |
-| `watch-limits` | Optimizes for measured effectiveness — tokens and attention against your real usage limits. |
-| `intake` | Turns feedback into infrastructure — captured work reconciled into durable issues. |
+| `builder` | The soul: thirteen tenets, a routing table to superpowers and gstack, and the builder report at the end of each piece of work. |
+| `shape` | A feature name becomes an issue: the person, the moment, anti-goals, and each open question with a recommendation. |
+| `canon` | A repository rule carries its incident and a check that fails when someone breaks it. |
+| `reach` | By default, a message to a teammate waits for your yes. Every send passes a duplicate check and a limit of 6 sends per hour. |
+| `fleet` | Many sessions work side by side, one lane each. Work outside a lane goes to its owner as a brief. |
+| `intake` | The day's captured tasks are reconciled against work in motion. Nothing becomes an issue without your marker or your yes. |
+| `budget` | A forecast of the weekly usage limit, and one idle session to compact. Where the harness has no usage reading, it says so. |
+| `harness` | A local code graph answers "what calls this?" in one query, and a watcher names stale graphs. |
 
-The framing derives from Ryan Lopopolo's
-[Harness Engineering](https://github.com/lopopolo/harness-engineering) corpus
-(CC BY 4.0). See [`AGENTS.md`](AGENTS.md) for skill-selection routing.
+Call a skill by name, for example the `shape` skill. The agent also loads a skill when its job comes up.
 
-## What the watcher reports
+## Works with
 
-1. **Weekly burn rate** — how much of your weekly limit you've used, and whether
-   you're on pace to blow it before the (fixed) reset. Uses an **activity-aware**
-   projection (discounts your sleep window + weekend) so a hot evening or weekday
-   start doesn't trigger a false alarm.
-2. **Session/context load** — busy vs idle sessions and total subagents.
-3. **Compaction pick** — the highest-context *idle* session, safe to compact now.
-4. **ctx-wire savings** — cumulative tokens saved + a per-interval delta.
+builder runs on its own. If a partner is missing, builder uses a fallback and says so once.
 
-## Prerequisites
+- [superpowers](https://github.com/obra/superpowers): planning, test-driven development and review. builder routes to these skills.
+- [gstack](https://github.com/garrytan/gstack): a real browser, QA, security checks and ship workflows.
+- [gh](https://cli.github.com): `intake` checks open pull requests and issues through it.
+- [matchblox](https://matchblox.sh): `budget` reads the plan windows from it, and `fleet` reads the live sessions. Run `matchblox setup` to add its hooks ([docs](https://docs.matchblox.com)).
+- Your channel's MCP server: `reach` sends through it. For Slack, use a Slack connector or Slack's official MCP server.
+- [codebase-memory-mcp](https://github.com/DeusData/codebase-memory-mcp): `harness` provisions it. It runs locally and needs no API key.
 
-- `cctop` on PATH, with its status-line tap writing `~/.claude/cctop/usage.json`
-  (see cctop's usage-limits docs). The watcher has no weekly data without it.
-- `ctx-wire` (optional) — enables the savings section.
+## Compare with your own setup
 
-## Standalone use (no plugin)
+`tests/evals/parity.sh` runs two fixtures twice: once with your setup, and once with builder and its recommendations only.
+The builder run accepts every recommendation.
+It prints both transcripts next to the expected behaviour, so you can compare them.
+It runs the agent four times, so it uses tokens from your plan.
+`parity.sh` works on Claude Code only.
+See [tests/evals/README.md](tests/evals/README.md).
 
-Just want the projector? Copy `skills/watch-limits/burn-proj.py` anywhere and:
+## Standalone use of the budget forecast
+
+`skills/budget/burn-proj.py` works without the plugin:
 
 ```bash
 python3 burn-proj.py <used_pct> <resets_at_epoch> [now_epoch]
-# elapsed=15.0%  naive=127%  profile_aware=102%  reset_in=5.95d
+python3 burn-proj.py --from-matchblox [now_epoch]
+
+python3 burn-proj.py 19 1783504800 1782990571
+# elapsed=15.0%  naive=127%  profile_aware=100%  reset_in=5.95d
 ```
 
-- **naive** — straight-line `used / elapsed_fraction`; the worst case, self-heals
-  as time passes.
-- **profile_aware** — discounts the hours you predictably don't burn: a sleep
-  window (02:00–09:00 ×0.05) and the weekend (Sat ×0.5, Sun ×0.1), for a forecast
-  that bends down as your quiet hours approach. Tune the sleep window and
-  multipliers in `mult()` to your own cadence (default active window 09:00–02:00).
+`--from-matchblox` needs matchblox on your PATH. Without it, read your agent's usage view and pass the numbers by hand.
 
-## The toolkit that builds this
-
-`builder` is small on purpose — but it's built inside a heavily-extended Claude
-Code setup that lets one person ship almost anything, fast. If you're pulling
-this repo to hack on it (or just curious how it's made), here's the stack. None
-of it is required to *use* the plugin — the install above is fully
-self-contained — but it's what makes contributing frictionless.
-
-- **[Claude Code](https://claude.com/claude-code) with auto-edit on.** Running in
-  `acceptEdits` permission mode means the agent edits, runs the validator, and
-  iterates without a prompt on every step — the flow that produced this repo
-  end-to-end. Turn it on with `/permissions` → *Auto-accept edits* (or `⇧⇥`).
-- **[superpowers](https://github.com/obra/superpowers)** (obra's skill
-  marketplace) — process skills for real engineering discipline. The
-  `watch-limits` skill in this repo was written **test-first** with
-  `superpowers:writing-skills`: baseline an agent *without* the skill, watch it
-  fail, then write the skill to close exactly those failures.
-- **[gstack](https://github.com/Lutherwaves/gstack)** — Garry Tan's opinionated
-  CEO / eng-manager / release-manager / QA skill set (`/ship`, `/review`, `/qa`)
-  for planning, review, and release flows.
-- **[`ctx-wire`](https://github.com/)** — filters noisy command output out of the
-  agent's context. It's why the badges up top exist: those are the tokens it
-  kept out of my transcripts. Lean context = cheaper, faster, longer sessions.
-- **[`cctop`](https://github.com/)** — live per-session monitor. `builder`'s
-  `watch-limits` watcher reads it to pick which idle session to compact.
-
-Refresh the metrics badges (anonymized aggregates only) any time with:
-
-```bash
-bash scripts/update-metrics.sh
-git commit -am "chore: refresh metrics"
-```
+- `naive` draws a straight line from the use so far. It is the worst case.
+- `profile_aware` discounts the hours you do not work: 02:00 to 09:00, and the weekend. Tune them in `mult()`.
 
 ## Contributing
 
-PRs welcome. `main` is protected — every change lands via PR, the `validate`
-check must pass, and CI cuts releases automatically from
-[Conventional Commit](https://www.conventionalcommits.org/) titles. Run the same
-gate locally before you push:
+Every change lands through a pull request, and the `validate` check must pass.
+Run the same check before you push:
 
 ```bash
 bash scripts/validate.sh
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the full flow, and
-[SECURITY.md](SECURITY.md) for how to report vulnerabilities privately.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the rules, and [SECURITY.md](SECURITY.md) to report a vulnerability.
 
 ## License
 
-MIT
+MIT.
 
-Doctrine and vocabulary derive from Ryan Lopopolo's
-[Harness Engineering](https://github.com/lopopolo/harness-engineering),
-licensed CC BY 4.0. builder adapts the concepts and copies no source prose.
+The `harness` skill derives its framing from Ryan Lopopolo's
+[Harness Engineering](https://github.com/lopopolo/harness-engineering), licensed CC BY 4.0.
+builder adapts the concepts and copies no source prose.

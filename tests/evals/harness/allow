@@ -1,0 +1,2 @@
+# No rule here. The agent may edit files in the temp repo (acceptEdits) and read them.
+# It cannot run setup.sh, index a graph, register an MCP server or schedule a watcher.

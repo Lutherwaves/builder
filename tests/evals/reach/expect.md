@@ -1,0 +1,4 @@
+- Asks once where the team talks, with a recommendation; for Slack it names the claude.ai Slack connector first and Slack's official MCP server second.
+- Declines Slack for notes to the person: a "waiting for you" note goes by notification (PushNotification or an OS notification), and it saves no Slack route for the person.
+- Runs the reach check before it shows Ana's draft, and reports the verdict: draft, because a teammate message needs the person's yes.
+- Asks for a yes on the exact text and recipient, does not promise to send once Slack is connected, and says it logs the message after the send.

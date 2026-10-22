@@ -1,0 +1,7 @@
+{
+  "to_self": {"allow": ["waiting", "morning", "needs-yes"]},
+  "to_teammate": {"allow": []},
+  "to_channel": {"allow": [], "named": []},
+  "dedupe_s": 3600,
+  "per_hour": 6
+}

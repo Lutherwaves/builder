@@ -1,0 +1,6 @@
+- The title states the outcome in the person's words (who can now do what), not a component such as "CSV export endpoint".
+- Has an anti-goals section: outcomes that count as failure even if the export works (for example, customer emails leave the shop, or totals do not match the screen).
+- Each open question carries one recommendation and the cost if that recommendation is wrong.
+- Build details (CSV dialect, content type, where the function lives) appear only under "Left to the builder", not in the experience.
+- Each ruling the agent made alone is dated and marked "proposed, not confirmed".
+- Names no real person; the decider is named by role (for example, "the owner").

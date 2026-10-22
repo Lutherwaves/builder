@@ -1,0 +1,4 @@
+# The agent may run the reach rules check and log only. No channel is connected, so nothing can be sent.
+# Notify is not allowed, so the eval shows no real notification.
+Bash(python3 *lib/reach.py check *)
+Bash(python3 *lib/reach.py log *)

@@ -6,7 +6,8 @@ Only the latest minor version receives security fixes.
 
 | Version | Supported |
 |---------|-----------|
-| 0.1.x   | ✅        |
+| 1.x     | ✅        |
+| < 1.0   | ❌        |
 
 ## Reporting a Vulnerability
 
@@ -22,20 +23,51 @@ mitigation plan within 14 days for confirmed issues.
 
 ## Scope
 
-This plugin runs inside Claude Code and, as part of its normal flow, executes
-shell commands and schedules recurring agent prompts on the user's machine.
+This plugin runs inside Claude Code, Codex CLI, Cursor CLI and opencode. As part
+of its normal flow, it runs shell commands and schedules recurring agent prompts on the user's machine.
 Security-relevant surfaces:
 
-- `skills/*/SKILL.md` — instructions Claude Code treats as trusted content.
-- `scripts/*.sh` and bundled tools (e.g. `burn-proj.py`) — run locally.
-- Files written under `~/.claude/cctop/` (`burn-proj.py`, `ctxwire-last.json`).
-- Scheduled watcher prompts that read `cctop`, `ctx-wire`, and
-  `~/.claude/cctop/usage.json`.
+- `hooks/` — the SessionStart hook. It runs at the start of every session and
+  adds text to the session context. It runs local commands only (`git`,
+  `gh auth token`, `ps`, `matchblox sessions --json`, `matchblox usage --json`)
+  under one 0.5 s budget, and reads local files.
+- `lib/` — `ledger.py`, `signals.py` and `reach.py`. The hook and the skills run them.
+- `skills/*/SKILL.md` — instructions the harness treats as trusted content.
+- `skills/*/*.sh`, `skills/*/*.py` and `scripts/*.sh` — run locally.
+- Files under `~/.config/builder/` (or `$BUILDER_HOME`): `ledger.json` (setup
+  answers), `reach.json` (send rules and the team channel) and `reach-log.jsonl`.
+  **`reach-log.jsonl` holds the full text of each message** that `reach` sent or
+  skipped, with its recipient. It is written with mode 0600.
+- Files under `$BUILDER_HOME/code-graph/` (the graph registry) and
+  `$BUILDER_HOME/intake/` (config and seen messages). `$BUILDER_HOME` is
+  `~/.config/builder` by default. Builder still reads the old
+  `~/.claude/code-graph/` and `~/.claude/intake/` files when the new ones are
+  missing. It never writes or deletes them.
+- The adapters: the per-harness manifests, the hook files and the opencode plugin.
+- The state directories of each harness that builder reads: the Claude Code
+  directory (`~/.claude` or `CLAUDE_CONFIG_DIR`), the Codex directory
+  (`~/.codex` or `CODEX_HOME`), the Cursor directory (`~/.cursor` or
+  `CURSOR_CONFIG_DIR`), the opencode directory (`~/.config/opencode` or
+  `OPENCODE_CONFIG_DIR`), and `$BUILDER_HOME`. From these it reads the MCP
+  server and hook lists, and the project's `.mcp.json` and `.cursor/mcp.json`.
+- Scheduled watcher prompts that read `matchblox usage --json`,
+  `matchblox sessions --json`, and the graph registry.
 
-The tools are **read-only with respect to your account**: they read local files
-and process output. They make no network calls and store no secrets. The
-optional metrics badge publishes only an aggregate token count — no session,
-project, or account data.
+Network:
 
-Out of scope: the Claude Code harness itself, `cctop`/`ctx-wire` upstream, and
+- The hook makes no network call itself.
+- A message leaves the machine only through `reach`, under its send rules or
+  the person's yes, through the person's own chat connector, matchblox, or an
+  OS notification.
+- `intake` reads the person's trackers through `gh` and their MCP connectors.
+  It writes to a tracker only under the person's own config rule
+  (`annotate_in_tracker`), on a mark, or on the person's yes.
+- The `codebase-memory-mcp` binary that `harness` sets up makes one version
+  check against GitHub.
+- A setup step that installs a tool (for example `gh auth login` or a
+  `git clone`) runs only after the person's yes.
+
+builder stores no secrets.
+
+Out of scope: the four harnesses themselves, `matchblox` upstream, and
 user-authored content.

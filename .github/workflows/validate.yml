@@ -2,6 +2,7 @@ name: validate
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, edited]
   push:
     branches: [main]
 
@@ -13,5 +14,44 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Check the pull request title and every commit subject
+        if: github.event_name == 'pull_request'
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          rc=0
+          printf '%s\n' "$PR_TITLE" | bash scripts/check-subjects.sh > "$RUNNER_TEMP/bad.txt" || rc=1
+          git log "$BASE_SHA..$HEAD_SHA" --format=%s | bash scripts/check-subjects.sh >> "$RUNNER_TEMP/bad.txt" || rc=1
+          if [ "$rc" -ne 0 ]; then
+            echo "Not Conventional Commits (type(scope)?: outcome):"
+            cat "$RUNNER_TEMP/bad.txt"
+            exit 1
+          fi
       - name: Validate plugin manifests, skills, and scripts
-        run: bash scripts/validate.sh
+        env:
+          DENYLIST_SECRET: ${{ secrets.BUILDER_DENYLIST }}
+        run: |
+          if [ -n "$DENYLIST_SECRET" ]; then
+            printf '%s\n' "$DENYLIST_SECRET" > "$RUNNER_TEMP/deny.txt"
+            export BUILDER_DENYLIST="$RUNNER_TEMP/deny.txt"
+          fi
+          bash scripts/validate.sh
+
+  validate-tests:
+    # The tests of the guards above: the scrub, the skill shape and the subject check.
+    # A guard whose test never runs is a wish (tenet 9). About 5 minutes; runs beside `validate`.
+    # An edit of the title or body changes no code, so it does not run these tests again.
+    if: github.event.action != 'edited'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Test the validator's guards
+        run: bash tests/test_validate.sh

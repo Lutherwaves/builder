@@ -1,0 +1,174 @@
+[
+  {
+    "id": "superpowers",
+    "order": 1,
+    "onboarding": true,
+    "when": {
+      "superpowers": false
+    },
+    "say": "Builder works best with the superpowers plugin, which adds planning, TDD and review skills.",
+    "why": "It gives every task a plan, a test and a review step.",
+    "how": {
+      "claude": "/plugin marketplace add obra/superpowers-marketplace, then /plugin install superpowers@superpowers-marketplace",
+      "codex": "In Codex, run /plugins, search for superpowers, and pick Install Plugin",
+      "cursor": "In Cursor Agent chat, run /add-plugin superpowers",
+      "opencode": "Tell opencode: Fetch and follow instructions from https://raw.githubusercontent.com/obra/superpowers/refs/heads/main/.opencode/INSTALL.md"
+    },
+    "sources": {
+      "codex": "https://github.com/obra/superpowers",
+      "cursor": "https://github.com/obra/superpowers",
+      "opencode": "https://github.com/obra/superpowers"
+    }
+  },
+  {
+    "id": "gstack",
+    "order": 2,
+    "onboarding": true,
+    "when": {
+      "gstack": false
+    },
+    "say": "Builder pairs well with gstack, a set of skills for browsing, QA and shipping.",
+    "why": "It adds a real browser and ship workflows that builder can route to.",
+    "how": {
+      "claude": "git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/gstack\" && cd \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/gstack\" && ./setup",
+      "codex": "git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git ~/gstack && cd ~/gstack && ./setup --host codex",
+      "cursor": "git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git ~/gstack && cd ~/gstack && ./setup --host cursor",
+      "opencode": "git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git ~/gstack && cd ~/gstack && ./setup --host opencode"
+    },
+    "sources": {
+      "codex": "https://github.com/garrytan/gstack",
+      "cursor": "https://github.com/garrytan/gstack",
+      "opencode": "https://github.com/garrytan/gstack"
+    }
+  },
+  {
+    "id": "gh",
+    "order": 3,
+    "onboarding": true,
+    "when": {
+      "gh": false
+    },
+    "say": "The GitHub CLI is not signed in, so builder cannot read issues or pull requests for you.",
+    "why": "Intake and review need a signed-in gh.",
+    "how": "gh auth login"
+  },
+  {
+    "id": "signing",
+    "order": 4,
+    "onboarding": true,
+    "when": {
+      "signing": false
+    },
+    "say": "Your git commits are not signed, and builder asks for signed commits.",
+    "why": "A signed commit shows that you, and not someone else, made it.",
+    "how": "Use SSH signing. On macOS, use a Secure Enclave SSH agent (for example the open-source Secretive app) and create the key there with \"notify\" protection, so agents can sign without you. Otherwise run `ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_signing` and keep the passphrase in the OS keychain or agent. Then run `git config --global gpg.format ssh`, `git config --global user.signingkey <path-or-key>`, `git config --global commit.gpgsign true` and `git config --global tag.gpgsign true`. Last, register the public key on GitHub as a signing key: `gh auth refresh -h github.com -s admin:ssh_signing_key`, then `gh ssh-key add <key.pub> --type signing`."
+  },
+  {
+    "id": "channel",
+    "order": 5,
+    "onboarding": true,
+    "when": {
+      "channel": null
+    },
+    "say": "Builder does not know where your team talks, so it cannot draft messages to your teammates there.",
+    "why": "reach drafts teammate messages for that channel. Notes to you go by matchblox, a push or an OS notification, never by the channel.",
+    "how": "Ask me: \"set up reach\" (the reach skill walks you through it)."
+  },
+  {
+    "id": "matchblox",
+    "order": 6,
+    "onboarding": false,
+    "when": {
+      "matchblox": false,
+      "sessions_proc": {
+        ">=": 2
+      }
+    },
+    "say": "You run several coding agent sessions at once, and matchblox can show them together with their usage.",
+    "why": "It lists live sessions and limits in one view.",
+    "how": "curl -fsSL https://matchblox.sh | sh"
+  },
+  {
+    "id": "matchblox-setup",
+    "order": 7,
+    "onboarding": false,
+    "when": {
+      "matchblox": true,
+      "matchblox_hooks": false
+    },
+    "say": "matchblox is installed, but its hooks are not in your coding agent's hook settings, so it cannot see this session.",
+    "why": "The hooks tell matchblox what each session does and asks, and they put its status line under every session.",
+    "how": "matchblox setup (it adds the hooks, the status line and the tmux way back in one step; see https://docs.matchblox.com)",
+    "harnesses": [
+      "claude",
+      "codex",
+      "opencode",
+      "cursor"
+    ]
+  },
+  {
+    "id": "fleet",
+    "order": 8,
+    "onboarding": false,
+    "when": {
+      "sessions": {
+        ">=": 3
+      }
+    },
+    "say": "You have three or more live sessions, so builder can help you run them as a fleet.",
+    "why": "Parallel sessions need one owner per task to avoid clashes.",
+    "how": "Ask me for the fleet skill"
+  },
+  {
+    "id": "budget",
+    "order": 9,
+    "onboarding": false,
+    "when": {
+      "weekly_pct": {
+        ">=": 80
+      }
+    },
+    "say": "Your weekly usage is at 80% or more, so builder can help you plan the rest of the week.",
+    "why": "A budget stops one big task from using the whole limit.",
+    "how": "Ask me for the budget skill"
+  },
+  {
+    "id": "autocompact",
+    "order": 10,
+    "onboarding": false,
+    "when": {
+      "autocompact": false
+    },
+    "say": "Claude Code compacts only when the context window is almost full.",
+    "why": "An earlier compact leaves room to write the durable record first, so the session keeps its place after the compact.",
+    "how": "Add \"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE\": \"85\" to the \"env\" object in your Claude Code settings.json (~/.claude/settings.json, or $CLAUDE_CONFIG_DIR/settings.json when CLAUDE_CONFIG_DIR is set), then start a new session",
+    "harnesses": [
+      "claude"
+    ]
+  },
+  {
+    "id": "code-graph",
+    "order": 11,
+    "onboarding": false,
+    "when": {
+      "code_graph": false
+    },
+    "say": "No code graph is set up, so agents read file after file to find callers and structure.",
+    "why": "A code graph answers \"who calls this?\" in one query and keeps the context window small.",
+    "how": "Ask me for the harness skill (it provisions the codebase-memory-mcp graph and keeps it fresh)",
+    "harnesses": [
+      "claude"
+    ]
+  },
+  {
+    "id": "canon",
+    "order": 12,
+    "onboarding": false,
+    "when": {
+      "has_canon": false
+    },
+    "say": "This project has no written canon, so builder cannot tell your rules from its own guesses.",
+    "why": "A short canon (RULES.md, DESIGN.md or docs/rules/) gives every session the same rules.",
+    "how": "Ask me for the canon skill"
+  }
+]

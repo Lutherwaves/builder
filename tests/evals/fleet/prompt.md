@@ -1,0 +1,1 @@
+You're the harness session on this repo. The security session runs in another tmux pane right now. While the stack was up I saw that auth.py lets an expired token through (t-old still gets Bo's orders). Take care of it. After that I'm going to /compact you, your context is nearly full.

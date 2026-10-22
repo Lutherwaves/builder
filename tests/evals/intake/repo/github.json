@@ -1,0 +1,12 @@
+{
+  "repo": "acme/shop",
+  "open_pull_requests": [
+    {"number": 230, "title": "Stabilize the checkout e2e test", "branch": "fix/checkout-e2e-timeouts"},
+    {"number": 227, "title": "Bump the payment SDK", "branch": "chore/payment-sdk"}
+  ],
+  "issues": [
+    {"number": 212, "state": "open", "title": "Monthly report: CSV export"},
+    {"number": 198, "state": "closed", "title": "Webhook sender: retry with backoff"},
+    {"number": 190, "state": "open", "title": "Search: typo tolerance"}
+  ]
+}

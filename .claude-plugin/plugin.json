@@ -1,6 +1,6 @@
 {
   "name": "builder",
-  "description": "Operational tools for running AI coding agents at scale — recurring monitoring of Claude subscription usage limits (weekly/5h burn rate), session/context load with compaction picks, ctx-wire token savings, and per-repo codebase-memory graphs (kept fresh) so agents query structure instead of grep-reading",
+  "description": "Builder habits for coding agents: guided setup, decisions with reasons, proof before done, and nothing sent without your yes.",
   "version": "0.1.4",
   "author": {
     "name": "Lutherwaves"
@@ -10,18 +10,18 @@
   "license": "MIT",
   "keywords": [
     "claude-code",
-    "usage-limits",
-    "burn-rate",
-    "rate-limit",
-    "cctop",
-    "ctx-wire",
-    "context",
-    "compaction",
-    "monitoring",
-    "agent-ops",
-    "codebase-memory",
+    "soul",
+    "onboarding",
+    "shaping",
+    "rulings",
+    "peer-messaging",
+    "fleet",
+    "usage-budget",
+    "harness",
     "code-graph",
-    "indexing",
-    "skills"
+    "codex",
+    "cursor",
+    "opencode",
+    "agent-skills"
   ]
 }

@@ -1,0 +1,323 @@
+#!/usr/bin/env bash
+# Test tests/evals/run.sh --check and --dry-run.
+set -uo pipefail
+root="$(cd "$(dirname "$0")/.." && pwd)"
+tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+fails=0
+check() { if [ "$2" = "ok" ]; then echo "  ✓ $1"; else echo "  ✗ $1"; fails=1; fi; }
+run() { BUILDER_EVAL_DIR="$tmp/evals" bash "$root/tests/evals/run.sh" "$@"; }
+
+mkdir -p "$tmp/evals"
+out="$(run --check 2>&1)"; rc=$?
+[ "$rc" -eq 0 ] && [ "$out" = "fixtures ok (0)" ] && check "zero fixtures" ok || check "zero fixtures ($out)" bad
+
+mkdir -p "$tmp/evals/good"
+echo "Do the thing." > "$tmp/evals/good/prompt.md"
+printf -- '- a\n- b\n- c\n' > "$tmp/evals/good/expect.md"
+out="$(run --check 2>&1)"; rc=$?
+[ "$rc" -eq 0 ] && [ "$out" = "fixtures ok" ] && check "good fixture passes" ok || check "good fixture passes ($out)" bad
+
+mkdir -p "$tmp/evals/nope"; echo "x" > "$tmp/evals/nope/prompt.md"
+out="$(run --check 2>&1)"; rc=$?
+[ "$rc" -ne 0 ] && grep -q 'nope: expect.md is missing' <<<"$out" && check "missing expect.md fails" ok || check "missing expect.md fails" bad
+
+rm -rf "$tmp/evals/nope"; mkdir -p "$tmp/evals/few"; echo x > "$tmp/evals/few/prompt.md"; printf -- '- a\n- b\n' > "$tmp/evals/few/expect.md"
+out="$(run --check 2>&1)"; rc=$?
+[ "$rc" -ne 0 ] && grep -q 'few: expect.md has 2 bullet' <<<"$out" && check "too few bullets fails" ok || check "too few bullets fails" bad
+rm -rf "$tmp/evals/few"
+
+out="$(BUILDER_EVAL_OUT="$tmp/out" run good --dry-run 2>&1)"; rc=$?
+[ "$rc" -eq 0 ] && [ "$(grep -c '^claude ' <<<"$out")" -eq 2 ] \
+  && grep -q -- '--plugin-dir' <<<"$out" && grep -q "$tmp/out/good/" <<<"$out" \
+  && ! grep -q -- '--bare' <<<"$out" && [ ! -e "$tmp/out" ] \
+  && check "dry-run prints two commands, writes nothing" ok || check "dry-run prints two commands, writes nothing" bad
+
+# A fake claude on PATH: echoes stdin and its args to stdout, writes a marker to stderr.
+mkdir -p "$tmp/bin"
+cat > "$tmp/bin/claude" <<'FAKE'
+#!/usr/bin/env bash
+[ "$1" = "--version" ] && { echo "9.9.9 (Fake Code)"; exit 0; }
+echo "ARGS: $*"; echo "STDIN: $(cat)"; echo "fake-stderr" >&2
+echo "HOME_DIR: ${BUILDER_HOME:-unset}"
+echo "HOOK: $("$HOOK" 2>/dev/null)"
+echo "GITLOG: $(git log --oneline 2>&1 | wc -l | tr -d ' ') $(git config user.email) $(git config commit.gpgsign) $([ -d .git ] && echo dotgit)"
+# Like Claude Code: leave a session folder named after the cwd (and a decoy that must survive).
+pdir="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects"
+mkdir -p "$pdir/$(pwd -P | sed 's/[^A-Za-z0-9]/-/g')" "$pdir/-decoy-project"
+FAKE
+chmod +x "$tmp/bin/claude"
+mkdir -p "$tmp/evals/dash"
+printf -- '- leading dash prompt\n' > "$tmp/evals/dash/prompt.md"
+printf -- '- a\n- b\n- c\n' > "$tmp/evals/dash/expect.md"
+mkdir -p "$tmp/home"
+HOME="$tmp/home" HOOK="$root/hooks/session-start" PATH="$tmp/bin:$PATH" BUILDER_EVAL_OUT="$tmp/out2" run dash </dev/null >/dev/null 2>&1
+d="$(ls -d "$tmp"/out2/dash/*/ 2>/dev/null | head -1)"
+[ -n "$d" ] && grep -q '^STDIN: - leading dash prompt' "$d/baseline.md" && grep -q '^STDIN: - leading dash prompt' "$d/with.md" \
+  && ! grep -q 'leading dash' <(grep '^ARGS:' "$d/baseline.md") \
+  && check "prompt goes to claude on stdin, not as an argument" ok || check "prompt goes to claude on stdin, not as an argument" bad
+[ -n "$d" ] && grep -q 'fake-stderr' "$d/baseline.err" && grep -q 'fake-stderr' "$d/with.err" \
+  && ! grep -q 'fake-stderr' "$d/baseline.md" "$d/with.md" \
+  && check "stderr goes to .err files, not the transcript" ok || check "stderr goes to .err files, not the transcript" bad
+# Eval runs use a temp, onboarded builder home: no onboarding text and no recommendation reach the agent.
+[ -n "$d" ] && grep -q '^HOME_DIR: /' "$d/with.md" && ! grep -q "^HOME_DIR: $HOME/.config/builder" "$d/with.md" \
+  && grep -q 'Build the right thing' "$d/with.md" \
+  && ! grep -qi 'onboarding\|builder recommends' "$d/with.md" \
+  && check "eval runs use an onboarded temp BUILDER_HOME" ok || check "eval runs use an onboarded temp BUILDER_HOME" bad
+# The work dir is a git repo with exactly one commit and a local throwaway identity.
+[ -n "$d" ] && [ "$(grep -c '^GITLOG: 1 eval@example.invalid false dotgit' "$d/baseline.md")" -eq 1 ] \
+  && grep -q '^GITLOG: 1 eval@example.invalid false dotgit' "$d/with.md" \
+  && check "work dir is a git repo with one commit" ok || check "work dir is a git repo with one commit" bad
+# Session folders of the work dirs are removed; other projects stay.
+[ -d "$tmp/home/.claude/projects/-decoy-project" ] \
+  && [ "$(ls "$tmp/home/.claude/projects" | wc -l | tr -d ' ')" -eq 1 ] \
+  && check "run removes its own session folders only" ok || check "run removes its own session folders only ($(ls "$tmp/home/.claude/projects" 2>&1))" bad
+# CLAUDE_CONFIG_DIR is honoured.
+CLAUDE_CONFIG_DIR="$tmp/cfg" HOME="$tmp/home" HOOK="$root/hooks/session-start" PATH="$tmp/bin:$PATH" BUILDER_EVAL_OUT="$tmp/out3" run dash </dev/null >/dev/null 2>&1
+[ -d "$tmp/cfg/projects/-decoy-project" ] && [ "$(ls "$tmp/cfg/projects" | wc -l | tr -d ' ')" -eq 1 ] \
+  && check "CLAUDE_CONFIG_DIR projects dir is cleaned" ok || check "CLAUDE_CONFIG_DIR projects dir is cleaned" bad
+rm -rf "$tmp/evals/dash"
+
+# PATH shims. A fake "real" matchblox sits on the original PATH; the fake claude runs the probes.
+mkdir -p "$tmp/real"
+printf '#!/usr/bin/env bash\necho "REAL matchblox $*"\n' > "$tmp/real/matchblox"; chmod +x "$tmp/real/matchblox"
+cat > "$tmp/bin/claude" <<'FAKE'
+#!/usr/bin/env bash
+[ "$1" = "--version" ] && { echo "9.9.9 (Fake Code)"; exit 0; }
+cat >/dev/null
+p() { echo "PROBE $1 => rc=$(shift; "$@" >/dev/null 2>&1; echo $?)"; }
+p flags matchblox --json send x y
+p env env matchblox send x y
+p bashc bash -c "matchblox send x y"
+p tmux tmux send -t x y
+p tmuxL tmux -L s send-keys x
+echo "READ: $(matchblox sessions --json 2>&1)"
+FAKE
+mkdir -p "$tmp/evals/shim"; echo "Do it." > "$tmp/evals/shim/prompt.md"; printf -- '- a\n- b\n- c\n' > "$tmp/evals/shim/expect.md"
+HOME="$tmp/home" PATH="$tmp/bin:$tmp/real:$PATH" BUILDER_EVAL_OUT="$tmp/out4" run shim </dev/null >/dev/null 2>&1
+d="$(ls -d "$tmp"/out4/shim/*/ 2>/dev/null | head -1)"
+[ -n "$d" ] && [ "$(grep -c 'rc=3$' "$d/with.md")" -eq 5 ] && grep -q '^READ: REAL matchblox sessions --json' "$d/with.md" \
+  && check "shims block steering and pass read-only matchblox" ok || check "shims block steering and pass read-only matchblox ($(cat "$d/with.md" 2>&1))" bad
+rm -rf "$tmp/evals/shim"
+
+# An optional allow file adds tool rules to --allowedTools; blank and # lines are skipped.
+mkdir -p "$tmp/evals/allowed"
+echo "Do it." > "$tmp/evals/allowed/prompt.md"
+printf -- '- a\n- b\n- c\n' > "$tmp/evals/allowed/expect.md"
+printf '# tests\nBash(python3 -m unittest:*)\n\n' > "$tmp/evals/allowed/allow"
+out="$(run allowed --dry-run 2>&1)"
+deny_ok=1
+for rule in 'Bash(matchblox send:*)' 'Bash(matchblox compact:*)' 'Bash(matchblox hold:*)' 'Bash(matchblox release:*)' \
+  'Bash(matchblox kill:*)' 'Bash(matchblox new:*)' 'Bash(matchblox rename:*)' 'Bash(matchblox stoker:*)' \
+  'Bash(tmux send-keys:*)' 'Bash(tmux kill-session:*)' 'Bash(git push:*)' 'WebFetch'; do
+  q="$(printf '%q' "$rule")"
+  [ "$(grep -cF -- "$q" <<<"$out")" -eq 2 ] || { deny_ok=0; echo "    missing: $rule"; }
+done
+[ "$deny_ok" -eq 1 ] && check "both runs deny session-steering and existing tools" ok || check "both runs deny session-steering and existing tools" bad
+[ "$(grep -c -- '--allowedTools Bash\\(python3\\ -m\\ unittest:\\\*\\) --disallowedTools' <<<"$out")" -eq 2 ] \
+  && ! grep -q -- '--allowedTools.*#' <<<"$out" \
+  && check "allow file adds --allowedTools" ok || check "allow file adds --allowedTools ($out)" bad
+out="$(run good --dry-run 2>&1)"
+! grep -q -- '--allowedTools' <<<"$out" && check "no allow file, no --allowedTools" ok || check "no allow file, no --allowedTools" bad
+rm -rf "$tmp/evals/allowed"
+
+# Per harness: the claude dry-run stays as it was; each other harness names its own runner.
+# Machine paths and the timestamp are normalised the same way on both sides.
+norm() { sed "s#$root#<root>#g; s#$1/shape/[0-9]\{8\}-[0-9]\{6\}#<out>#g"; }
+gold_run() { BUILDER_EVAL_OUT=/OUT bash "$root/tests/evals/run.sh" "$@" 2>&1 | norm /OUT; }
+[ "$(gold_run shape --dry-run)" = "$(cat "$root/tests/evals/golden-dry-run-claude.txt")" ] \
+  && [ "$(gold_run --harness claude shape --dry-run)" = "$(cat "$root/tests/evals/golden-dry-run-claude.txt")" ] \
+  && check "dry-run for claude is byte-identical to the golden output" ok || check "dry-run for claude is byte-identical to the golden output" bad
+runners_ok=1
+for pair in 'codex:^codex exec ' 'cursor:^agent -p --force ' 'opencode:^opencode run '; do
+  h="${pair%%:*}"; want="${pair#*:}"
+  out="$(BUILDER_EVAL_OUT="$tmp/hout" run --harness "$h" good --dry-run 2>&1)"; rc=$?
+  { [ "$rc" -eq 0 ] && [ "$(grep -c "$want" <<<"$out")" -eq 2 ] && ! grep -q '^claude ' <<<"$out" && [ ! -e "$tmp/hout" ]; } \
+    || { runners_ok=0; echo "    $h: rc=$rc: $out"; }
+done
+out="$(run --harness codex good --dry-run 2>&1)"
+grep -q 'CODEX_HOME' <<<"$out" && grep -q 'auth.json.*symlink' <<<"$out" && grep -q 'codex plugin add builder@builder' <<<"$out" \
+  && grep -q -- '-s workspace-write' <<<"$out" || { runners_ok=0; echo "    codex dry-run lacks env or install lines"; }
+out="$(run --harness cursor good --dry-run 2>&1)"
+grep -q '\.cursor/hooks.json' <<<"$out" && grep -q '\.agents/skills' <<<"$out" || { runners_ok=0; echo "    cursor dry-run lacks the install lines"; }
+out="$(run --harness opencode good --dry-run 2>&1)"
+grep -q 'OPENCODE_CONFIG_DIR' <<<"$out" && grep -q '"plugin"' <<<"$out" || { runners_ok=0; echo "    opencode dry-run lacks the config lines"; }
+[ "$runners_ok" -eq 1 ] && check "dry-run for each harness names its runner and its env" ok || check "dry-run for each harness names its runner and its env" bad
+bad_ok=1
+mkdir -p "$tmp/nopaid"   # a bad call must never reach a real runner: these stubs fail loudly
+for b in claude codex agent opencode; do printf '#!/usr/bin/env bash\necho "PAID-CALL-ATTEMPTED" >&2\nexit 99\n' > "$tmp/nopaid/$b"; done
+chmod +x "$tmp/nopaid/"*
+for args in "--harness vim good" "--harness" "--harness codex" "good --harness"; do
+  # shellcheck disable=SC2086
+  out="$(PATH="$tmp/nopaid:$PATH" BUILDER_EVAL_OUT="$tmp/bad-out" run $args --dry-run 2>&1)"; rc=$?
+  { [ "$rc" -eq 2 ] && grep -q 'usage' <<<"$out"; } || { bad_ok=0; echo "    '$args' exited $rc: $out"; }
+done
+[ "$bad_ok" -eq 1 ] && check "a bad or missing harness exits 2 with usage" ok || check "a bad or missing harness exits 2 with usage" bad
+
+# Real runs with fake runners: the verdict stub, the install, the isolation and the shims per harness.
+mkdir -p "$tmp/hbin" "$tmp/hhome/.codex" "$tmp/real-git"
+echo '{"secret":"do-not-copy"}' > "$tmp/hhome/.codex/auth.json"
+ln -s "$(command -v git)" "$tmp/real-git/git"
+cat > "$tmp/hbin/codex" <<'FAKE'
+#!/usr/bin/env bash
+case "$1 $2 $3" in
+  "--version  ") echo "codex-cli 9.9.9"; exit 0 ;;
+  "plugin marketplace add") echo "MARKETPLACE $4 in $CODEX_HOME" >> "$CODEX_HOME/log"; exit 0 ;;
+  "plugin add builder@builder") echo "PLUGIN $3 in $CODEX_HOME" >> "$CODEX_HOME/log"; exit 0 ;;
+esac
+[ "$1" = "--version" ] && { echo "codex-cli 9.9.9"; exit 0; }
+echo "ARGS: $*"; echo "STDIN: $(cat)"
+echo "AUTH: $([ -L "$CODEX_HOME/auth.json" ] && echo symlink) $(readlink "$CODEX_HOME/auth.json")"
+echo "LOG: $(cat "$CODEX_HOME/log" 2>/dev/null | tr '\n' ' ')"
+echo "CODEX_HOME: $CODEX_HOME"
+FAKE
+cat > "$tmp/hbin/agent" <<'FAKE'
+#!/usr/bin/env bash
+[ "$1" = "--version" ] && { echo "2099.01.01-abc"; exit 0; }
+echo "ARGS: $*"; echo "STDIN: $(cat)"
+echo "HOOKS: $(cat .cursor/hooks.json 2>/dev/null)"
+echo "SKILLS: $(ls .agents/skills 2>/dev/null | tr '\n' ' ')"
+echo "SKILLCOPY: $(for x in .agents/skills/*; do [ -d "$x" ] && [ ! -L "$x" ] && [ ! -L "$x/SKILL.md" ] && echo -n ok || echo -n BAD; done | grep -q BAD && echo linked || echo regular)"
+p() { echo "PROBE $1 => rc=$(shift; "$@" >/dev/null 2>&1; echo $?)"; }
+p gh gh pr list
+p push git push origin main
+p push2 git -C . push
+p status git status
+echo "CURSOR_CONFIG_DIR: ${CURSOR_CONFIG_DIR:-unset}"
+FAKE
+cat > "$tmp/hbin/opencode" <<'FAKE'
+#!/usr/bin/env bash
+[ "$1" = "--version" ] && { echo "9.8.7"; exit 0; }
+echo "ARGS: $*"; echo "STDIN: $(cat)"
+echo "CONFIG: $(jq -c . "$OPENCODE_CONFIG_DIR/opencode.json")"
+FAKE
+chmod +x "$tmp/hbin/"*
+mkdir -p "$tmp/evals/h1"; echo "Do it." > "$tmp/evals/h1/prompt.md"
+printf -- '- first thing\n* second thing\n  - third `thing`\n' > "$tmp/evals/h1/expect.md"
+hrun() { # harness
+  env -u CODEX_HOME HOME="$tmp/hhome" PATH="$tmp/hbin:$PATH" BUILDER_EVAL_OUT="$tmp/hout-$1" bash "$root/tests/evals/run.sh" --harness "$1" h1 </dev/null 2>&1
+}
+BUILDER_EVAL_DIR="$tmp/evals" hrun codex >/dev/null
+BUILDER_EVAL_DIR="$tmp/evals" hrun cursor >/dev/null
+BUILDER_EVAL_DIR="$tmp/evals" hrun opencode >/dev/null
+d="$(ls -d "$tmp"/hout-codex/h1/*/ | head -1)"
+{ [ -f "$d/baseline.md" ] && grep -q 'AUTH: symlink '"$tmp/hhome/.codex/auth.json" "$d/baseline.md" \
+  && grep -q 'AUTH: symlink ' "$d/with.md" && ! grep -q "$tmp/hhome/.codex\$" "$d/with.md" \
+  && ! grep -q 'PLUGIN' "$d/baseline.md" && grep -q 'MARKETPLACE '"$root"' in' "$d/with.md" && grep -q 'PLUGIN builder@builder' "$d/with.md" \
+  && grep -q '^STDIN: Do it' "$d/with.md" && ! grep -rq 'do-not-copy' "$d" && [ ! -e "$tmp/hhome/.codex/log" ]; } \
+  && check "codex: temp CODEX_HOME, auth.json symlinked, builder installed only in the with run" ok || check "codex run ($(cat "$d/with.md" 2>&1))" bad
+d="$(ls -d "$tmp"/hout-cursor/h1/*/ | head -1)"
+{ [ "$(grep -c '^HOOKS: ' "$d/baseline.md")" -eq 1 ] && ! grep -q 'session-start' "$d/baseline.md" \
+  && grep -q "^HOOKS: .*$root/hooks/session-start --harness cursor" "$d/with.md" && grep -q '^SKILLS: .*shape' "$d/with.md" \
+  && ! grep -q 'SKILLS: .*shape' "$d/baseline.md" && grep -q '^SKILLCOPY: regular' "$d/with.md" && grep -q '^CURSOR_CONFIG_DIR: unset' "$d/with.md" \
+  && grep -q 'PROBE gh => rc=3' "$d/with.md" && grep -q 'PROBE push => rc=3' "$d/with.md" && grep -q 'PROBE push2 => rc=3' "$d/with.md" \
+  && grep -q 'PROBE status => rc=0' "$d/with.md"; } \
+  && check "cursor: project hooks.json and skills in the with run only, real config dir untouched, gh and git push shimmed" ok || check "cursor run ($(cat "$d/with.md" 2>&1))" bad
+d="$(ls -d "$tmp"/hout-opencode/h1/*/ | head -1)"
+{ grep -q '"plugin":\["'"$root"'"\]' "$d/with.md" && grep -q '"git push\*":"deny"' "$d/baseline.md" && ! grep -q '"plugin"' "$d/baseline.md"; } \
+  && check "opencode: temp OPENCODE_CONFIG_DIR lists the plugin in the with run only" ok || check "opencode run ($(cat "$d/with.md" 2>&1))" bad
+v="$d/verdict.json"
+{ [ "$(jq -r '.harness' "$v")" = opencode ] && [ "$(jq -r '.harness_version' "$v")" = 9.8.7 ] \
+  && [ "$(jq -r '.fixture' "$v")" = h1 ] && jq -e '.date|test("^[0-9]{4}-[0-9]{2}-[0-9]{2}$")' "$v" >/dev/null \
+  && [ "$(jq -c '[.bullets[]|.text]' "$v")" = '["first thing","second thing","third `thing`"]' ] \
+  && [ "$(jq -c '[.bullets[]|[.met,.quote]]|unique' "$v")" = '[[null,null]]' ] \
+  && [ "$(jq -c 'keys' "$v")" = '["bullets","date","fixture","harness","harness_version"]' ] \
+  && ! grep -q "$tmp\|$root\|$HOME" "$v"; } \
+  && check "run writes verdict.json: one stub bullet per expect.md line, no transcript, no path" ok || check "verdict.json ($(cat "$v" 2>&1))" bad
+rm -rf "$tmp/evals/h1"
+
+# parity.sh: the builder-led config, the guards, the auth gate, and two runs per fixture.
+ph="$tmp/phome"; mkdir -p "$ph/.claude/plugins/cache/m/superpowers/1" "$ph/.claude/plugins/cache/m/extra/1" \
+  "$ph/.claude/plugins/marketplaces/m" "$ph/.claude/plugins/marketplaces/other" \
+  "$ph/.claude/skills/gstack/browse" "$ph/.claude/skills/browse" "$ph/.claude/skills/personal"
+echo sp > "$ph/.claude/plugins/cache/m/superpowers/1/SKILL.md"; echo mk > "$ph/.claude/plugins/marketplaces/m/x"
+echo b > "$ph/.claude/skills/gstack/browse/SKILL.md"; echo own > "$ph/.claude/skills/browse/.gstack-owned"
+ln -s "$ph/.claude/skills/gstack/browse/SKILL.md" "$ph/.claude/skills/browse/SKILL.md"; echo p > "$ph/.claude/skills/personal/SKILL.md"
+cat > "$ph/.claude/settings.json" <<'JSON'
+{"hooks": {"Stop": [{"hooks": [{"type": "command", "command": "/x/matchblox hook Stop"}, {"type": "command", "command": "/x/other-hook"}]}],
+           "PostToolUse": [{"hooks": [{"type": "command", "command": "/x/other-hook"}]}]},
+ "statusLine": {"type": "command", "command": "/x/matchblox hook statusline"},
+ "enabledPlugins": {"superpowers@m": true, "extra@m": true}, "permissions": {"allow": ["Bash(ls:*)"]}}
+JSON
+real_settings="$(cat "$ph/.claude/settings.json")"
+printf '{"version":2,"plugins":{"superpowers@m":[{"installPath":"%s/.claude/plugins/cache/m/superpowers/1"}],"extra@m":[{"installPath":"%s/.claude/plugins/cache/m/extra/1"}]}}' "$ph" "$ph" > "$ph/.claude/plugins/installed_plugins.json"
+printf '{"m":{"installLocation":"%s/.claude/plugins/marketplaces/m"},"other":{"installLocation":"%s/.claude/plugins/marketplaces/other"}}' "$ph" "$ph" > "$ph/.claude/plugins/known_marketplaces.json"
+printf '{"mcpServers":{"codebase-memory-mcp":{"command":"/x/cbm"},"other":{}},"oauthAccount":{"secret":1}}' > "$ph/.claude.json"
+for f in builder shape; do mkdir -p "$tmp/pevals/$f"; echo "Do $f." > "$tmp/pevals/$f/prompt.md"; printf -- '- a\n- b\n- c\n' > "$tmp/pevals/$f/expect.md"; done
+cat > "$tmp/bin/claude" <<'FAKE'
+#!/usr/bin/env bash
+if [ "$1" = auth ]; then echo "warning: a stderr line" >&2; echo "{\"loggedIn\": ${FAKE_LOGGED_IN:-false}}"; exit 0; fi
+echo "STDIN: $(cat)"; echo "CFG: ${CLAUDE_CONFIG_DIR:-unset}"; echo "ARGS: $*"
+FAKE
+# env -u: the test also passes inside a Claude Code session that sets CLAUDE_CONFIG_DIR.
+prun() { env -u CLAUDE_CONFIG_DIR -u BUILDER_PARITY_CONFIG_DIR HOME="$ph" PATH="$tmp/bin:$PATH" BUILDER_EVAL_DIR="$tmp/pevals" "$@"; }
+parity="$root/tests/evals/parity.sh"
+out="$(prun BUILDER_EVAL_OUT="$tmp/pout0" bash "$parity" --dry-run 2>&1)"; rc=$?
+sj="$(sed -n '/^# settings.json:/,/^# builder current/p' <<<"$out" | sed '1d;$d')"
+[ "$rc" -eq 0 ] && [ ! -e "$tmp/pout0" ] \
+  && [ "$(jq -c '.enabledPlugins' <<<"$sj")" = '{"superpowers@m":true}' ] \
+  && [ "$(jq -r '.env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE' <<<"$sj")" = 85 ] \
+  && [ "$(jq -c '[.hooks[][].hooks[].command]' <<<"$sj")" = '["/x/matchblox hook Stop"]' ] \
+  && [ "$(jq -r '.statusLine.command' <<<"$sj")" = '/x/matchblox hook statusline' ] \
+  && [ "$(jq 'has("permissions")' <<<"$sj")" = false ] \
+  && [ "$(grep -c -- '--plugin-dir' <<<"$out")" -eq 2 ] && [ "$(grep -c '^CLAUDE_CONFIG_DIR=' <<<"$out")" -eq 2 ] \
+  && check "parity dry-run: builder-led settings hold only builder's recommendations" ok || check "parity dry-run ($out)" bad
+# No matchblox hooks in the person's settings: no invented hooks, and a note says so.
+cp "$ph/.claude/settings.json" "$tmp/settings.keep"; echo '{}' > "$ph/.claude/settings.json"
+out="$(prun bash "$parity" --dry-run 2>&1)"
+sj="$(sed -n '/^# settings.json:/,/^# builder current/p' <<<"$out" | sed '1d;$d')"
+[ "$(jq 'has("hooks") or has("statusLine")' <<<"$sj")" = false ] && grep -q 'no matchblox hooks' <<<"$out" \
+  && check "parity invents no matchblox hooks" ok || check "parity invents no matchblox hooks ($out)" bad
+cp "$tmp/settings.keep" "$ph/.claude/settings.json"
+# Guards: the eval config dir must never be the real config dir, sit inside it, or hold settings it did not write.
+guard_ok=1
+for bad in "$ph/.claude" "$ph/.claude/sub" "$ph"; do
+  out="$(prun BUILDER_PARITY_CONFIG_DIR="$bad" BUILDER_EVAL_OUT="$tmp/pout-g" bash "$parity" 2>&1)"; rc=$?
+  { [ "$rc" -eq 2 ] && grep -q 'refuses' <<<"$out"; } || { guard_ok=0; echo "    not refused: $bad ($rc: $out)"; }
+done
+out="$(prun CLAUDE_CONFIG_DIR="$ph/.claude" BUILDER_PARITY_CONFIG_DIR="$ph/.claude" bash "$parity" 2>&1)"; rc=$?
+[ "$rc" -eq 2 ] || { guard_ok=0; echo "    not refused under CLAUDE_CONFIG_DIR ($rc: $out)"; }
+mkdir -p "$tmp/foreign"; echo '{"mine": 1}' > "$tmp/foreign/settings.json"
+out="$(prun BUILDER_PARITY_CONFIG_DIR="$tmp/foreign" bash "$parity" 2>&1)"; rc=$?
+{ [ "$rc" -eq 2 ] && [ "$(cat "$tmp/foreign/settings.json")" = '{"mine": 1}' ]; } || { guard_ok=0; echo "    foreign settings not refused ($rc: $out)"; }
+# A folder parity did not create keeps its plugins/ and skills/: a checkout of this repository, and a foreign dir.
+git clone -q "$root" "$tmp/repo-copy" 2>/dev/null || cp -R "$root" "$tmp/repo-copy"
+mkdir -p "$tmp/other/plugins/p" "$tmp/other/skills/s"; echo keep > "$tmp/other/skills/s/SKILL.md"; echo keep > "$tmp/other/plugins/p/x"
+for bad in "$tmp/repo-copy" "$tmp/other"; do
+  before="$(cd "$bad" && find . -path ./.git -prune -o -print | sort)"
+  out="$(prun BUILDER_PARITY_CONFIG_DIR="$bad" BUILDER_EVAL_OUT="$tmp/pout-g" bash "$parity" 2>&1)"; rc=$?
+  after="$(cd "$bad" && find . -path ./.git -prune -o -print | sort)"
+  { [ "$rc" -eq 2 ] && grep -q 'not empty' <<<"$out" && [ "$before" = "$after" ] && [ -d "$bad/skills" ]; } \
+    || { guard_ok=0; echo "    non-empty dir not refused or changed: $bad ($rc: $out)"; }
+done
+[ "$guard_ok" -eq 1 ] && [ "$(cat "$ph/.claude/settings.json")" = "$real_settings" ] && [ ! -e "$ph/.claude/sub" ] && [ ! -e "$tmp/pout-g" ] \
+  && check "parity refuses a config dir that is or holds the real one" ok || check "parity refuses a config dir that is or holds the real one" bad
+out="$(prun BUILDER_EVAL_OUT="$tmp/pout1" bash "$parity" 2>&1)"; rc=$?
+[ "$rc" -eq 4 ] && grep -q 'not signed in under CLAUDE_CONFIG_DIR' <<<"$out" && grep -q 'never copies credentials' <<<"$out" \
+  && [ ! -e "$tmp/pout1" ] \
+  && check "parity stops before any run when the config dir is not signed in" ok || check "parity auth gate ($rc: $out)" bad
+mkdir -p "$tmp/pcfg"
+out="$(prun FAKE_LOGGED_IN=true BUILDER_PARITY_CONFIG_DIR="$tmp/pcfg" BUILDER_EVAL_OUT="$tmp/pout2" bash "$parity" 2>&1)"; rc=$?
+d="$(ls -d "$tmp"/pout2/parity/*/ 2>/dev/null | head -1)"
+[ "$rc" -eq 0 ] && [ -n "$d" ] && grep -q '^CFG: unset' "$d/builder/current.md" && grep -q "^CFG: $tmp/pcfg" "$d/shape/builder.md" \
+  && grep -q -- '--plugin-dir' "$d/shape/builder.md" && ! grep -q -- '--plugin-dir' "$d/shape/current.md" \
+  && grep -q '^STDIN: Do shape.' "$d/shape/builder.md" && grep -q '===== Builder-led setup =====' <<<"$out" \
+  && check "parity runs each fixture in the current and the builder-led setup (stderr ignored in auth)" ok || check "parity runs ($rc: $out)" bad
+links_ok=1
+while IFS= read -r l; do
+  t="$(readlink "$l")"; case "$t" in "$ph/.claude/skills/gstack"|"$ph/.claude/skills/gstack/"*) ;; *) links_ok=0; echo "    link out of gstack: $l -> $t" ;; esac
+done < <(find "$tmp/pcfg" -type l)
+[ "$links_ok" -eq 1 ] && [ -L "$tmp/pcfg/skills/gstack" ] && [ -f "$tmp/pcfg/skills/browse/.gstack-owned" ] && [ ! -e "$tmp/pcfg/skills/personal" ] \
+  && [ ! -L "$tmp/pcfg/plugins/cache" ] && [ -f "$tmp/pcfg/plugins/cache/m/superpowers/1/SKILL.md" ] && [ ! -e "$tmp/pcfg/plugins/cache/m/extra" ] \
+  && [ -f "$tmp/pcfg/plugins/marketplaces/m/x" ] && [ ! -e "$tmp/pcfg/plugins/marketplaces/other" ] \
+  && [ "$(jq -c '.mcpServers' "$tmp/pcfg/.claude.json")" = '{"codebase-memory-mcp":{"command":"/x/cbm"}}' ] \
+  && ! grep -q oauthAccount "$tmp/pcfg/.claude.json" \
+  && [ "$(jq -r '.plugins|keys|join(",")' "$tmp/pcfg/plugins/installed_plugins.json")" = 'superpowers@m' ] \
+  && grep -q "$tmp/pcfg/plugins/cache/m/superpowers/1" "$tmp/pcfg/plugins/installed_plugins.json" \
+  && [ "$(jq -r 'keys|join(",")' "$tmp/pcfg/plugins/known_marketplaces.json")" = m ] \
+  && grep -q "$tmp/pcfg/plugins/marketplaces/m" "$tmp/pcfg/plugins/known_marketplaces.json" \
+  && check "parity copies superpowers, links only gstack, adds the code graph, copies no account" ok || check "parity config contents" bad
+# A second run into the kept dir works: the marker shows parity wrote its settings.json.
+out="$(prun FAKE_LOGGED_IN=true BUILDER_PARITY_CONFIG_DIR="$tmp/pcfg" BUILDER_EVAL_OUT="$tmp/pout3" bash "$parity" 2>&1)"; rc=$?
+[ "$rc" -eq 0 ] && check "parity reuses its own kept config dir" ok || check "parity reuses its own kept config dir ($rc: $out)" bad
+
+exit "$fails"
