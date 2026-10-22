@@ -54,7 +54,7 @@ Add this snippet, as it is, to the repository's `CLAUDE.md` or `AGENTS.md`:
 ```
 **Structural questions: ask the graph first.** For "where is X?", "what calls Y?" or "what is the
 architecture?", use the `codebase-memory` graph tools (`search_graph`, `query_graph`, `trace_path`,
-`get_architecture`, `get_code_snippet`) before grep, glob or Explore. If this checkout has no graph,
+`get_architecture`, `get_code_snippet`) before grep, glob or a search subagent. If this checkout has no graph,
 provision one first with the `harness` skill (local, no API key), then ask.
 ```
 

@@ -91,7 +91,7 @@ Use the named skill for the job. If its provider is not installed, use the fallb
 | Find a bug's cause | superpowers `systematic-debugging` or gstack `/investigate` | Reproduce, find the root cause, then fix |
 | Say it is done | superpowers `verification-before-completion` | Run the tests; quote the output |
 | Review a diff | superpowers `requesting-code-review` or gstack `/review` | Read your own diff against the request |
-| Show a mockup, a diagram or a visual | A shareable page (a Claude artifact) | A file in the repository; give its path. Never only a local browser tab |
+| Show a mockup, a diagram or a visual | A shareable page (the "make a shareable page" row of your harness mapping) | A file in the repository; give its path. Never only a local browser tab |
 | Test a web app in a browser | gstack `/qa` or `/browse` | Say "not tested in a browser" under Evidence |
 | Check security | gstack `/cso` | Say "no security pass" under Evidence |
 | Ship a branch | gstack `/ship` or superpowers `finishing-a-development-branch` | Show the diff; push only on a yes |

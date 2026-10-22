@@ -6,9 +6,9 @@
 # Usage: drift.sh [repo-path]   (default: $PWD)
 # Output: VERDICT=<FRESH|STALE|NOT_INDEXED|NO_BINARY|BAD_PATH> project=<name> ...
 #
-# The registry written by setup.sh ($BUILDER_HOME/code-graph/repos.txt, default
-# ~/.config/builder; the old ~/.claude/code-graph/repos.txt is read when the new
-# one is missing). Tab-separated: <abs-path>\t<project>\t<indexed-sha>) is the source of truth:
+# The registry that setup.sh writes is the source of truth. It is $BUILDER_HOME/code-graph/repos.txt (default ~/.config/builder).
+# drift.sh reads the old ~/.claude/code-graph/repos.txt when the new file is missing. Each line is tab-separated:
+# <abs-path>, <project>, <indexed-sha>. Two of the fields need care:
 #   - <project>     the AUTHORITATIVE name the tool assigned (paths get
 #                   normalized in ways a naive slug can't reproduce).
 #   - <indexed-sha> the git HEAD *at index time* — the only reliable way to
