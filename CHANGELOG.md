@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/Lutherwaves/builder/compare/builder-v1.0.0...builder-v1.1.0) (2026-10-22)
+
+
+### Features
+
+* a review skill proves how a change hurts a person ([#19](https://github.com/Lutherwaves/builder/issues/19)) ([e8c987f](https://github.com/Lutherwaves/builder/commit/e8c987f29027e908e0a1c895f8618a8c5f386cb4))
+
 ## [1.0.0](https://github.com/Lutherwaves/builder/compare/builder-v0.1.4...builder-v1.0.0) (2026-10-22)
 
 
