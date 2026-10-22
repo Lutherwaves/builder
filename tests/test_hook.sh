@@ -135,6 +135,6 @@ done
 
 echo "test_hook_manifests"
 jq -e '.hooks.SessionStart[0].hooks[0].command == "\"${CLAUDE_PLUGIN_ROOT}/hooks/session-start\" --harness auto"' "$root/hooks/hooks.json" >/dev/null && check "hooks.json passes --harness auto" ok || check "hooks.json passes --harness auto" bad
-jq -e '. == {"version":1,"hooks":{"sessionStart":[{"command":"./hooks/session-start --harness cursor"}]}}' "$root/hooks/hooks-cursor.json" >/dev/null && check "hooks-cursor.json exact" ok || check "hooks-cursor.json exact" bad
+jq -e '. == {"version":1,"hooks":{"sessionStart":[{"command":"\"${CURSOR_PLUGIN_ROOT}/hooks/session-start\" --harness cursor"}]}}' "$root/hooks/hooks-cursor.json" >/dev/null && check "hooks-cursor.json exact" ok || check "hooks-cursor.json exact" bad
 
 [ "$fails" -eq 0 ] && echo "✓ hook tests passed" || { echo "✗ hook tests failed"; exit 1; }
