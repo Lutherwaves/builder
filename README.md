@@ -96,7 +96,7 @@ A harness is listed as supported only after every eval fixture passes on it.
 <!-- support:start -->
 | Harness | Version | Eval date | Status |
 | --- | --- | --- | --- |
-| Claude Code | 2.1.308 (Claude Code) | 2026-10-22 | experimental: canon 5/6; fleet 3/4; harness 4/6; reach 3/4; shape 2/6; 2 not graded |
+| Claude Code | 2.1.308 (Claude Code) | 2026-10-22 | experimental: canon 5/6; fleet 3/4; harness 4/6; reach 3/4; shape 2/6; 3 not graded |
 <!-- support:end -->
 
 ## What happens in your first session
@@ -113,7 +113,7 @@ Examples: you run three or more sessions, your weekly usage reaches 80%, or no c
 The first two signals need matchblox.
 builder keeps your answers in `~/.config/builder/ledger.json`. Set `BUILDER_HOME` to move it.
 
-## The eight skills
+## The nine skills
 
 | Skill | What you get |
 | --- | --- |
@@ -125,6 +125,7 @@ builder keeps your answers in `~/.config/builder/ledger.json`. Set `BUILDER_HOME
 | `intake` | The day's captured tasks are reconciled against work in motion. Nothing becomes an issue without your marker or your yes. |
 | `budget` | A forecast of the weekly usage limit, and one idle session to compact. Where the harness has no usage reading, it says so. |
 | `harness` | A local code graph answers "what calls this?" in one query, and a watcher names stale graphs. |
+| `review` | A review proves how a change hurts a person: what it ran, each harm with its evidence, fix and test, and a verdict. Nothing is posted without your yes. |
 
 Call a skill by name, for example the `shape` skill. The agent also loads a skill when its job comes up.
 

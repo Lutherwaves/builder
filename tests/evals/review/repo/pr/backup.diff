@@ -1,0 +1,116 @@
+diff --git a/README.md b/README.md
+index af7a669..c0f8616 100644
+--- a/README.md
++++ b/README.md
+@@ -3,7 +3,10 @@
+ A tiny command-line notebook. Notes are Markdown files under one folder. Python 3 standard library only.
+ 
+     python3 jotter.py list                # lists your notes
++    python3 jotter.py backup              # uploads your notes to your backup server
+     python3 -m unittest -v                # runs the tests
+ 
++List notes or folders to keep off the server in `.backupignore`, one per line, for example `private/`.
++
+ Settings live in `config.json` next to your notes (see `config.example.json`).
+ The log goes to `jotter.log`. If something breaks, attach `jotter.log` to your bug report.
+diff --git a/jotter.py b/jotter.py
+index 5a29ea8..6d710ed 100644
+--- a/jotter.py
++++ b/jotter.py
+@@ -3,6 +3,7 @@ import json
+ import logging
+ import os
+ import sys
++import urllib.request
+ 
+ log = logging.getLogger("jotter")
+ 
+@@ -25,6 +26,46 @@ def list_notes(root):
+     return sorted(out)
+ 
+ 
++def read_ignore(root):
++    """Paths listed in root/.backupignore, one per line. Lines starting with # are comments."""
++    path = os.path.join(root, ".backupignore")
++    if not os.path.exists(path):
++        return set()
++    with open(path) as f:
++        return {line.strip() for line in f if line.strip() and not line.startswith("#")}
++
++
++def is_ignored(rel, ignored):
++    """True if the note, or the first folder it sits in, is listed in .backupignore."""
++    return rel in ignored or rel.split(os.sep)[0] in ignored
++
++
++def http_upload(url, rel, body):
++    req = urllib.request.Request(url, data=body, method="PUT", headers={"X-Note": rel})
++    with urllib.request.urlopen(req, timeout=10) as resp:
++        resp.read()
++
++
++def backup(cfg, upload=http_upload):
++    """Upload every note that .backupignore does not list. Returns the number backed up."""
++    root = cfg["notes_dir"]
++    ignored = read_ignore(root)
++    url = f"{cfg['server']}/v1/notes?token={cfg['token']}"
++    sent = 0
++    for rel in list_notes(root):
++        if is_ignored(rel, ignored):
++            continue
++        log.info("uploading %s to %s", rel, url)
++        with open(os.path.join(root, rel), "rb") as f:
++            body = f.read()
++        try:
++            upload(url, rel, body)
++        except OSError as e:
++            log.warning("upload of %s failed: %s", rel, e)
++        sent += 1
++    return sent
++
++
+ def main(argv):
+     logging.basicConfig(filename="jotter.log", level=logging.INFO)
+     cfg = load_config()
+@@ -32,7 +73,11 @@ def main(argv):
+         for rel in list_notes(cfg["notes_dir"]):
+             print(rel)
+         return 0
+-    print("usage: jotter.py list")
++    if argv[:1] == ["backup"]:
++        n = backup(cfg)
++        print(f"Backed up {n} notes. Your notes are safe.")
++        return 0
++    print("usage: jotter.py list | backup")
+     return 2
+ 
+ 
+diff --git a/test_jotter.py b/test_jotter.py
+index 3f8e85d..3d8515a 100644
+--- a/test_jotter.py
++++ b/test_jotter.py
+@@ -15,5 +15,24 @@ class ListNotes(unittest.TestCase):
+             self.assertEqual(jotter.list_notes(root), ["a.md", os.path.join("work", "b.md")])
+ 
+ 
++class Backup(unittest.TestCase):
++    def make_notes(self, root, ignore):
++        os.makedirs(os.path.join(root, "private"))
++        for rel in ("a.md", "b.md", "private/diary.md"):
++            with open(os.path.join(root, rel), "w") as f:
++                f.write("x")
++        with open(os.path.join(root, ".backupignore"), "w") as f:
++            f.write(ignore)
++
++    def test_uploads_notes_and_skips_ignored_folder(self):
++        with tempfile.TemporaryDirectory() as root:
++            self.make_notes(root, "# keep these at home\nprivate\n")
++            got = []
++            cfg = {"notes_dir": root, "server": "https://backup.test", "token": "t0k"}
++            n = jotter.backup(cfg, upload=lambda url, rel, body: got.append(rel))
++            self.assertEqual(sorted(got), ["a.md", "b.md"])
++            self.assertEqual(n, 2)
++
++
+ if __name__ == "__main__":
+     unittest.main()

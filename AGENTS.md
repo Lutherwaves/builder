@@ -1,6 +1,6 @@
 # builder — agent guide
 
-builder is a plugin for coding agents: eight skills, one session-start hook, and a small Python library. It has adapters for Claude Code, Codex CLI, Cursor CLI and opencode.
+builder is a plugin for coding agents: nine skills, one session-start hook, and a small Python library. It has adapters for Claude Code, Codex CLI, Cursor CLI and opencode.
 This guide routes an agent that works on builder itself.
 
 ## Where each change goes

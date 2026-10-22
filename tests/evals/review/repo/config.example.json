@@ -1,0 +1,5 @@
+{
+  "notes_dir": "~/notes",
+  "server": "https://backup.example.invalid",
+  "token": "replace-with-your-personal-token"
+}
