@@ -146,7 +146,7 @@ def _toml(path):
     """(parsed dict or None, raw text). None means the text did not parse: scan it with a regex."""
     try:
         text = Path(path).read_text()
-    except OSError:
+    except (OSError, ValueError):
         return {}, ""
     if tomllib is not None:
         try:

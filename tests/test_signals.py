@@ -291,6 +291,14 @@ fi''')
         with mock.patch.dict(os.environ, {"BUILDER_HARNESS": "codex"}):
             self.assertTrue(signals.collect(str(self.cwd), timeout=GENEROUS)["superpowers"])
 
+    def test_non_utf8_config_toml_does_not_crash(self):
+        cfg = self.home / ".codex"
+        cfg.mkdir()
+        (cfg / "config.toml").write_bytes(b'[plugins."superpowers@x"]\nname = "\xff\xfe"\n')
+        out = self.sig("codex")
+        self.assertFalse(out["superpowers"])
+        self.assertFalse(out["code_graph"])
+
     def test_codex_reads_mcp_from_config_toml(self):
         cfg = self.home / ".codex"
         cfg.mkdir()
