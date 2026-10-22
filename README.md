@@ -52,6 +52,8 @@ codex plugin add builder@builder
 
 Codex runs a plugin's hooks only after you trust them. builder does not work around this step.
 Until you trust the hook, the `builder` skill still loads by name.
+Until Codex detection lands (issue #17), builder's session start on Codex uses the Claude Code step list and mapping.
+The marketplace add was proven with a local path. The `Lutherwaves/builder` form is the git form that Codex documents.
 
 ### Cursor CLI
 
@@ -61,6 +63,8 @@ In your project, create `.cursor/hooks.json`:
 ```json
 {"version":1,"hooks":{"sessionStart":[{"command":"<path to builder>/hooks/session-start --harness cursor"}]}}
 ```
+
+`<path to builder>` must be an absolute path.
 
 Keep only these keys. One invalid key disables every hook in the file.
 Then copy builder's skill folders into `.agents/skills/` in the same project.
@@ -83,7 +87,7 @@ A local checkout works:
 {"plugin": ["/path/to/builder"]}
 ```
 
-opencode also takes a git form, as superpowers documents: `"plugin": ["builder@git+https://github.com/Lutherwaves/builder.git"]`. The local path is the form tested for builder.
+opencode also takes a git form, as superpowers documents: `"plugin": ["builder@git+https://github.com/Lutherwaves/builder.git"]`. Only the local path was proven, with `opencode debug skill`: the skills load. No live opencode session has run builder yet.
 
 ### Harness support
 
@@ -139,6 +143,7 @@ builder runs on its own. If a partner is missing, builder uses a fallback and sa
 The builder run accepts every recommendation.
 It prints both transcripts next to the expected behaviour, so you can compare them.
 It runs the agent four times, so it uses tokens from your plan.
+`parity.sh` works on Claude Code only.
 See [tests/evals/README.md](tests/evals/README.md).
 
 ## Standalone use of the budget forecast

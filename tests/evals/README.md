@@ -69,6 +69,8 @@ After a run, the runner writes `verdict.json` next to the transcripts. It holds 
 
 ## Drop-in parity
 
+`parity.sh` works on Claude Code only.
+
     bash tests/evals/parity.sh             # run the builder and shape fixtures in two setups
     bash tests/evals/parity.sh --dry-run   # print the builder-led settings and the commands only
 
