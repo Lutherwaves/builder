@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.0.0](https://github.com/Lutherwaves/builder/compare/builder-v0.1.4...builder-v1.0.0) (2026-10-22)
+
+
+### ⚠ BREAKING CHANGES
+
+* builder 2 — the builder soul, agent-led setup and peer messaging ([#16](https://github.com/Lutherwaves/builder/issues/16))
+
+### Features
+
+* builder 2 — the builder soul, agent-led setup and peer messaging ([#16](https://github.com/Lutherwaves/builder/issues/16)) ([1e685b4](https://github.com/Lutherwaves/builder/commit/1e685b4daf380ad8022a7150668b5bb5a0ead893))
+* **intake:** GitHub Project drafts as a task source ([#12](https://github.com/Lutherwaves/builder/issues/12)) ([b414939](https://github.com/Lutherwaves/builder/commit/b41493983fc8e6324bc57a1385c508d0c458bb2a))
+
+
+### CI
+
+* bump actions/checkout from 7.0.0 to 7.0.1 ([#11](https://github.com/Lutherwaves/builder/issues/11)) ([3ac649d](https://github.com/Lutherwaves/builder/commit/3ac649d136b8f87abed1fdf8633e8e197efdd8a5))
+
 ## [0.1.4](https://github.com/Lutherwaves/builder/compare/builder-v0.1.3...builder-v0.1.4) (2026-07-22)
 
 
