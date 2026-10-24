@@ -1,6 +1,6 @@
 # builder — agent guide
 
-builder is a plugin for coding agents: nine skills, one session-start hook, and a small Python library. It has adapters for Claude Code, Codex CLI, Cursor CLI and opencode.
+builder is a plugin for coding agents: ten skills, one session-start hook, and a small Python library. It has adapters for Claude Code, Codex CLI, Cursor CLI and opencode.
 This guide routes an agent that works on builder itself.
 
 ## Where each change goes
@@ -11,6 +11,7 @@ This guide routes an agent that works on builder itself.
 | The soul the hook injects | `skills/builder/soul-compact.md` (keep it in step with `skills/builder/SKILL.md`) | `bash tests/test_hook.sh` |
 | The SessionStart hook | `hooks/session-start`, `hooks/session_start.py` | `bash tests/test_hook.sh` |
 | A recommendation or its signal | `lib/recommendations.json`, `lib/signals.py`, `lib/ledger.py` | `python3 -m unittest tests.test_signals tests.test_ledger` |
+| The security score, CWE checks and audit baseline | `lib/security.py`, `skills/security/standards.md` | `python3 -m unittest tests.test_security` |
 | A send rule for `reach` | `lib/reach.py`, `skills/reach/rules.default.json` | `python3 -m unittest tests.test_reach` |
 | The budget forecast | `skills/budget/burn-proj.py` | `python3 -m unittest tests.test_burn_proj` |
 | The graph drift check | `skills/harness/drift.sh` | `bash tests/test_drift.sh` |

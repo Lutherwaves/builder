@@ -1,6 +1,6 @@
 # Contributing to builder
 
-Thanks for your interest. builder is a plugin for coding agents: nine skills, one session-start hook,
+Thanks for your interest. builder is a plugin for coding agents: ten skills, one session-start hook,
 and a small Python library. It runs on Claude Code, Codex CLI, Cursor CLI and opencode. [AGENTS.md](AGENTS.md) tells you which file to change for each job.
 
 ## Quick start

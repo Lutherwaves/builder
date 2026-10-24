@@ -20,6 +20,7 @@
     "harness",
     "code-graph",
     "code-review",
+    "security-review",
     "codex",
     "cursor",
     "opencode",
