@@ -44,6 +44,8 @@ MODES = ("change", "audit")
 
 
 def parse_vector(vector):
+    if not isinstance(vector, str):
+        raise ValueError("vector must be a string like %s..., got %r" % (PREFIX, vector))
     if not vector.startswith(PREFIX):
         raise ValueError("vector must start with %s, got %r" % (PREFIX, vector.split("/")[0]))
     metrics = {}
@@ -101,17 +103,36 @@ def in_top25(cwe):
     return check_cwe(cwe) in TOP25_2025
 
 
+def _text(obj, key):
+    value = obj.get(key)
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("%s must be a non-empty string, got %r" % (key, value))
+    return value
+
+
 def enrich(doc):
+    if not isinstance(doc, dict):
+        raise ValueError("the findings file must hold a JSON object")
     if doc.get("mode") not in MODES:
         raise ValueError("mode must be one of %s, got %r" % (", ".join(MODES), doc.get("mode")))
-    for dim in doc.get("dimensions", []):
+    if not os.path.isabs(_text(doc, "repo")):
+        raise ValueError("repo must be an absolute path to the person's checkout, got %r" % doc["repo"])
+    _text(doc, "sha")
+    for key in ("dimensions", "findings"):
+        if not isinstance(doc.get(key), list):
+            raise ValueError("%s must be a list (an empty list means none), got %r" % (key, doc.get(key)))
+    for dim in doc["dimensions"]:
         if dim not in DIMENSIONS:
             raise ValueError("unknown dimension %r in dimensions" % (dim,))
     seen = set()
     out = []
-    for f in doc.get("findings", []):
-        fid = f.get("id")
+    for f in doc["findings"]:
+        if not isinstance(f, dict):
+            raise ValueError("each finding must be a JSON object, got %r" % (f,))
+        fid = _text(f, "id")
         try:
+            for key in ("location", "title"):
+                _text(f, key)
             if fid in seen:
                 raise ValueError("duplicate id")
             seen.add(fid)
@@ -130,6 +151,14 @@ def baseline_path(repo, env, home):
     return harness.builder_home(env, home) / "security" / (key + ".json")
 
 
+def _is_date(value):
+    try:
+        date.fromisoformat(value)
+    except (TypeError, ValueError):
+        return False
+    return True
+
+
 def load_baseline(path):
     path = Path(path)
     if not path.exists():
@@ -139,7 +168,7 @@ def load_baseline(path):
     except (OSError, ValueError):
         data = None
     if not isinstance(data, dict) or not isinstance(data.get("open"), list) \
-            or not all(isinstance(f, dict) and "id" in f and "first_seen" in f for f in data["open"]):
+            or not all(isinstance(f, dict) and "id" in f and _is_date(f.get("first_seen")) for f in data["open"]):
         raise ValueError("corrupt baseline: %s (fix or delete it; the next audit then starts fresh)" % path)
     return data
 
@@ -150,7 +179,8 @@ def _days(first_seen, today):
 
 def diff(prior, current, today):
     known = {f["id"]: f for f in (prior or {}).get("open", [])}
-    ran = set(current.get("dimensions", []))
+    # A change review looks only at the diff, so it can never close a gap.
+    ran = set(current["dimensions"]) if current["mode"] == "audit" else set()
     out = {"new": [], "still_open": [], "closed": [], "not_rechecked": []}
     found = set()
     for f in current["findings"]:

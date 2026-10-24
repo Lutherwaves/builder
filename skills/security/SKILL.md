@@ -13,7 +13,7 @@ Each finding is mapped to the standards and gets a CVSS 3.1 score that code comp
 
 - Prove the harm. Name the person, the situation and what they lose. Report only a concrete path to harm. A finding with no harm is a nit. Drop it.
 - Never invent what code can compute. The score, the rating, the Top 25 mark and the baseline diff come from `security.py`.
-- Probe only where nothing real can break. Use a throwaway worktree: `git worktree add <temp dir>/sec HEAD`, or `.security-wt` inside the folder when your tools reach only it.
+- Probe only where nothing real can break. Use a throwaway worktree: `git worktree add <temp dir>/sec HEAD`, or `.security-wt` inside the folder when your tools reach only it (add it to `.git/info/exclude`).
   Prefer an in-process probe: a test file that calls the handler with the hostile input. A local server on `localhost` is allowed.
   A remote, shared or live system needs the person's explicit go each time. Remove the worktree at the end.
 - Defensive only. Write no working exploit for a live target, and do not inflate a severity.
@@ -55,7 +55,7 @@ Mark each finding "measured" (a probe ran: quote the input and the output) or "f
 
 ## 4. Score
 
-1. Write the findings file: JSON with `mode`, `repo` (absolute path), `sha`, `dimensions` (the ones you covered) and `findings`.
+1. Write the findings file: JSON with `mode`, `repo` (the absolute path of the person's checkout, never the probe worktree), `sha`, `dimensions` (the ones you covered) and `findings`.
    Each finding has `id` (`<dimension>/<CWE>/<file>/<symbol>`), `dimension`, `cwe`, `location`, `vector` (`CVSS:3.1/...`) and `title`.
    Put it outside the repository, for example in a temp dir.
 2. Run `python3 "${CLAUDE_PLUGIN_ROOT}/lib/security.py" score <findings.json>`. It adds `score`, `rating` and `top25`, or names the bad field.
@@ -65,7 +65,7 @@ Mark each finding "measured" (a probe ran: quote the input and the output) or "f
 ## 5. Remember
 
 - Audit mode: run `python3 "${CLAUDE_PLUGIN_ROOT}/lib/security.py" baseline save <findings.json>`. It prints new, still open, closed and not re-checked, and the path it saved.
-- Change mode: run `baseline diff` instead. It saves nothing. Use it to mark a finding "already known since <date>".
+- Change mode: run `baseline diff` instead. It saves nothing and closes nothing. Use it to mark a finding "already known since <date>".
 - The baseline lives in builder's local state, never in the repository. Commit it only on the person's request, and only in a private repository.
 - A corrupt baseline is an error. Report it with its path. Never treat it as empty.
 

@@ -121,6 +121,33 @@ class EnrichTest(unittest.TestCase):
                 if name != "mode":
                     self.assertIn(fid, str(ctx.exception))
 
+    def test_rejects_missing_or_malformed_fields(self):
+        def without(key):
+            d = doc()
+            del d[key]
+            return d
+        cases = {
+            "no findings key": without("findings"),
+            "no dimensions key": without("dimensions"),
+            "no sha": without("sha"),
+            "no repo": without("repo"),
+            "relative repo": dict(doc(), repo="."),
+            "findings not a list": dict(doc(), findings="oops"),
+            "finding not a dict": doc(["oops"]),
+            "vector null": doc([finding(vector=None)]),
+            "no id": doc([{k: v for k, v in finding().items() if k != "id"}]),
+            "empty title": doc([finding(title="")]),
+            "no location": doc([{k: v for k, v in finding().items() if k != "location"}]),
+            "not a dict": ["oops"],
+        }
+        for name, d in cases.items():
+            with self.subTest(case=name):
+                with self.assertRaises(ValueError):
+                    security.enrich(d)
+
+    def test_empty_findings_list_is_fine(self):
+        self.assertEqual(security.enrich(doc([]))["findings"], [])
+
     def test_rejects_unknown_run_dimension(self):
         with self.assertRaises(ValueError):
             security.enrich(doc(dimensions=("memory", "vibes")))
@@ -185,6 +212,12 @@ class BaselineTest(unittest.TestCase):
         [f] = skipped["not_rechecked"]
         self.assertEqual((f["first_seen"], f["days_open"]), ("2026-10-01", 23))
 
+    def test_change_mode_never_closes(self):
+        d = security.date(2026, 10, 24)
+        out = security.diff(self.prior(), security.enrich(doc([], mode="change", dimensions=("memory",))), d)
+        self.assertEqual(out["closed"], [])
+        self.assertEqual([f["id"] for f in out["not_rechecked"]], [finding()["id"]])
+
     def test_next_baseline_drops_closed(self):
         d = security.date(2026, 10, 24)
         other = finding(id="authz/CWE-862/app/admin.py/delete", dimension="authz", cwe="CWE-862")
@@ -198,7 +231,9 @@ class BaselineTest(unittest.TestCase):
         self.assertIsNone(security.load_baseline(self.dir / "absent.json"))
 
     def test_corrupt_file_raises(self):
-        for text in ("{not json", '{"open": "x"}', "[]"):
+        bad_date = json.dumps({"open": [dict(finding(), first_seen="bogus")]})
+        int_date = json.dumps({"open": [dict(finding(), first_seen=7)]})
+        for text in ("{not json", '{"open": "x"}', "[]", bad_date, int_date):
             with self.subTest(text=text):
                 path = self.dir / "bad.json"
                 path.write_text(text)

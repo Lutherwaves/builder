@@ -64,8 +64,8 @@ From `security.py baseline diff` (change mode) or `baseline save` (audit mode):
 
 - New: <ids>.
 - Still open: <id>, open <n> days since <first_seen> (<first_sha>).
-- Closed: <ids>.
-- Not re-checked: <ids>, with the dimension that did not run.
+- Closed: <ids>. Audit mode only: a change review never closes a gap.
+- Not re-checked: <ids>, with the dimension that did not run. In change mode, this is every known gap the diff did not touch.
 
 Write "No earlier audit for this repository." when no baseline exists.
 In audit mode, add the baseline path from the `saved` field.
