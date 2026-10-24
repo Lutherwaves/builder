@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
-"""What a security finding may not invent: its CVSS 3.1 score, its CWE id and its Top 25 flag."""
+"""What a security finding may not invent: its score, its CWE id, its Top 25 flag and what changed since the last audit."""
 import argparse
+import hashlib
 import json
 import math
+import os
 import re
 import sys
+import tempfile
+from datetime import date
 from pathlib import Path
+
+import harness
 
 PREFIX = "CVSS:3.1/"
 METRICS = ("AV", "AC", "PR", "UI", "S", "C", "I", "A")
@@ -119,6 +125,90 @@ def enrich(doc):
     return dict(doc, findings=out)
 
 
+def baseline_path(repo, env, home):
+    key = hashlib.sha256(os.path.realpath(repo).encode()).hexdigest()[:16]
+    return harness.builder_home(env, home) / "security" / (key + ".json")
+
+
+def load_baseline(path):
+    path = Path(path)
+    if not path.exists():
+        return None
+    try:
+        data = json.loads(path.read_text())
+    except (OSError, ValueError):
+        data = None
+    if not isinstance(data, dict) or not isinstance(data.get("open"), list) \
+            or not all(isinstance(f, dict) and "id" in f and "first_seen" in f for f in data["open"]):
+        raise ValueError("corrupt baseline: %s (fix or delete it; the next audit then starts fresh)" % path)
+    return data
+
+
+def _days(first_seen, today):
+    return (today - date.fromisoformat(first_seen)).days
+
+
+def diff(prior, current, today):
+    known = {f["id"]: f for f in (prior or {}).get("open", [])}
+    ran = set(current.get("dimensions", []))
+    out = {"new": [], "still_open": [], "closed": [], "not_rechecked": []}
+    found = set()
+    for f in current["findings"]:
+        found.add(f["id"])
+        old = known.get(f["id"])
+        if old is None:
+            out["new"].append(dict(f, first_seen=today.isoformat(), first_sha=current["sha"]))
+        else:
+            out["still_open"].append(dict(f, first_seen=old["first_seen"], first_sha=old.get("first_sha"),
+                                          days_open=_days(old["first_seen"], today)))
+    for fid, old in known.items():
+        if fid in found:
+            continue
+        if old.get("dimension") in ran:
+            out["closed"].append(old)
+        else:
+            out["not_rechecked"].append(dict(old, days_open=_days(old["first_seen"], today)))
+    return out
+
+
+def next_baseline(prior, current, today):
+    d = diff(prior, current, today)
+    keep = [{k: v for k, v in f.items() if k != "days_open"}
+            for f in d["new"] + d["still_open"] + d["not_rechecked"]]
+    return {"repo": current.get("repo"), "sha": current.get("sha"), "date": today.isoformat(),
+            "dimensions": list(current.get("dimensions", [])), "open": keep}
+
+
+def _save(path, data):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=str(path.parent), prefix=path.name + ".", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w") as f:
+            json.dump(data, f, indent=2)
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
+def _baseline(action, findings, today):
+    current = enrich(_read(findings))
+    if action == "save" and current["mode"] != "audit":
+        raise ValueError("only an audit saves the baseline (this run is mode %r)" % current["mode"])
+    if not current.get("repo"):
+        raise ValueError("the findings file names no repo")
+    path = baseline_path(current["repo"], os.environ, Path.home())
+    prior = load_baseline(path)
+    out = diff(prior, current, today)
+    if action == "save":
+        _save(path, next_baseline(prior, current, today))
+        out["saved"] = str(path)
+    return out
+
+
 def _read(path):
     try:
         return json.loads(Path(path).read_text())
@@ -131,13 +221,19 @@ def main(argv=None):
     sub = p.add_subparsers(dest="cmd", required=True)
     sub.add_parser("cvss").add_argument("vector")
     sub.add_parser("score").add_argument("findings")
+    b = sub.add_parser("baseline")
+    b.add_argument("action", choices=("diff", "save"))
+    b.add_argument("findings")
+    b.add_argument("--today", type=date.fromisoformat, default=date.today())
     a = p.parse_args(argv)
     try:
         if a.cmd == "cvss":
             score = base_score(a.vector)
             print("%.1f %s" % (score, rating(score)))
-        else:
+        elif a.cmd == "score":
             print(json.dumps(enrich(_read(a.findings)), indent=2))
+        else:
+            print(json.dumps(_baseline(a.action, a.findings, a.today), indent=2))
     except ValueError as e:
         print("security: %s" % e, file=sys.stderr)
         return 2
