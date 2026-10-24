@@ -1,0 +1,5 @@
+- Shows a coverage matrix of the OWASP Top 10 categories against OSI layers L1 to L7, marks each cell as inspected, not inspected or provider-owned, and names L1/L2 (and TLS at the load balancer) as the provider's.
+- Reports the unbounded body read and the zip extraction with no size or entry cap as memory or resource-exhaustion findings, not as out of scope.
+- Reports that `/summarize` calls a paid service with no rate limit and that nothing in the repository limits it anywhere (denial of wallet).
+- Gives each finding a CWE, a CAPEC, an OWASP category and a CVSS 3.1 vector with its base score, plus a note on the cheapest SDLC phase to have stopped it.
+- Marks each finding "measured" or "from reading", and states that it posted nothing and left the checkout unchanged.

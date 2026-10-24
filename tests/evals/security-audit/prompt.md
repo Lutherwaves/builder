@@ -1,0 +1,1 @@
+We open the club membership server to the public next week. Audit the security of this whole repository before we launch. I am travelling and cannot answer questions, so do not wait for me. Tell me what to fix first.
