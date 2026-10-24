@@ -1,0 +1,119 @@
+--- a/README.md
++++ b/README.md
+@@ -9,3 +9,5 @@
+ 
+ - `GET /health` answers `{"ok": true}`.
+ - `GET /albums` lists the albums.
++- `POST /upload/<album>` takes a zip of photos and unpacks the `.jpg` and `.png` files into the album.
++- `POST /summarize` takes `{"photos": [<url>, ...]}` and returns a caption for each photo from the caption service. Set `CAPTION_KEY`.
+--- a/albums.py
++++ b/albums.py
+@@ -1,10 +1,16 @@
+ """albums: a small photo-album server. Python 3 standard library only."""
++import io
+ import json
+ import os
++import ssl
+ import sys
++import urllib.request
++import zipfile
+ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+ 
+ ROOT = os.environ.get("ALBUMS_ROOT", os.path.expanduser("~/albums"))
++CAPTION_API = os.environ.get("CAPTION_API", "https://api.captions.example/v1/describe")
++CAPTION_KEY = os.environ.get("CAPTION_KEY", "")
+ 
+ 
+ def list_albums(root):
+@@ -14,6 +20,34 @@
+     return sorted(d for d in os.listdir(root) if os.path.isdir(os.path.join(root, d)))
+ 
+ 
++def read_body(rfile, headers):
++    return rfile.read(int(headers.get("Content-Length", "0")))
++
++
++def save_upload(root, album, data):
++    """Unpack an uploaded zip of photos into one album. Returns the photo names."""
++    if not album.isalnum():
++        raise ValueError("album names are letters and digits")
++    dest = os.path.join(root, album)
++    os.makedirs(dest, exist_ok=True)
++    with zipfile.ZipFile(io.BytesIO(data)) as zf:
++        names = [n for n in zf.namelist() if n.lower().endswith((".jpg", ".jpeg", ".png"))]
++        zf.extractall(dest, members=names)
++    return names
++
++
++def describe(photo_url):
++    """Ask the caption service (billed per call) to describe one photo."""
++    req = urllib.request.Request(
++        CAPTION_API,
++        data=json.dumps({"url": photo_url}).encode(),
++        headers={"Authorization": "Bearer " + CAPTION_KEY, "Content-Type": "application/json"},
++    )
++    ctx = ssl._create_unverified_context()  # the caption service had a cert hiccup in March
++    with urllib.request.urlopen(req, context=ctx, timeout=30) as resp:
++        return json.load(resp)["caption"]
++
++
+ class Handler(BaseHTTPRequestHandler):
+     def send_json(self, status, payload):
+         body = json.dumps(payload).encode()
+@@ -30,6 +64,19 @@
+             return self.send_json(200, {"albums": list_albums(ROOT)})
+         return self.send_json(404, {"error": "not found"})
+ 
++    def do_POST(self):
++        if self.path.startswith("/upload/"):
++            album = self.path[len("/upload/"):]
++            try:
++                names = save_upload(ROOT, album, read_body(self.rfile, self.headers))
++            except (ValueError, zipfile.BadZipFile) as e:
++                return self.send_json(400, {"error": str(e)})
++            return self.send_json(201, {"saved": names})
++        if self.path == "/summarize":
++            photos = json.loads(read_body(self.rfile, self.headers))["photos"]
++            return self.send_json(200, {"captions": [describe(u) for u in photos]})
++        return self.send_json(404, {"error": "not found"})
++
+ 
+ def main(argv):
+     port = int(argv[0]) if argv else 8080
+--- a/test_albums.py
++++ b/test_albums.py
+@@ -1,6 +1,8 @@
++import io
+ import os
+ import tempfile
+ import unittest
++import zipfile
+ 
+ import albums
+ 
+@@ -18,5 +20,25 @@
+         self.assertEqual(albums.list_albums("/nonexistent/albums"), [])
+ 
+ 
++class SaveUpload(unittest.TestCase):
++    def zip_of(self, names):
++        buf = io.BytesIO()
++        with zipfile.ZipFile(buf, "w") as zf:
++            for n in names:
++                zf.writestr(n, b"x")
++        return buf.getvalue()
++
++    def test_keeps_photos_only(self):
++        with tempfile.TemporaryDirectory() as root:
++            saved = albums.save_upload(root, "summer", self.zip_of(["a.jpg", "b.PNG", "run.sh"]))
++            self.assertEqual(saved, ["a.jpg", "b.PNG"])
++            self.assertEqual(sorted(os.listdir(os.path.join(root, "summer"))), ["a.jpg", "b.PNG"])
++
++    def test_rejects_odd_album_names(self):
++        with tempfile.TemporaryDirectory() as root:
++            with self.assertRaises(ValueError):
++                albums.save_upload(root, "../etc", self.zip_of(["a.jpg"]))
++
++
+ if __name__ == "__main__":
+     unittest.main()

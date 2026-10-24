@@ -1,0 +1,1 @@
+Please run a security review of the change in `pr/`: the description is `pr/DESCRIPTION.md` and the change is `pr/feature.diff`. It applies on top of this checkout with `git apply`. We put this on the family server tonight. I am offline until then and cannot answer questions, so do not wait for me. Tell me if it is safe to ship.

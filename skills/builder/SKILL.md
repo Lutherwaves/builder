@@ -93,7 +93,7 @@ Use the named skill for the job. If its provider is not installed, use the fallb
 | Review a diff, a branch or a PR | builder `review`, inside superpowers `requesting-code-review` or gstack `/review` | Run the tests; prove each harm; post nothing without a yes |
 | Show a mockup, a diagram or a visual | A shareable page (the "make a shareable page" row of your harness mapping) | A file in the repository; give its path. Never only a local browser tab |
 | Test a web app in a browser | gstack `/qa` or `/browse` | Say "not tested in a browser" under Evidence |
-| Check security | gstack `/cso` | Say "no security pass" under Evidence |
+| Check security, a threat model or posture | builder `security` (gstack `/cso` for a second opinion) | Say "no security pass" under Evidence |
 | Ship a branch | gstack `/ship` or superpowers `finishing-a-development-branch` | Show the diff; push only on a yes |
 | Look back on a week | gstack `/retro` | List what shipped, what broke, what to change |
 | Grow a repository's rules | builder `canon` | Add the rule, its incident and its test |
