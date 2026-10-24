@@ -1,7 +1,7 @@
 {
   "name": "builder",
   "displayName": "builder",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Builder habits for coding agents: guided setup, decisions with reasons, proof before done, and nothing sent without your yes.",
   "author": {
     "name": "Lutherwaves"
