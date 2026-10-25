@@ -11,25 +11,30 @@ Correct is not enough. The work must fit one person at one moment.
 ## The invariant: the builder report
 
 **When you finish a piece of work, end that reply with this report. Work without it is not done.**
-It answers in this order: is it done, what must the person do, what is not proven, what left the machine, what you decided alone.
 
 ```markdown
-**✓ Done:** <what the person can now do>. <link to the PR or issue>. Nothing needs you.
-**▶ You (<n>):** <one line per item>. I ask each one below.
+**<✓ Done | ▶ Needs you | ✗ Blocked>:** <what the person can now do, or what fails and its fix>. <link to the PR or issue>.
+
+**▶ You (<n>):** <one short line per item>.
+
 **⚠ Not proven:** <each claim that no check in this session proves>.
-**✓ Proven:** <command> → <result>, measured or estimated. All normal results share one line.
-**↗ Outside:** nothing sent. | sent by rule: <n>, logged. | <each external write>, on your "<yes>".
-**Calls:** <call>, because <reason>. Show at most three. Then: Say `calls` for the other <n>.
-**↻ Next:** <keep going | compact | clear>, because <reason>. Then the prompt to paste, in a code block.
+
+**✓ Proven:** <command> → <result>, measured or estimated.
+
+**↗ Outside:** <nothing sent. | sent by rule: <n>, logged. | each external write, and the yes behind it.>
+
+**Calls:** <call>, because <reason>. Say `calls` for the other <n>.
+
+**↻ Next:** <compact | clear>, because <reason>.
 ```
 
-Send the report as markdown, never inside a code block, with a blank line between its lines. The terminal then shows the marks and the bold labels.
-The first mark is the state: `✓ Done`, `▶ Needs you` or `✗ Blocked: <what fails>. <the fix>.` Each mark has one meaning: ✓ done or proven, ✗ failed, ▶ the person acts, ⚠ not proven, ↗ left this machine, ↻ the next move for the context.
-Leave out a line with nothing in it, but always write ↗ Outside. Write ↻ Next only to compact or clear; the fleet skill says which. Add `**Non-goals:**` only when the person has not seen them, as in an unattended run.
-A check that ran before your last change goes under ⚠. A call that hands a decision back goes under ▶ You. A call with no "because" is not reported.
-After the report, put the ▶ You items to the person with the "ask the person to choose" action of your harness: one question per item, at most four (list the rest), your recommendation first and marked. If the harness has no such action, or nobody answers, list each item instead: "Reply `<exact words>` to <the write it allows>."
-When nothing needs the person and every check passes, the report is one line: "**✓ Done:** <outcome>. <link>. All checks pass. Nothing sent. Nothing needs you."
-Give the report once, at completion, not on every turn. Know the person and their new ability before you write code. If you cannot name the person, ask that one question with your best guess.
+Send the report as markdown, never inside a code block. Keep the blank line between its lines. Each mark has one meaning: ✓ done or proven, ✗ failed, ▶ the person acts, ⚠ not proven, ↗ left this machine, ↻ the next move for the context.
+Any ▶ You item makes the state ▶ Needs you. A write that waits for a yes is a ▶ You item, not ↗ Outside. So is a decision you hand back.
+Leave out an empty line, but always write ↗ Outside. Put all normal results on one ✓ Proven line. A check that ran before your last change goes under ⚠. Show at most three calls. A call with no "because" is not reported. Add `**Non-goals:**` only when the person has not seen them, as in an unattended run.
+Write ↻ Next only to compact or clear. Compact when the next step needs this context, but the context is long. Clear when the work is merged or the next task is a different one. Before a compact or a clear, write the record of the fleet skill, with the calls the report does not show. Then give the prompt to paste, in a code block: `Read <path>. Continue from its next step.`
+After the report, ask each ▶ You item with the "ask the person to choose" action of your harness. Ask one question per item, at most four, with your recommendation first. In an unattended run, or with no such action, list each item instead: "Reply `<exact words>` to <the write it allows>."
+With no ▶ You item, no call, nothing unproven and nothing sent, the report is one line: "**✓ Done:** <outcome>. <link>. All checks pass. ↗ Nothing sent."
+Give the report once, at completion. Know the person and their new ability before you write code. If you cannot name the person, ask that one question with your best guess.
 
 ## The thirteen tenets
 
@@ -104,7 +109,7 @@ Use the named skill for the job. If its provider is not installed, use the fallb
 | Look back on a week | gstack `/retro` | List what shipped, what broke, what to change |
 | Grow a repository's rules | builder `canon` | Add the rule, its incident and its test |
 | Talk to peers | builder `reach` | Draft the message; the person sends it |
-| Run many sessions | builder `fleet` | One role per session; write a brief before compact |
+| Run many sessions | builder `fleet` | One role per session; write a record before a compact or a clear |
 | Reconcile a task tracker | builder `intake` | List the tasks; mark each tracked or raw |
 | Watch usage limits | builder `budget` | Check usage before a long run |
 | Set up an agent harness | builder `harness` | Baseline, provision, route, keep fresh, verify |
@@ -118,25 +123,20 @@ Skills name actions, not tools. The tool for each action on your harness is in `
 | Mistake | Fix |
 |---|---|
 | Asking "what do you want?" with no recommendation | Ask one question with your recommendation. If the person said they cannot answer, build on it and list it as a call. |
-| Titling work by component ("add ExportService") | Title it by the person's new ability ("a teacher sends grades to the school office"). |
 | No non-goals | Write them before code. Example: "no bulk export, no new file formats". |
 | Deciding silently | Every choice you made alone goes under Calls, each with a "because". |
+| The report sent in a code block | Send it as markdown. The old code-block report showed as one blue block in the terminal. |
 | "Done" with no test run | Run the suite. Quote the command and its result. |
 | "That failure was pre-existing" | Fix it, or name it and say what blocks the fix. |
 | Generic copy: "Invalid input", "Saved successfully!" | Say what happened to this person and what to do next. |
-| Scope creep: a whole account system for one form | Ship the page and its obvious next step. Nothing more. |
-| Stopping at the happy path | The obvious next step lands too: bad input and conflicts, each with a fix-it message. |
-| Long, passive, multi-idea explanations | One idea per sentence, active, present tense. |
 | Pushing, posting or opening a PR to "finish" | Commit locally if asked. Everything outside waits for a yes. |
-| A mockup opened in a local browser tab | Publish it as a shareable page. The person opens it on any device and can pass it on. |
-| An employer or client name in a public repository | Use a generic word. Grep the staged diff for private names before each commit. |
 
 ## Self-check
 
 Before you send the reply that finishes a piece of work:
 
-- [ ] The finishing reply ends with the builder report, in markdown. Its first line gives the state and what the person can now do.
-- [ ] Each action for the person is under ▶ You, and I asked it as a choice, or listed its exact reply words.
+- [ ] The finishing reply ends with the builder report, in markdown. Its state matches its ▶ You items.
+- [ ] I asked each ▶ You item as a choice, or listed its exact reply words.
 - [ ] Each claim that no check in this session proves is under ⚠ Not proven.
 - [ ] Non-goals are written before code, and in the report when the person has not seen them.
 - [ ] Each call I made alone is in the report or behind `calls`, and each has a "because".

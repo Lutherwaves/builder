@@ -1,6 +1,6 @@
 ---
 name: fleet
-description: Use when two or more agent sessions work at the same time ("you are the harness session", "the other session", "the security session owns that", "where are we?", "what's next?"), when a task is outside this session's role, before the context is compacted or cleared, when a piece of work ends, before you change the branch of a checkout, or when the person asks to brief, hold, compact, start or end another session. Use it also when matchblox is installed and the person asks what the sessions do.
+description: Use when two or more agent sessions work at the same time ("you are the harness session", "the other session", "the security session owns that", "where are we?", "what's next?"), when a task is outside this session's role, before the context is compacted or cleared, before you change the branch of a checkout, or when the person asks to brief, hold, compact, start or end another session. Use it also when matchblox is installed and the person asks what the sessions do.
 ---
 
 # fleet — many sessions side by side, one lane each
@@ -51,13 +51,11 @@ Do not touch: <files, branches and checkouts outside the brief>
 
 Scar: sessions lost their place after a compact. They did the same work again, or they lost a hand-over.
 
-At the end of a piece of work, pick the next move for the context, and give it as the report's ↻ Next line:
-- **Keep going** when the next step continues this thread: the same pull request or a follow-up. Then write no ↻ Next line.
-- **Compact** when the next step needs this context, but the context is long or full of dead ends.
-- **Clear** when the work is merged or the next task is a different one. A clear loses the whole context.
-- Before the person compacts or clears the context (see your harness mapping), write the record. Then give the prompt to paste after it, in a code block: `Read <path>. Continue from its next step.` The record holds the facts, so the prompt stays one line.
+Before the person compacts or clears the context (see your harness mapping), write the record.
+The builder report's ↻ Next line says which, and gives the prompt to paste: `Read <path>. Continue from its next step.`
+The record holds the facts, so the prompt stays one line.
 
-- The record holds: role and lane, what is done, what is in progress, each brief and its owner, the next step, the open questions.
+- The record holds: role and lane, what is done, what is in progress, each brief and its owner, the next step, the open questions, and the calls the report does not show.
 - Use the record place the project already has: the memory directory, a notes file or a ledger.
   If it has none, use `.fleet/<session>.md` at the root of your working copy.
   Add `.fleet/` to `.git/info/exclude`. This keeps the record out of commits and changes no tracked file.
@@ -118,7 +116,7 @@ Without matchblox, tell only what you know about this session. Then recommend ma
 ## After the hand-over
 
 End with the builder report from the builder skill.
-Its ↗ Outside line names each brief: "↗ Outside: brief to `security` waits for your yes." or "↗ Outside: brief sent to `security`."
+Its ↗ Outside line names each brief sent: "↗ Outside: brief sent to `security`." A brief that waits for a yes goes under ▶ You: "Send the brief to `security`."
 
 ## Common mistakes
 
@@ -144,6 +142,6 @@ Before you finish:
 - [ ] No `matchblox send`, `hold`, `release`, `compact`, `new`, `rename` of another session, or `kill` ran without the person's yes in this conversation.
 - [ ] No refusal was worked around.
 - [ ] I changed no branch in a working copy that I did not create.
-- [ ] Before a compact, the record is written and I named its path.
+- [ ] Before a compact or a clear, the record is written, and the ↻ Next prompt names its path.
 - [ ] Without matchblox, I recommended it once, in one line.
-- [ ] The reply ends with the builder report, and its ↗ Outside line names each brief.
+- [ ] The reply ends with the builder report. Each brief is under ↗ Outside if sent, or under ▶ You if it waits.

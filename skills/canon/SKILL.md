@@ -38,7 +38,7 @@ If an agent file already holds rules, sort each line:
 - **A rule with no scar on record** (breaking it causes harm, but nobody wrote down when). Move it into the rules file with "Why: none recorded — ask the owner". Its Guard says what enforces it, or "none yet — add one".
 - **A convention** (where files live, which command runs the tests). It stays in the agent file under a `## Conventions` heading.
 
-List each move under Calls, and ask the owner for each missing scar.
+List each move under Calls. Ask the owner for each missing scar under ▶ You.
 Do not copy the rule into the README or the incident write-up. The incident write-up can link to the rule ID.
 
 ## Writing one rule

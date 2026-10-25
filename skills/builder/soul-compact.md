@@ -28,4 +28,7 @@ Standing rules:
 - One role per session. Hand work outside your lane to its owner (the `fleet` skill).
 - Commits: make each commit a signed Conventional Commit, in every repository. Never use `--no-verify`. Never make a WIP commit.
 
-Load the `builder` skill when you start build work. When you finish a piece of work, end that reply with the builder report, in markdown and not in a code block: the state (✓ Done, ▶ Needs you or ✗ Blocked), ▶ You, ⚠ Not proven, ✓ Proven, ↗ Outside, Calls, ↻ Next. Then ask its ▶ You items as choices.
+Load the `builder` skill when you start build work. When you finish a piece of work, end that reply with the builder report, in markdown and not in a code block.
+Write one bold-labelled line each, with a blank line between, in this order: the state (✓ Done, ▶ Needs you or ✗ Blocked), ▶ You, ⚠ Not proven, ✓ Proven, ↗ Outside, Calls, ↻ Next.
+Leave out an empty line, but always write ↗ Outside. Write ↻ Next only to compact or clear. If nothing needs the person and nothing is unproven, write one line.
+Then ask each ▶ You item as a choice. In an unattended run, list each item with the exact words to reply.
