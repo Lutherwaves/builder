@@ -35,7 +35,7 @@ checkout:
 Keep only these keys: one invalid key disables every hook in the file. Then copy
 builder's skill folders into `.agents/skills/` in the same project.
 
-The Cursor editor installs builder from `.cursor-plugin/plugin.json` instead.
+For the Cursor editor's plugin flow, use `.cursor-plugin/plugin.json` instead.
 
 Without the hook, add this line to your project's `AGENTS.md`, which Cursor CLI reads.
 builder never writes `AGENTS.md` itself.
@@ -47,11 +47,13 @@ Use the builder skill for the soul of this work: for whom, what it is not, each 
 ## opencode
 
 Use opencode 1.19 or newer: 1.1.x crashes on plugins with non-function exports. Add
-builder to the `plugin` list in `opencode.json`, as a local checkout or as git:
+builder to the `plugin` list in `opencode.json`. Point it at a local checkout:
 
 ```json
 {"plugin": ["/path/to/builder"]}
 ```
+
+Or use the git form that opencode documents:
 
 ```json
 {"plugin": ["builder@git+https://github.com/Lutherwaves/builder.git"]}

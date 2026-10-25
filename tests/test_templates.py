@@ -129,6 +129,14 @@ class Readme(unittest.TestCase):
         for name in ("superpowers", "gstack", "CLAUDE.md"):
             self.assertIn(name, section)
 
+    def test_why_builder_claims_hold(self):
+        section = self.readme.split("## Why builder", 1)[1].split("\n## ", 1)[0]
+        # superpowers also injects itself at every session start, and the report comes once per piece of work.
+        self.assertNotIn("when that\nskill runs", section)
+        self.assertNotIn("every reply", section)
+        # A hand-written CLAUDE.md can ask for a reason and for proof too.
+        self.assertNotIn("| no |\n| Unproven", section)
+
 
 if __name__ == "__main__":
     unittest.main()

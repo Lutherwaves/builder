@@ -31,16 +31,17 @@ recommendation first.
 
 ## Why builder
 
-superpowers and gstack are skill packs: they make the agent better at a job *when that
-skill runs*. builder is the layer that is always on. It holds every reply to the same
-contract, and it covers what neither pack touches: messages to people, rules that
-remember their incident, many sessions at once, and your usage limit.
+superpowers and gstack make the agent better at a job: planning, debugging, a browser,
+QA. builder's report is the same whichever skill ran: every finished piece of work ends
+with what's done, what's yours to do, and what isn't proven. builder also covers ground
+neither pack does: messages to people, rules that remember their incident, many sessions
+at once, and your usage limit.
 
 | | builder | superpowers | gstack | your own CLAUDE.md |
 |---|---|---|---|---|
 | Starts from the person and the non-goals | every piece of work | in brainstorming | in `/spec`, `/office-hours` | if you wrote it |
-| Each solo call recorded with its reason | every report, under Calls | while executing a plan | decision log | no |
-| Unproven work marked as unproven | every report | when verification runs | in QA and review | no |
+| Each solo call recorded with its reason | every report, under Calls | while executing a plan | durable decisions, in a decision log | if you wrote it |
+| Unproven work marked as unproven | every report | when verification runs | in QA and review | if you wrote it |
 | Messages to people: send rules, duplicate check, 6 an hour | `reach` | no | no | no |
 | A rule carries its incident and a check that fails | `canon` | no | no | no |
 | Many sessions, one lane each, hand-offs as briefs | `fleet` | no | no | no |
