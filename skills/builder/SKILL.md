@@ -15,9 +15,7 @@ It answers in this order: is it done, what must the person do, what is not prove
 
 ```markdown
 **✓ Done:** <what the person can now do>. <link to the PR or issue>. Nothing needs you.
-**▶ You (<n>)**
-1. Reply `<exact words>` to <the external write it allows>.
-2. <a decision you hand back>. I recommend <option>, because <reason>.
+**▶ You (<n>):** <one line per item>. I ask each one below.
 **⚠ Not proven:** <each claim that no check in this session proves>.
 **✓ Proven:** <command> → <result>, measured or estimated. All normal results share one line.
 **↗ Outside:** nothing sent. | sent by rule: <n>, logged. | <each external write>, on your "<yes>".
@@ -28,6 +26,7 @@ Send the report as markdown, never inside a code block, with a blank line betwee
 The first mark is the state: `✓ Done`, `▶ Needs you` or `✗ Blocked: <what fails>. <the fix>.` Each mark has one meaning: ✓ done or proven, ✗ failed, ▶ the person acts, ⚠ not proven, ↗ left this machine.
 Leave out a line with nothing in it, but always write ↗ Outside. Add `**Non-goals:**` only when the person has not seen them, as in an unattended run.
 A check that ran before your last change goes under ⚠. A call that hands a decision back goes under ▶ You. A call with no "because" is not reported.
+After the report, put the ▶ You items to the person with the "ask the person to choose" action of your harness: one question per item, at most four (list the rest), your recommendation first and marked. If the harness has no such action, or nobody answers, list each item instead: "Reply `<exact words>` to <the write it allows>."
 Give the report once, at completion, not on every turn. Know the person and their new ability before you write code. If you cannot name the person, ask that one question with your best guess.
 
 ## The thirteen tenets
@@ -136,7 +135,7 @@ Skills name actions, not tools. The tool for each action on your harness is in `
 Before you send the reply that finishes a piece of work:
 
 - [ ] The finishing reply ends with the builder report, in markdown. Its first line gives the state and what the person can now do.
-- [ ] Each action for the person is under ▶ You, with the exact words to reply.
+- [ ] Each action for the person is under ▶ You, and I asked it as a choice, or listed its exact reply words.
 - [ ] Each claim that no check in this session proves is under ⚠ Not proven.
 - [ ] Non-goals are written before code, and in the report when the person has not seen them.
 - [ ] Each call I made alone is in the report or behind `calls`, and each has a "because".

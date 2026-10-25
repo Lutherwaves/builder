@@ -45,6 +45,11 @@ class ReportShape(unittest.TestCase):
         positions = [soul.index(l) for l in ["▶ You,", "⚠ Not proven,", "✓ Proven", "↗ Outside", "Calls."]]
         self.assertEqual(positions, sorted(positions))
 
+    def test_report_asks_with_an_action_every_harness_maps(self):
+        self.assertIn('the "ask the person to choose" action of your harness', read("builder", "SKILL.md"))
+        for harness in ["claude", "codex", "cursor", "opencode"]:
+            self.assertIn("| ask the person to choose |", read("builder", "harnesses", harness + ".md"))
+
     def test_report_is_sent_as_markdown(self):
         self.assertIn("never inside a code block", read("builder", "SKILL.md"))
         self.assertIn("not in a code block", read("builder", "soul-compact.md"))

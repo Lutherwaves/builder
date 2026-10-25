@@ -20,8 +20,7 @@ Example, invented for illustration:
 
 > **▶ Needs you:** a customer who moved can now change their email at checkout, in one step.
 >
-> **▶ You (1)**
-> 1. Reply `yes push` to push `feat/change-email` and open the PR.
+> **▶ You (1):** push `feat/change-email` and open the PR. I ask below.
 >
 > **⚠ Not proven:** the confirmation email in a real inbox.
 >
@@ -32,6 +31,7 @@ Example, invented for illustration:
 > **Calls:** the old address gets a notice, because a stolen account changes the email first.
 
 The marks have one meaning each: ✓ done or proven, ✗ failed, ▶ you act, ⚠ not proven, ↗ left this machine.
+After the report, the agent asks each ▶ You item as a choice, with its recommendation first. On a harness with no choice tool, it lists the exact words to reply.
 
 ## Install
 
