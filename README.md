@@ -109,7 +109,7 @@ A harness is listed as supported only after every eval fixture passes on it.
 1. You ask for your work as usual. builder adds its thirteen tenets to the session, and the agent does your work first.
 2. At the end of that reply, the agent introduces builder in at most three short lines. This happens even after a one-line request.
 3. The agent offers one setup step and asks: yes, not now, or never.
-4. Each later reply offers the next step, one at a time: superpowers, gstack, a signed-in `gh`, signed commits, and the channel where your team talks (for messages to teammates; notes to you go by notification). A step you already did is skipped.
+4. Each later reply offers the next step, one at a time: superpowers, gstack, a signed-in `gh`, and signed commits. A step you already did is skipped.
 5. "Not now" stays quiet for 7 days. "Never" stays quiet for good.
 6. When you answer every step, onboarding ends.
 

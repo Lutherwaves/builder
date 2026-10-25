@@ -141,16 +141,24 @@ class LedgerTest(unittest.TestCase):
         done = {"answers": {}, "onboarded": True}
         self.assertEqual([i["id"] for i in ledger.due_catalog(done, cat)], ["a", "b"])
 
-    def test_channel_item_is_for_teammates_not_for_notes_to_the_person(self):
+    def test_channel_is_never_offered(self):
         cat = json.loads((Path(ledger.__file__).parent / "recommendations.json").read_text())
-        ch = next(i for i in cat if i["id"] == "channel")
-        text = " ".join((ch["say"], ch["why"], ch["how"]))
-        self.assertIn("teammates", text)
-        self.assertIn("notification", text)
-        self.assertNotIn("reach you", text)
-        self.assertNotIn("send you", text)
-        readme = (Path(ledger.__file__).parent.parent / "README.md").read_text()
-        self.assertNotIn("a channel to reach you", readme)
+        self.assertNotIn("channel", [i["id"] for i in cat])
+        for led in (EMPTY, {"answers": {}, "onboarded": True}):
+            nxt = ledger.next_recommendation(led, cat, {"channel": None}, 1.0, onboarding=not led["onboarded"])
+            self.assertTrue(nxt is None or nxt["id"] != "channel")
+
+    def test_old_ledger_with_a_channel_answer_still_loads(self):
+        p = Path(tempfile.mkdtemp()) / "ledger.json"
+        p.write_text(json.dumps({"answers": {"channel": {"verdict": "later", "at": 1.0}}, "onboarded": False}))
+        led = ledger.load(p)
+        cat = json.loads((Path(ledger.__file__).parent / "recommendations.json").read_text())
+        nxt = ledger.next_recommendation(led, cat, {}, 2.0, onboarding=True)
+        self.assertTrue(nxt is None or nxt["id"] != "channel")
+
+    def test_reach_asks_for_the_channel_on_first_use(self):
+        text = (Path(ledger.__file__).parent.parent / "skills/reach/SKILL.md").read_text()
+        self.assertIn("If `channel` is missing, ask once", text)
 
     def test_gstack_install_goes_where_the_signal_looks(self):
         import os, subprocess
