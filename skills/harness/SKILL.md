@@ -101,7 +101,6 @@ Never put it on a badge or next to measured numbers.
 ## After the work
 
 End with the builder report from the builder skill. Its ✓ Proven line holds the baseline and the verify result.
-Offer other formats in one line.
 
 ## Common mistakes
 
@@ -129,4 +128,4 @@ Before you finish:
 - [ ] I listed the scheduled jobs before I scheduled a drift watcher, and added no second one.
 - [ ] The verify run called a graph tool, and I compared it with the baseline.
 - [ ] Each savings figure says "estimated".
-- [ ] The reply ends with the builder report and a one-line offer of other formats.
+- [ ] The reply ends with the builder report.

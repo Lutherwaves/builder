@@ -96,7 +96,7 @@ Forecast: 91% (profile_aware, estimated). Ceiling: 118% (naive).
 Compact: `docs` (idle, 78% context) — the largest idle context.
 ```
 
-Then end with the builder report from the builder skill. Offer other formats in one line.
+Then end with the builder report from the builder skill.
 
 ## Common mistakes
 
@@ -122,4 +122,4 @@ Before you finish:
 - [ ] A missing reading shows as missing, with its cause.
 - [ ] The compaction pick is `idle`, and I compacted nothing myself.
 - [ ] I listed the scheduled jobs before I scheduled a watcher, and I added no second one.
-- [ ] The reply ends with the builder report and a one-line offer of other formats.
+- [ ] The reply ends with the builder report.

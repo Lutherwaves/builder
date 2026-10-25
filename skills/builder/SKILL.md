@@ -20,13 +20,15 @@ It answers in this order: is it done, what must the person do, what is not prove
 **✓ Proven:** <command> → <result>, measured or estimated. All normal results share one line.
 **↗ Outside:** nothing sent. | sent by rule: <n>, logged. | <each external write>, on your "<yes>".
 **Calls:** <call>, because <reason>. Show at most three. Then: Say `calls` for the other <n>.
+**↻ Next:** <keep going | compact | clear>, because <reason>. Then the prompt to paste, in a code block.
 ```
 
 Send the report as markdown, never inside a code block, with a blank line between its lines. The terminal then shows the marks and the bold labels.
-The first mark is the state: `✓ Done`, `▶ Needs you` or `✗ Blocked: <what fails>. <the fix>.` Each mark has one meaning: ✓ done or proven, ✗ failed, ▶ the person acts, ⚠ not proven, ↗ left this machine.
-Leave out a line with nothing in it, but always write ↗ Outside. Add `**Non-goals:**` only when the person has not seen them, as in an unattended run.
+The first mark is the state: `✓ Done`, `▶ Needs you` or `✗ Blocked: <what fails>. <the fix>.` Each mark has one meaning: ✓ done or proven, ✗ failed, ▶ the person acts, ⚠ not proven, ↗ left this machine, ↻ the next move for the context.
+Leave out a line with nothing in it, but always write ↗ Outside. Write ↻ Next only to compact or clear; the fleet skill says which. Add `**Non-goals:**` only when the person has not seen them, as in an unattended run.
 A check that ran before your last change goes under ⚠. A call that hands a decision back goes under ▶ You. A call with no "because" is not reported.
 After the report, put the ▶ You items to the person with the "ask the person to choose" action of your harness: one question per item, at most four (list the rest), your recommendation first and marked. If the harness has no such action, or nobody answers, list each item instead: "Reply `<exact words>` to <the write it allows>."
+When nothing needs the person and every check passes, the report is one line: "**✓ Done:** <outcome>. <link>. All checks pass. Nothing sent. Nothing needs you."
 Give the report once, at completion, not on every turn. Know the person and their new ability before you write code. If you cannot name the person, ask that one question with your best guess.
 
 ## The thirteen tenets
@@ -55,9 +57,8 @@ Each tenet has a rule and a test. Fail the test, fix the work.
     Test: no push, pull request, post, message, deploy, tracker or ticket write happened without a send rule or the person's yes in this session.
 11. **Fix what you touch, and say so.** Do not call a failure "pre-existing". Do not refactor the world.
     Test: the suite you ran is green, or the report names each red test and what you did about it.
-12. **Agents are first-class readers.** Write descriptions as scripts. Write every explanation in ASD-STE100: one idea per sentence, active voice, present tense, short sentences, one word for one thing. After an explanation, offer other formats in one line.
+12. **Agents are first-class readers.** Write descriptions as scripts. Write every explanation in ASD-STE100: one idea per sentence, active voice, present tense, short sentences, one word for one thing.
     Test: another agent can act on your text with no follow-up question. No sentence holds two ideas.
-    Example: "The cache expires after one hour. Want this as a table, a diagram, one sentence, or a page?"
 13. **Never bland.** Could this be any generic product? Then it fails.
     Test: the squint test. Swap the product name. If the copy still fits, rewrite it for this person.
 
@@ -125,7 +126,7 @@ Skills name actions, not tools. The tool for each action on your harness is in `
 | Generic copy: "Invalid input", "Saved successfully!" | Say what happened to this person and what to do next. |
 | Scope creep: a whole account system for one form | Ship the page and its obvious next step. Nothing more. |
 | Stopping at the happy path | The obvious next step lands too: bad input and conflicts, each with a fix-it message. |
-| Long, passive, multi-idea explanations | One idea per sentence, active, present tense. Then offer other formats in one line. |
+| Long, passive, multi-idea explanations | One idea per sentence, active, present tense. |
 | Pushing, posting or opening a PR to "finish" | Commit locally if asked. Everything outside waits for a yes. |
 | A mockup opened in a local browser tab | Publish it as a shareable page. The person opens it on any device and can pass it on. |
 | An employer or client name in a public repository | Use a generic word. Grep the staged diff for private names before each commit. |
@@ -143,7 +144,7 @@ Before you send the reply that finishes a piece of work:
 - [ ] Every error and empty state says what to do next.
 - [ ] Nothing left the repository without a send rule or the person's yes.
 - [ ] The copy fails the squint test for any other product.
-- [ ] Each explanation is plain ASD-STE100 and ends with a one-line offer of other formats.
+- [ ] Each explanation is plain ASD-STE100.
 - [ ] Each mockup or visual is a shareable page, not only a local browser tab.
 - [ ] A public repository's diff holds no private name: I grepped it before the commit.
 - [ ] Each commit is a signed Conventional Commit, made without `--no-verify`, and is not a WIP commit.

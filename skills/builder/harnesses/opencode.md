@@ -13,6 +13,7 @@ The full action map for this harness is in skills/builder/harnesses/opencode.md.
 | schedule a recurring check | not verified: ask the person to run the check on a timer, or name the cron line and stop |
 | see usage limits | not available: say so and stop (matchblox does not measure opencode usage) |
 | compact the context | not verified: write the durable record, then ask the person to start a fresh session |
+| clear the context | not verified: write the durable record, then ask the person to start a fresh session |
 | make a shareable page | not verified: write a local file and give its path |
 | fetch a web page | `webfetch` |
 | track a todo list | `todowrite` (v1.x); v2 has no todo tool: track the plan in a markdown file |

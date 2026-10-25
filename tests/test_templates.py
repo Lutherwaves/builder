@@ -40,9 +40,9 @@ class ReportShape(unittest.TestCase):
         skill = read("builder", "SKILL.md")
         template = skill[skill.index("```markdown"):skill.index("```", skill.index("```markdown") + 3)]
         labels = re.findall(r"^\*\*(.+?):?\*\*", template, re.M)
-        self.assertEqual(labels, ["✓ Done", "▶ You (<n>)", "⚠ Not proven", "✓ Proven", "↗ Outside", "Calls"])
+        self.assertEqual(labels, ["✓ Done", "▶ You (<n>)", "⚠ Not proven", "✓ Proven", "↗ Outside", "Calls", "↻ Next"])
         soul = read("builder", "soul-compact.md")
-        positions = [soul.index(l) for l in ["▶ You,", "⚠ Not proven,", "✓ Proven", "↗ Outside", "Calls."]]
+        positions = [soul.index(l) for l in ["▶ You,", "⚠ Not proven,", "✓ Proven", "↗ Outside", "Calls,", "↻ Next."]]
         self.assertEqual(positions, sorted(positions))
 
     def test_report_asks_with_an_action_every_harness_maps(self):

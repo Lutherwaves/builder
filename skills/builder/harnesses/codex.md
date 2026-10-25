@@ -13,6 +13,7 @@ The full action map for this harness is in skills/builder/harnesses/codex.md.
 | schedule a recurring check | not verified: ask the person to run the check on a timer, or name the cron line and stop |
 | see usage limits | `/status` (manual); `matchblox usage --json` measures plan limits for Codex |
 | compact the context | not verified: write the durable record, then ask the person to compact in the Codex UI |
+| clear the context | not verified: write the durable record, then ask the person to start a new chat |
 | make a shareable page | not verified: write a local file and give its path |
 | fetch a web page | not verified: use `curl` in the shell |
 | track a todo list | `update_plan` |

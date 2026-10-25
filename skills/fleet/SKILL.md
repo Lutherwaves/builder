@@ -1,6 +1,6 @@
 ---
 name: fleet
-description: Use when two or more agent sessions work at the same time ("you are the harness session", "the other session", "the security session owns that", "where are we?", "what's next?"), when a task is outside this session's role, before the context is compacted, before you change the branch of a checkout, or when the person asks to brief, hold, compact, start or end another session. Use it also when matchblox is installed and the person asks what the sessions do.
+description: Use when two or more agent sessions work at the same time ("you are the harness session", "the other session", "the security session owns that", "where are we?", "what's next?"), when a task is outside this session's role, before the context is compacted or cleared, when a piece of work ends, before you change the branch of a checkout, or when the person asks to brief, hold, compact, start or end another session. Use it also when matchblox is installed and the person asks what the sessions do.
 ---
 
 # fleet — many sessions side by side, one lane each
@@ -47,18 +47,22 @@ Do not touch: <files, branches and checkouts outside the brief>
 - Do not write the fix into the brief as an order. The owner decides how to fix.
 - Keep the brief in the record place (section 4). The file name is `brief-<owner>-<date>.md`.
 
-## 4. The durable record before compacting
+## 4. The durable record before a compact or a clear
 
 Scar: sessions lost their place after a compact. They did the same work again, or they lost a hand-over.
 
-Before the person compacts the context (see your harness mapping), write the record, then say: "Record: `<path>`. Ready to compact."
+At the end of a piece of work, pick the next move for the context, and give it as the report's ↻ Next line:
+- **Keep going** when the next step continues this thread: the same pull request or a follow-up. Then write no ↻ Next line.
+- **Compact** when the next step needs this context, but the context is long or full of dead ends.
+- **Clear** when the work is merged or the next task is a different one. A clear loses the whole context.
+- Before the person compacts or clears the context (see your harness mapping), write the record. Then give the prompt to paste after it, in a code block: `Read <path>. Continue from its next step.` The record holds the facts, so the prompt stays one line.
 
 - The record holds: role and lane, what is done, what is in progress, each brief and its owner, the next step, the open questions.
 - Use the record place the project already has: the memory directory, a notes file or a ledger.
   If it has none, use `.fleet/<session>.md` at the root of your working copy.
   Add `.fleet/` to `.git/info/exclude`. This keeps the record out of commits and changes no tracked file.
 - Update the record, do not append a second copy. One record per session.
-- After the compact, read the record first. Then continue from the next step.
+- After a compact or a clear, read the record first. Then continue from the next step.
 
 ## 5. Never change another session's working copy
 
@@ -107,7 +111,7 @@ Use this for "where are we?", "what's next?" or "what do the sessions do?".
    Example: "security asks: approve the token test. api is busy on #12. docs is idle: out of work."
 3. Flag each session with `context_pct` at 80 or more. Flag each account's `windows` weekly window (`window_minutes` 10080) at `used_pct` 80 or more.
 4. Run `matchblox peek <who> --json` only for a session that needs more detail.
-5. End with the one next action for the person. Then offer other formats in one line, for example an ASCII timeline.
+5. End with the one next action for the person.
 
 Without matchblox, tell only what you know about this session. Then recommend matchblox in one line (section 6).
 
