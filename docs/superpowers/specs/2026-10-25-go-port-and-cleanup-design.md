@@ -1,6 +1,6 @@
 # builder 3: one Go binary, a README that sells, a clean repo
 
-Date: 2026-10-25. Status: draft for approval.
+Date: 2026-10-25. Status: approved by the owner, 2026-10-25.
 
 ## Intent
 
@@ -189,17 +189,33 @@ Old binaries: the installer keeps the three newest versions and deletes the rest
 `BUILDER_HOME` is shared by all harnesses, and each harness can hold a different
 plugin version, so deleting every older version would break the other harnesses.
 
-### Release
+### Release (automatic, as matchblox does it; owner's call, 2026-10-25)
 
-Keep release-please for versions, changelog and manifest bumps (it works today).
-Set it to create a **draft** release. Release-please runs with `GITHUB_TOKEN`, and a
-release made with that token starts no other workflow. So the build, attest and
-publish jobs (copied from matchblox's `publish.yml`) are chained inside `release.yml`
-behind release-please's `release_created` output. No new secret is needed. They
-build the four targets with `CGO_ENABLED=0 go build -trimpath
--ldflags "-s -w -X main.version=<tag>"`, write `.sha256` and SBOM, attest, upload,
-then publish the release. Then a matrix job on Linux and macOS, amd64 and arm64, runs
-`scripts/install.sh` against the published release and checks `builder version`.
+No release-please and no release PR to merge. Delete `release-please-config.json`,
+`.release-please-manifest.json` and the current `release.yml`. Copy matchblox's
+`release.yml`, `publish.yml` and `.github/scripts/release-notes.sh`, then adapt them:
+
+1. **Release** runs when CI passes on a push to main and the commit is still the tip.
+   `go-semantic-release` computes the next version from the conventional commits.
+   The job makes a draft release `vX.Y.Z` and pushes its tag on the verified commit.
+   The notes come from `## [Unreleased]` in `CHANGELOG.md`, which each PR writes.
+2. **Publish** runs on the tag. It builds the four targets with `CGO_ENABLED=0
+   go build -trimpath -ldflags "-s -w -X main.version=<tag>"`, writes `.sha256` and an
+   SBOM, attests them, uploads them to the draft and publishes it. A matrix job on Linux
+   and macOS, amd64 and arm64, runs `scripts/install.sh` against the release and checks
+   `builder version`. Only then does it become the latest release.
+3. **Bot PR** `docs: vX.Y.Z is released` moves `[Unreleased]` under the version and
+   bumps `version` in the four manifests and `package.json`. It merges itself once its
+   checks pass. Nobody reviews or merges it. It is needed because the plugin's version
+   lives in the repo, and the shim pins the binary by that version.
+
+`RELEASE_ENABLED` (repository variable) turns releases on or off. `RELEASE_TOKEN` is a
+fine-grained token for this repository only, with Contents and Pull requests set to
+read and write. A tag pushed with `GITHUB_TOKEN` starts no workflow, so the token is
+required. The owner creates it; `RELEASING.md` says how, copied from matchblox.
+
+Between a release and its bot PR, main still names the previous version, so the shim
+runs the previous binary for those minutes (accepted risk).
 
 ### Tests and CI
 
@@ -217,7 +233,7 @@ then publish the release. Then a matrix job on Linux and macOS, amd64 and arm64,
 Every marketplace entry points at the repo (`"source": "./"`), so a git install runs
 main HEAD. Milestone 2 alone would leave main calling a binary that no release has.
 So the three milestones merge into an integration branch `feat/go`. `feat/go` merges
-to main once, and that merge is released at once as builder 3. After that, a change
+to main once, and that merge is released as builder 3 by the release workflow. After that, a change
 that adds a binary command lands in the same release as the skill that calls it.
 Until the release PR merges, main can still run the previous binary (accepted risk).
 
@@ -230,14 +246,12 @@ Until the release PR merges, main can still run the previous binary (accepted ri
 
 - One integration branch `feat/go`, released once as builder 3 (see Milestones).
 - The installer keeps the three newest binaries.
-- Publish jobs chained inside `release.yml`, so no new secret is needed.
 
 - Go over Rust (owner agreed, 2026-10-25).
 - Plugin from git, binary from releases (owner agreed, 2026-10-25).
 - A missing binary stops a skill with an install offer (owner agreed, 2026-10-25).
-- Keep release-please and add a matchblox-style publish job, instead of replacing
-  release-please with matchblox's own release workflow. Reason: release-please already
-  bumps four manifests; only the build-and-attest half is missing.
+- Release exactly as matchblox does, with no release-please (owner, 2026-10-25). The
+  self-merging bot PR stays, because the plugin version lives in the repo.
 - Binary path is versioned under `BUILDER_HOME`, not on PATH. Reason: version pinning
   and no PATH dependency in hooks.
 - README prose is plain English, not ASD-STE100. Reason: tenet 12 targets explanations
