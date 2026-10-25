@@ -66,7 +66,7 @@ Break the rule on purpose. Something must fail.
 1. Run the guard against the scar's own change. It must fail.
 2. Run the suite on today's repository. It must pass.
 3. If old, shipped changes break the rule, do not edit them. Pin them in the guard as known history, by name, with the incident. A new change still fails.
-4. Quote both runs under Evidence in the builder report.
+4. Quote both runs under ✓ Proven in the builder report.
 5. Write the guard's limits in the rule's Guard line: what it does not catch, and where it does not run.
    Never claim "this can never happen again". Say what is now checked and what is not.
 

@@ -114,7 +114,7 @@ Without matchblox, tell only what you know about this session. Then recommend ma
 ## After the hand-over
 
 End with the builder report from the builder skill.
-Its Outside line names each brief: "Outside: brief to `security` waits for your yes." or "Outside: brief sent to `security`."
+Its ↗ Outside line names each brief: "↗ Outside: brief to `security` waits for your yes." or "↗ Outside: brief sent to `security`."
 
 ## Common mistakes
 
@@ -142,4 +142,4 @@ Before you finish:
 - [ ] I changed no branch in a working copy that I did not create.
 - [ ] Before a compact, the record is written and I named its path.
 - [ ] Without matchblox, I recommended it once, in one line.
-- [ ] The reply ends with the builder report, and its Outside line names each brief.
+- [ ] The reply ends with the builder report, and its ↗ Outside line names each brief.

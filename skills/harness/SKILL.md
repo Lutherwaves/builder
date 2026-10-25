@@ -100,7 +100,7 @@ Never put it on a badge or next to measured numbers.
 
 ## After the work
 
-End with the builder report from the builder skill. Its Evidence line holds the baseline and the verify result.
+End with the builder report from the builder skill. Its ✓ Proven line holds the baseline and the verify result.
 Offer other formats in one line.
 
 ## Common mistakes

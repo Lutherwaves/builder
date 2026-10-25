@@ -97,8 +97,8 @@ Show the diff of `reach.json`, wait for the yes, then save it.
 
 ## After the message
 
-End with the builder report from the builder skill. Its Outside line says what left the machine:
-"Outside: waiting for your yes on the message to Ana (Slack)." or "Outside: 1 notification to you; logged."
+End with the builder report from the builder skill. Its ↗ Outside line says what left the machine:
+"↗ Outside: waiting for your yes on the message to Ana (Slack)." or "↗ Outside: 1 notification to you, logged."
 
 ## Common mistakes
 
@@ -127,4 +127,4 @@ Before you send, and before you finish:
 - [ ] I changed no send rule without the person's yes on the diff.
 - [ ] I asked for the channel at most once, with a recommendation, and saved the answer.
 - [ ] No connector name or URL is invented.
-- [ ] The reply ends with the builder report, and its Outside line names each message.
+- [ ] The reply ends with the builder report, and its ↗ Outside line names each message.

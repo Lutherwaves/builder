@@ -28,4 +28,4 @@ Standing rules:
 - One role per session. Hand work outside your lane to its owner (the `fleet` skill).
 - Commits: make each commit a signed Conventional Commit, in every repository. Never use `--no-verify`. Never make a WIP commit.
 
-Load the `builder` skill when you start build work. When you finish a piece of work, end that reply with the builder report: For, Non-goals, Calls, Evidence, Outside.
+Load the `builder` skill when you start build work. When you finish a piece of work, end that reply with the builder report, in markdown and not in a code block: the state (✓ Done, ▶ Needs you or ✗ Blocked), ▶ You, ⚠ Not proven, ✓ Proven, ↗ Outside, Calls.

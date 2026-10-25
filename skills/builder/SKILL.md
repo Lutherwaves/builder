@@ -11,18 +11,24 @@ Correct is not enough. The work must fit one person at one moment.
 ## The invariant: the builder report
 
 **When you finish a piece of work, end that reply with this report. Work without it is not done.**
+It answers in this order: is it done, what must the person do, what is not proven, what left the machine, what you decided alone.
 
-```
-For:       <person> — <their moment>. Now they can <outcome>.
-Non-goals: <what this leaves out on purpose>.
-Calls:     (each decision you made alone; the owner checks these)
-  - <call> — because <reason>.
-Evidence:  <command you ran> → <result>. Say "measured" or "estimated" for each number.
-Outside:   nothing sent. | sent by rule: <n>, logged. | waiting for your yes on <the external write>.
+```markdown
+**✓ Done:** <what the person can now do>. <link to the PR or issue>. Nothing needs you.
+**▶ You (<n>)**
+1. Reply `<exact words>` to <the external write it allows>.
+2. <a decision you hand back>. I recommend <option>, because <reason>.
+**⚠ Not proven:** <each claim that no check in this session proves>.
+**✓ Proven:** <command> → <result>, measured or estimated. All normal results share one line.
+**↗ Outside:** nothing sent. | sent by rule: <n>, logged. | <each external write>, on your "<yes>".
+**Calls:** <call>, because <reason>. Show at most three. Then: Say `calls` for the other <n>.
 ```
 
-A call with no "because" is not reported. Give the report once, at completion, not on every turn. Know the For line before you write code.
-If you cannot name the person, ask that one question with your best guess.
+Send the report as markdown, never inside a code block, with a blank line between its lines. The terminal then shows the marks and the bold labels.
+The first mark is the state: `✓ Done`, `▶ Needs you` or `✗ Blocked: <what fails>. <the fix>.` Each mark has one meaning: ✓ done or proven, ✗ failed, ▶ the person acts, ⚠ not proven, ↗ left this machine.
+Leave out a line with nothing in it, but always write ↗ Outside. Add `**Non-goals:**` only when the person has not seen them, as in an unattended run.
+A check that ran before your last change goes under ⚠. A call that hands a decision back goes under ▶ You. A call with no "because" is not reported.
+Give the report once, at completion, not on every turn. Know the person and their new ability before you write code. If you cannot name the person, ask that one question with your best guess.
 
 ## The thirteen tenets
 
@@ -92,8 +98,8 @@ Use the named skill for the job. If its provider is not installed, use the fallb
 | Say it is done | superpowers `verification-before-completion` | Run the tests; quote the output |
 | Review a diff, a branch or a PR | builder `review`, inside superpowers `requesting-code-review` or gstack `/review` | Run the tests; prove each harm; post nothing without a yes |
 | Show a mockup, a diagram or a visual | A shareable page (the "make a shareable page" row of your harness mapping) | A file in the repository; give its path. Never only a local browser tab |
-| Test a web app in a browser | gstack `/qa` or `/browse` | Say "not tested in a browser" under Evidence |
-| Check security, a threat model or posture | builder `security` (gstack `/cso` for a second opinion) | Say "no security pass" under Evidence |
+| Test a web app in a browser | gstack `/qa` or `/browse` | Say "not tested in a browser" under ⚠ Not proven |
+| Check security, a threat model or posture | builder `security` (gstack `/cso` for a second opinion) | Say "no security pass" under ⚠ Not proven |
 | Ship a branch | gstack `/ship` or superpowers `finishing-a-development-branch` | Show the diff; push only on a yes |
 | Look back on a week | gstack `/retro` | List what shipped, what broke, what to change |
 | Grow a repository's rules | builder `canon` | Add the rule, its incident and its test |
@@ -129,11 +135,11 @@ Skills name actions, not tools. The tool for each action on your harness is in `
 
 Before you send the reply that finishes a piece of work:
 
-- [ ] The finishing reply ends with the builder report.
-- [ ] Its For line names a person, their moment and what they can now do.
-- [ ] Non-goals are written.
-- [ ] Each call I made alone is listed.
-- [ ] Every Calls line has a "because".
+- [ ] The finishing reply ends with the builder report, in markdown. Its first line gives the state and what the person can now do.
+- [ ] Each action for the person is under ▶ You, with the exact words to reply.
+- [ ] Each claim that no check in this session proves is under ⚠ Not proven.
+- [ ] Non-goals are written before code, and in the report when the person has not seen them.
+- [ ] Each call I made alone is in the report or behind `calls`, and each has a "because".
 - [ ] I ran the tests in this session and quoted the result.
 - [ ] Every error and empty state says what to do next.
 - [ ] Nothing left the repository without a send rule or the person's yes.

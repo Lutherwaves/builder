@@ -97,7 +97,7 @@ A converted draft is an issue. It leaves the candidate list by itself.
 One block: `N candidates → M in motion → K raw.` Then one line per in-motion task, with the signal that hit.
 Then one line per raw task, with its proposal. Then each issue you created, with its URL.
 A task that you would file but that has no mark: say so. Do not create it.
-End with the builder report from the builder skill. Its Outside line names each tracker write and each issue.
+End with the builder report from the builder skill. Its ↗ Outside line names each tracker write and each issue.
 
 ## Common mistakes
 

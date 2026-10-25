@@ -33,6 +33,23 @@ class TemplateOrder(unittest.TestCase):
         self.assertEqual(lines, listed_order(read("canon", "SKILL.md"), "Its lines, in order:"))
 
 
+class ReportShape(unittest.TestCase):
+    """The soul each session loads lists the report lines in the order the builder skill's template gives."""
+
+    def test_soul_lists_the_template_lines_in_order(self):
+        skill = read("builder", "SKILL.md")
+        template = skill[skill.index("```markdown"):skill.index("```", skill.index("```markdown") + 3)]
+        labels = re.findall(r"^\*\*(.+?):?\*\*", template, re.M)
+        self.assertEqual(labels, ["✓ Done", "▶ You (<n>)", "⚠ Not proven", "✓ Proven", "↗ Outside", "Calls"])
+        soul = read("builder", "soul-compact.md")
+        positions = [soul.index(l) for l in ["▶ You,", "⚠ Not proven,", "✓ Proven", "↗ Outside", "Calls."]]
+        self.assertEqual(positions, sorted(positions))
+
+    def test_report_is_sent_as_markdown(self):
+        self.assertIn("never inside a code block", read("builder", "SKILL.md"))
+        self.assertIn("not in a code block", read("builder", "soul-compact.md"))
+
+
 class SendRuleWording(unittest.TestCase):
     """reach.py lets a send rule allow a message. Every text that names the gate says so."""
 
