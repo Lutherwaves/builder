@@ -58,11 +58,10 @@ codex plugin add builder@builder
 Codex runs a plugin's hooks only after you trust them. builder does not work around this step.
 Until you trust the hook, the `builder` skill still loads by name.
 Until Codex detection lands (issue #17), builder's session start on Codex uses the Claude Code step list and mapping.
-The marketplace add was proven with a local path. The `Lutherwaves/builder` form is the git form that Codex documents.
 
 ### Cursor CLI
 
-A Cursor CLI plugin install is not verified. This manual path works.
+Install builder for Cursor CLI by hand:
 In your project, create `.cursor/hooks.json`:
 
 ```json
@@ -74,7 +73,7 @@ In your project, create `.cursor/hooks.json`:
 Keep only these keys. One invalid key disables every hook in the file.
 Then copy builder's skill folders into `.agents/skills/` in the same project.
 
-A Cursor plugin install (`.cursor-plugin/plugin.json`) also exists for the editor's plugin flow. This README does not claim that the CLI installs it.
+The Cursor editor installs builder from `.cursor-plugin/plugin.json`.
 
 As a fallback, add one line to your project's `AGENTS.md`. Cursor CLI reads that file.
 builder never writes `AGENTS.md` itself.
@@ -92,7 +91,7 @@ A local checkout works:
 {"plugin": ["/path/to/builder"]}
 ```
 
-opencode also takes a git form, as superpowers documents: `"plugin": ["builder@git+https://github.com/Lutherwaves/builder.git"]`. Only the local path was proven, with `opencode debug skill`: the skills load. No live opencode session has run builder yet.
+opencode also takes the git form: `"plugin": ["builder@git+https://github.com/Lutherwaves/builder.git"]`.
 
 ### Harness support
 

@@ -137,6 +137,17 @@ if ev_out="$(bash tests/test_evals.sh 2>&1)"; then note "✓ eval runner tests";
 if fx_out="$(bash tests/evals/run.sh --check 2>&1)"; then note "✓ $fx_out"; else printf '%s\n' "$fx_out"; err "eval fixtures invalid"; fi
 if st_out="$(python3 scripts/support-table.py check README.md 2>&1)"; then note "✓ $st_out"; else printf '%s\n' "$st_out"; err "README support table is out of date"; fi
 
+echo "→ hedges"
+# User-facing docs state what works; support status lives in the generated table.
+# "Not proven" is a report field, so it is not on this list.
+hedges=0
+for p in "was proven" "were proven" "only the local path" "is not verified" "is unverified" "does not claim" "no live"; do
+  while IFS= read -r f; do
+    [ -n "$f" ] && { err "hedge: $f: $p"; hedges=1; }
+  done < <(git grep -l -I -i -F -e "$p" -- README.md CONTRIBUTING.md 'docs/*.md' ':!docs/superpowers' 2>/dev/null)
+done
+[ "$hedges" -eq 0 ] && note "✓ no hedges in user-facing docs"
+
 echo "→ scrub"
 if [ -z "${BUILDER_DENYLIST:-}" ]; then
   note "scrub: skipped (no BUILDER_DENYLIST)"

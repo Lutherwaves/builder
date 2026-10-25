@@ -192,6 +192,22 @@ out="$(run_in "$tmp/man")"; rc=$?
 [ "$rc" -eq 1 ] && grep -q '✗ README support table is out of date' <<<"$out" \
   && check "support table with no results behind it fails" ok || check "support table with no results behind it fails (got $rc)" bad
 
+# Case 23 (hedge_fails): a hedge in a user-facing doc fails validation and names the file and phrase.
+rm -rf "$tmp/man"; mkrepo "$tmp/clean" "$tmp/man"
+echo 'Only the local path was proven.' >> "$tmp/man/README.md"
+git -C "$tmp/man" add -A >/dev/null
+out="$(run_in "$tmp/man")"; rc=$?
+[ "$rc" -eq 1 ] && grep -q '✗ hedge: README.md: was proven' <<<"$out" \
+  && check "hedge in README fails" ok || check "hedge in README fails (got $rc)" bad
+
+# Case 24 (not_proven_is_a_report_field): the report's "Not proven" line is not a hedge.
+# CONTRIBUTING, not README: a second report line in README breaks the example-order test.
+rm -rf "$tmp/man"; mkrepo "$tmp/clean" "$tmp/man"
+echo '> **⚠ Not proven:** the email in a real inbox.' >> "$tmp/man/CONTRIBUTING.md"
+git -C "$tmp/man" add -A >/dev/null
+out="$(run_in "$tmp/man")"; rc=$?
+[ "$rc" -eq 0 ] && check "Not proven in a user-facing doc passes" ok || check "Not proven in a user-facing doc passes (got $rc)" bad
+
 # Case 16: the run left the real repo's HEAD, refs and working tree as they were.
 [ "$(snapshot)" = "$before" ] && check "real repo untouched by the test run" ok || check "real repo untouched by the test run" bad
 
