@@ -105,5 +105,13 @@ class SendRuleWording(unittest.TestCase):
         self.assertNotIn("Nothing left the repository without a yes.", skill)
 
 
+class QuestionFormat(unittest.TestCase):
+    def test_questions_follow_the_decision_brief(self):
+        section = read("builder", "SKILL.md").split("**Questions.**", 1)[1].split("\n\n**", 1)[0]
+        for part in ("What is at stake", "Recommendation", "(recommended)", "pro", "con", "Net", "typed word"):
+            self.assertIn(part, section)
+        self.assertNotIn("Completeness", section)
+
+
 if __name__ == "__main__":
     unittest.main()
