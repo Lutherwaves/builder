@@ -113,5 +113,22 @@ class QuestionFormat(unittest.TestCase):
         self.assertNotIn("Completeness", section)
 
 
+class Readme(unittest.TestCase):
+    def setUp(self):
+        with open(os.path.join(SKILLS, "..", "README.md"), encoding="utf-8") as f:
+            self.readme = f.read()
+
+    def test_readme_links_resolve(self):
+        root = os.path.join(SKILLS, "..")
+        for target in re.findall(r"\]\(((?!https?://|#)[^)\s]+)\)", self.readme):
+            self.assertTrue(os.path.exists(os.path.join(root, target.split("#")[0])), target)
+
+    def test_readme_says_why_builder(self):
+        self.assertIn("## Why builder", self.readme)
+        section = self.readme.split("## Why builder", 1)[1].split("\n## ", 1)[0]
+        for name in ("superpowers", "gstack", "CLAUDE.md"):
+            self.assertIn(name, section)
+
+
 if __name__ == "__main__":
     unittest.main()
