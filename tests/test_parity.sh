@@ -127,7 +127,18 @@ done; done
 [ "$(cat "$tmp/x-pypy.json")" = "$(cat "$tmp/x-gogo.json")" ] && check "both languages pick the same next step" ok || check "both languages pick the same next step" bad
 
 echo "mcp-merge and support table"
-heredoc="$(sed -n "/<<'PY'/,/^PY\$/p" "$root/skills/harness/setup.sh" | sed '1d;$d')"
+# the Python merge that setup.sh used to carry, kept as the reference until the Python goes
+heredoc=$(cat <<'PY'
+import json, sys
+data = json.load(open(sys.argv[1]))
+if not isinstance(data, dict):
+    sys.exit(1)
+servers = data.get("mcpServers") if isinstance(data.get("mcpServers"), dict) else {}
+servers["codebase-memory"] = {"command": sys.argv[2], "args": ["--ui=false"], "env": {}}
+data["mcpServers"] = servers
+print(json.dumps(data, indent=2))
+PY
+)
 a="$(printf '%s\n' "$heredoc" | "$py" - "$fx/mcp.json" /bin/cbm | jq -S .)"
 b="$("$tmp/builder" mcp-merge "$fx/mcp.json" /bin/cbm | jq -S .)"
 [ -n "$a" ] && [ "$a" = "$b" ] && check "mcp-merge" ok || check "mcp-merge" bad
