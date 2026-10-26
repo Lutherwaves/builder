@@ -18,10 +18,14 @@ A merge to `main` that `validate` passed makes a release. Nobody tags by hand.
    installer says `checksum ok, provenance ok`, that `builder version` names
    the tag, and that the SBOM is attested. Then it makes it the latest release.
 3. A pull request `docs: vX.Y.Z is released` moves `[Unreleased]` under the
-   version and sets `version` in the four manifests. It merges itself once its
-   checks pass, and the release job keeps it up to date with `main` for 40
-   minutes. Until it merges, `main` names the previous version, so the plugin
-   installs the previous binary.
+   version and sets `version` in the four manifests. The release job waits up
+   to 60 minutes until Publish verified the release and took it out of
+   pre-release. Then the pull request merges itself once its checks pass, and
+   the release job keeps it up to date with `main` for 40 minutes. Until it
+   merges, `main` names the previous version, so the plugin installs the
+   previous binary. For the first release, `main` names 2.1.0, and no release
+   has a 2.1.0 binary. Until the pull request merges, every session offers an
+   install that cannot succeed.
 
 ## Turn releases on or off
 
@@ -60,6 +64,18 @@ four steps once:
 4. Set `RELEASE_ENABLED=true` as "Turn releases on or off" says.
 
 Then: squash-merge `feat/go` with a `feat!:` title, so the release is 3.0.0.
+Do the four steps first, and merge when you can watch the run. Watch the
+Release run and the Publish run to the end. Until the 3.0.0 pull request
+merges, sessions offer an install that fails. If the release stalls, choose
+one:
+
+- **Merge the 3.0.0 pull request by hand**, once Publish verified the release
+  and `gh release view v3.0.0 --json isDraft,isPrerelease` shows both
+  `false`. `main` then names 3.0.0, and sessions install its binary.
+- **Revert the `feat/go` merge.** Hold releases first ("Turn releases on or
+  off"), so the revert makes no release. `main` then holds builder 2.1.0
+  again, which needs no binary, and sessions stop the offer. Fix the cause,
+  turn releases on, and merge `feat/go` again.
 
 ## When something fails
 
@@ -69,6 +85,7 @@ Then: squash-merge `feat/go` with a `feat!:` title, so the release is 3.0.0.
 | Publish, from a runner or network hiccup | Publish the tag again: `gh workflow run publish.yml --ref vX.Y.Z` |
 | Publish says the release is published without a file | It went out before its binaries and cannot take them now. Merge a fix: the next release carries them |
 | Publish, from a bug in the code or the workflow | Merge the fix: the next release is published and becomes the latest. The broken one stays a pre-release |
+| Release says "release vX.Y.Z is not published and verified after 60 min" | The pull request stays open without auto-merge. Fix Publish (rows above). Once `gh release view vX.Y.Z --json isDraft,isPrerelease` shows both `false`, merge the pull request as the next row says |
 | The changelog pull request did not merge itself | Update it with `main` (`gh pr update-branch --rebase <branch>`: a merge commit fails the subject check), then merge it once its checks pass |
 | No changelog pull request after a release | Run `.github/scripts/promote-changelog.sh X.Y.Z <date>` and `.github/scripts/bump-version.sh X.Y.Z`, and open the pull request yourself |
 
