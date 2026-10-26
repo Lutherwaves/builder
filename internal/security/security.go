@@ -13,10 +13,10 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
+	"github.com/Lutherwaves/builder/internal/cli"
 	"github.com/Lutherwaves/builder/internal/harness"
 )
 
@@ -53,57 +53,22 @@ var Dimensions = []string{
 
 var Modes = []string{"change", "audit"}
 
-// pyrepr formats a JSON value as Python's repr() does, so error messages read as the Python's.
-func pyrepr(v any) string {
-	switch x := v.(type) {
-	case nil:
-		return "None"
-	case bool:
-		if x {
-			return "True"
-		}
-		return "False"
-	case float64:
-		if x == math.Trunc(x) && math.Abs(x) < 1e16 {
-			return strconv.FormatInt(int64(x), 10)
-		}
-		return strconv.FormatFloat(x, 'g', -1, 64)
-	case int:
-		return strconv.Itoa(x)
-	case string:
-		if strings.Contains(x, "'") && !strings.Contains(x, `"`) {
-			return `"` + x + `"`
-		}
-		return "'" + strings.ReplaceAll(strings.ReplaceAll(x, `\`, `\\`), "'", `\'`) + "'"
-	case []any:
-		parts := make([]string, len(x))
-		for n, e := range x {
-			parts[n] = pyrepr(e)
-		}
-		return "[" + strings.Join(parts, ", ") + "]"
-	case map[string]any:
-		b, _ := json.Marshal(x)
-		return string(b)
-	}
-	return fmt.Sprint(v)
-}
-
 func ParseVector(v any) (map[string]string, error) {
 	s, ok := v.(string)
 	if !ok {
-		return nil, fmt.Errorf("vector must be a string like %s..., got %s", prefix, pyrepr(v))
+		return nil, fmt.Errorf("vector must be a string like %s..., got %s", prefix, cli.Repr(v))
 	}
 	if !strings.HasPrefix(s, prefix) {
-		return nil, fmt.Errorf("vector must start with %s, got %s", prefix, pyrepr(strings.Split(s, "/")[0]))
+		return nil, fmt.Errorf("vector must start with %s, got %s", prefix, cli.Repr(strings.Split(s, "/")[0]))
 	}
 	m := map[string]string{}
 	for _, part := range strings.Split(s[len(prefix):], "/") {
 		key, value, _ := strings.Cut(part, ":")
 		if _, dup := m[key]; dup {
-			return nil, fmt.Errorf("duplicate metric %s in %s", key, pyrepr(s))
+			return nil, fmt.Errorf("duplicate metric %s in %s", key, cli.Repr(s))
 		}
 		if _, ok := values[key][value]; !ok {
-			return nil, fmt.Errorf("bad metric %s in %s", part, pyrepr(s))
+			return nil, fmt.Errorf("bad metric %s in %s", part, cli.Repr(s))
 		}
 		m[key] = value
 	}
@@ -114,7 +79,7 @@ func ParseVector(v any) (map[string]string, error) {
 		}
 	}
 	if missing != nil {
-		return nil, fmt.Errorf("missing metric %s in %s", strings.Join(missing, ", "), pyrepr(s))
+		return nil, fmt.Errorf("missing metric %s in %s", strings.Join(missing, ", "), cli.Repr(s))
 	}
 	return m, nil
 }
@@ -172,7 +137,7 @@ var cweID = regexp.MustCompile(`^CWE-[1-9][0-9]*$`)
 func CheckCWE(c any) (string, error) {
 	s, ok := c.(string)
 	if !ok || !cweID.MatchString(s) {
-		return "", fmt.Errorf("bad CWE id %s (want CWE-<number>)", pyrepr(c))
+		return "", fmt.Errorf("bad CWE id %s (want CWE-<number>)", cli.Repr(c))
 	}
 	return s, nil
 }
@@ -185,7 +150,7 @@ func InTop25(c any) (bool, error) {
 func text(obj map[string]any, key string) (string, error) {
 	s, ok := obj[key].(string)
 	if !ok || strings.TrimSpace(s) == "" {
-		return "", fmt.Errorf("%s must be a non-empty string, got %s", key, pyrepr(obj[key]))
+		return "", fmt.Errorf("%s must be a non-empty string, got %s", key, cli.Repr(obj[key]))
 	}
 	return s, nil
 }
@@ -207,26 +172,26 @@ func Enrich(d any) (map[string]any, error) {
 		return nil, errors.New("the findings file must hold a JSON object")
 	}
 	if mode, _ := doc["mode"].(string); !slices.Contains(Modes, mode) {
-		return nil, fmt.Errorf("mode must be one of %s, got %s", strings.Join(Modes, ", "), pyrepr(doc["mode"]))
+		return nil, fmt.Errorf("mode must be one of %s, got %s", strings.Join(Modes, ", "), cli.Repr(doc["mode"]))
 	}
 	repo, err := text(doc, "repo")
 	if err != nil {
 		return nil, err
 	}
 	if !filepath.IsAbs(repo) {
-		return nil, fmt.Errorf("repo must be an absolute path to the person's checkout, got %s", pyrepr(repo))
+		return nil, fmt.Errorf("repo must be an absolute path to the person's checkout, got %s", cli.Repr(repo))
 	}
 	if _, err := text(doc, "sha"); err != nil {
 		return nil, err
 	}
 	for _, key := range []string{"dimensions", "findings"} {
 		if _, ok := doc[key].([]any); !ok {
-			return nil, fmt.Errorf("%s must be a list (an empty list means none), got %s", key, pyrepr(doc[key]))
+			return nil, fmt.Errorf("%s must be a list (an empty list means none), got %s", key, cli.Repr(doc[key]))
 		}
 	}
 	for _, dim := range doc["dimensions"].([]any) {
 		if s, _ := dim.(string); !slices.Contains(Dimensions, s) {
-			return nil, fmt.Errorf("unknown dimension %s in dimensions", pyrepr(dim))
+			return nil, fmt.Errorf("unknown dimension %s in dimensions", cli.Repr(dim))
 		}
 	}
 	seen := map[string]bool{}
@@ -234,7 +199,7 @@ func Enrich(d any) (map[string]any, error) {
 	for _, raw := range doc["findings"].([]any) {
 		f, ok := raw.(map[string]any)
 		if !ok {
-			return nil, fmt.Errorf("each finding must be a JSON object, got %s", pyrepr(raw))
+			return nil, fmt.Errorf("each finding must be a JSON object, got %s", cli.Repr(raw))
 		}
 		fid, err := text(f, "id")
 		if err != nil {
@@ -260,7 +225,7 @@ func enrichOne(f map[string]any, fid string, seen map[string]bool) (map[string]a
 	}
 	seen[fid] = true
 	if dim, _ := f["dimension"].(string); !slices.Contains(Dimensions, dim) {
-		return nil, fmt.Errorf("unknown dimension %s", pyrepr(f["dimension"]))
+		return nil, fmt.Errorf("unknown dimension %s", cli.Repr(f["dimension"]))
 	}
 	vector, has := f["vector"]
 	if !has {
