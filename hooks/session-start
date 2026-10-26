@@ -40,7 +40,7 @@ install_block() {
     never) return ;;
     later)
       if [[ $at =~ ^[0-9]{1,15}$ && $now =~ ^[0-9]{1,15}$ ]]; then
-        age=$((now - at))
+        age=$((10#$now - 10#$at))
         [ "$age" -ge 0 ] && [ "$age" -lt 604800 ] && return
       fi ;;
     yes)

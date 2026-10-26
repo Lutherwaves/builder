@@ -55,7 +55,7 @@ has 'builder install: the helper binary of this plugin version is missing, and t
   && ! has 'ask this once' && has "$(root_line "$root")" && [ -z "$err" ] && check "yes block" ok || check "yes block" bad
 
 echo "corrupt_answer_offers"
-for a in "" "later" "later abc" "later $((now + 86400))" "maybe $now"; do
+for a in "" "later" "later abc" "later 08" "later 0" "later $((now + 86400))" "maybe $now"; do
   hook_run "$root" "$a" "${text[@]}"
   offer_ok "$root" && [ -z "$err" ] && check "offer for '$a'" ok || check "offer for '$a'" bad
 done
