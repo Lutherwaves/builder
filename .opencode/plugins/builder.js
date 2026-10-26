@@ -37,8 +37,8 @@ const readSoul = () => {
 const runHook = () => {
   try {
     const result = spawn(
-      "python3",
-      [path.join(root, "hooks", "session_start.py"), "--harness", "opencode", "--format", "text"],
+      path.join(root, "bin", "builder"),
+      ["hook", "--harness", "opencode", "--format", "text"],
       { timeout: 1000, encoding: "utf8" },
     );
     if (result && !result.error && result.status === 0 && typeof result.stdout === "string" && result.stdout.trim()) {
@@ -50,7 +50,7 @@ const runHook = () => {
   return readSoul();
 };
 
-// sessionID -> bootstrap text. The hook fires on every agent step, so run python once per session.
+// sessionID -> bootstrap text. The hook fires on every agent step, so run the hook once per session.
 const CACHE_MAX = 512;
 const _bootstrapCache = new Map();
 
