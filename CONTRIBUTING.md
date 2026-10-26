@@ -57,7 +57,6 @@ It checks that:
 - A skill has 60 to 150 lines.
 - A skill has the sections `## Common mistakes` and `## Self-check`.
 - Write in ASD-STE100: active voice, present tense, one idea per sentence, short sentences.
-- After an explanation, the skill offers other formats in one line.
 - Refer to a bundled tool through `${CLAUDE_PLUGIN_ROOT}`, so the path works after install. The hook gives the agent that path on every harness.
 - Add the skill to the table in the README.
 

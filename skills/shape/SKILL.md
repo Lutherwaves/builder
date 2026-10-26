@@ -72,7 +72,7 @@ The issue is still the deliverable. Do not build unless the person asked for the
 
 ## After the document
 
-End with the builder report from the builder skill. Its For line is the issue's title and moment.
+End with the builder report from the builder skill. Its first line names the issue by the person's new ability, and links it.
 Then offer the next step in one line: "Plan it with `writing-plans`, or change a ruling first?"
 
 ## Common mistakes

@@ -6,7 +6,7 @@
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://www.conventionalcommits.org)
 
 builder is a plugin for coding agents. Your agent ends each piece of work with a builder report.
-The report names who the work is for, each call the agent made alone, and the test run that proves the work.
+The report tells you, in this order: is it done, what you must do, what is not proven, what left the machine, and what the agent decided alone.
 Nothing leaves this machine without a send rule or your yes.
 
 builder is the soul behind that report.
@@ -14,19 +14,24 @@ You decide. The agent proposes, builds inside the repository, and reports.
 Correct is not enough: the work must fit one person at one moment.
 So each piece of work starts from that person and the non-goals.
 Each call the agent makes alone carries its reason.
-The evidence is a test run from the session.
-The last line says what left the machine.
+The proof is a check from the session, and a check it did not run shows as not proven.
 
 Example, invented for illustration:
 
-```
-For:       a customer who moved — at checkout. Now they can change their email in one step.
-Non-goals: no change to the login flow.
-Calls:
-  - The old address gets a notice — because a stolen account changes the email first.
-Evidence:  python3 -m unittest → 14 passed (example).
-Outside:   nothing sent.
-```
+> **▶ Needs you:** a customer who moved can now change their email at checkout, in one step.
+>
+> **▶ You (1):** push `feat/change-email` and open the PR. I ask below.
+>
+> **⚠ Not proven:** the confirmation email in a real inbox.
+>
+> **✓ Proven:** `python3 -m unittest` → 14 passed (example).
+>
+> **↗ Outside:** nothing sent.
+>
+> **Calls:** the old address gets a notice, because a stolen account changes the email first.
+
+The marks have one meaning each: ✓ done or proven, ✗ failed, ▶ you act, ⚠ not proven, ↗ left this machine.
+After the report, the agent asks each ▶ You item as a choice, with its recommendation first. On a harness with no choice tool, it lists the exact words to reply.
 
 ## Install
 

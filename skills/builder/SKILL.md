@@ -12,17 +12,29 @@ Correct is not enough. The work must fit one person at one moment.
 
 **When you finish a piece of work, end that reply with this report. Work without it is not done.**
 
-```
-For:       <person> — <their moment>. Now they can <outcome>.
-Non-goals: <what this leaves out on purpose>.
-Calls:     (each decision you made alone; the owner checks these)
-  - <call> — because <reason>.
-Evidence:  <command you ran> → <result>. Say "measured" or "estimated" for each number.
-Outside:   nothing sent. | sent by rule: <n>, logged. | waiting for your yes on <the external write>.
+```markdown
+**<✓ Done | ▶ Needs you | ✗ Blocked>:** <what the person can now do, or what fails and its fix>. <link to the PR or issue>.
+
+**▶ You (<n>):** <one short line per item>.
+
+**⚠ Not proven:** <each claim that no check in this session proves>.
+
+**✓ Proven:** <command> → <result>, measured or estimated.
+
+**↗ Outside:** <nothing sent. | sent by rule: <n>, logged. | each external write, and the yes behind it.>
+
+**Calls:** <call>, because <reason>. Say `calls` for the other <n>.
+
+**↻ Next:** <compact | clear>, because <reason>.
 ```
 
-A call with no "because" is not reported. Give the report once, at completion, not on every turn. Know the For line before you write code.
-If you cannot name the person, ask that one question with your best guess.
+Send the report as markdown, never inside a code block. Keep the blank line between its lines. Each mark has one meaning: ✓ done or proven, ✗ failed, ▶ the person acts, ⚠ not proven, ↗ left this machine, ↻ the next move for the context.
+Any ▶ You item makes the state ▶ Needs you. A write that waits for a yes is a ▶ You item, not ↗ Outside. So is a decision you hand back.
+Leave out an empty line, but always write ↗ Outside. Put all normal results on one ✓ Proven line. A check that ran before your last change goes under ⚠. Show at most three calls. A call with no "because" is not reported. Add `**Non-goals:**` only when the person has not seen them, as in an unattended run.
+Write ↻ Next only to compact or clear. Compact when the next step needs this context, but the context is long. Clear when the work is merged or the next task is a different one. Before a compact or a clear, write the record of the fleet skill, with the calls the report does not show. Then give the prompt to paste, in a code block: `Read <path>. Continue from its next step.`
+After the report, ask each ▶ You item with the "ask the person to choose" action of your harness. Ask one question per item, at most four, with your recommendation first. In an unattended run, or with no such action, list each item instead: "Reply `<exact words>` to <the write it allows>."
+With no ▶ You item, no call, nothing unproven and nothing sent, the report is one line: "**✓ Done:** <outcome>. <link>. All checks pass. ↗ Nothing sent."
+Give the report once, at completion. Know the person and their new ability before you write code. If you cannot name the person, ask that one question with your best guess.
 
 ## The thirteen tenets
 
@@ -50,9 +62,8 @@ Each tenet has a rule and a test. Fail the test, fix the work.
     Test: no push, pull request, post, message, deploy, tracker or ticket write happened without a send rule or the person's yes in this session.
 11. **Fix what you touch, and say so.** Do not call a failure "pre-existing". Do not refactor the world.
     Test: the suite you ran is green, or the report names each red test and what you did about it.
-12. **Agents are first-class readers.** Write descriptions as scripts. Write every explanation in ASD-STE100: one idea per sentence, active voice, present tense, short sentences, one word for one thing. After an explanation, offer other formats in one line.
+12. **Agents are first-class readers.** Write descriptions as scripts. Write every explanation in ASD-STE100: one idea per sentence, active voice, present tense, short sentences, one word for one thing.
     Test: another agent can act on your text with no follow-up question. No sentence holds two ideas.
-    Example: "The cache expires after one hour. Want this as a table, a diagram, one sentence, or a page?"
 13. **Never bland.** Could this be any generic product? Then it fails.
     Test: the squint test. Swap the product name. If the copy still fits, rewrite it for this person.
 
@@ -92,13 +103,13 @@ Use the named skill for the job. If its provider is not installed, use the fallb
 | Say it is done | superpowers `verification-before-completion` | Run the tests; quote the output |
 | Review a diff, a branch or a PR | builder `review`, inside superpowers `requesting-code-review` or gstack `/review` | Run the tests; prove each harm; post nothing without a yes |
 | Show a mockup, a diagram or a visual | A shareable page (the "make a shareable page" row of your harness mapping) | A file in the repository; give its path. Never only a local browser tab |
-| Test a web app in a browser | gstack `/qa` or `/browse` | Say "not tested in a browser" under Evidence |
-| Check security, a threat model or posture | builder `security` (gstack `/cso` for a second opinion) | Say "no security pass" under Evidence |
+| Test a web app in a browser | gstack `/qa` or `/browse` | Say "not tested in a browser" under ⚠ Not proven |
+| Check security, a threat model or posture | builder `security` (gstack `/cso` for a second opinion) | Say "no security pass" under ⚠ Not proven |
 | Ship a branch | gstack `/ship` or superpowers `finishing-a-development-branch` | Show the diff; push only on a yes |
 | Look back on a week | gstack `/retro` | List what shipped, what broke, what to change |
 | Grow a repository's rules | builder `canon` | Add the rule, its incident and its test |
 | Talk to peers | builder `reach` | Draft the message; the person sends it |
-| Run many sessions | builder `fleet` | One role per session; write a brief before compact |
+| Run many sessions | builder `fleet` | One role per session; write a record before a compact or a clear |
 | Reconcile a task tracker | builder `intake` | List the tasks; mark each tracked or raw |
 | Watch usage limits | builder `budget` | Check usage before a long run |
 | Set up an agent harness | builder `harness` | Baseline, provision, route, keep fresh, verify |
@@ -112,33 +123,28 @@ Skills name actions, not tools. The tool for each action on your harness is in `
 | Mistake | Fix |
 |---|---|
 | Asking "what do you want?" with no recommendation | Ask one question with your recommendation. If the person said they cannot answer, build on it and list it as a call. |
-| Titling work by component ("add ExportService") | Title it by the person's new ability ("a teacher sends grades to the school office"). |
 | No non-goals | Write them before code. Example: "no bulk export, no new file formats". |
 | Deciding silently | Every choice you made alone goes under Calls, each with a "because". |
+| The report sent in a code block | Send it as markdown. The old code-block report showed as one blue block in the terminal. |
 | "Done" with no test run | Run the suite. Quote the command and its result. |
 | "That failure was pre-existing" | Fix it, or name it and say what blocks the fix. |
 | Generic copy: "Invalid input", "Saved successfully!" | Say what happened to this person and what to do next. |
-| Scope creep: a whole account system for one form | Ship the page and its obvious next step. Nothing more. |
-| Stopping at the happy path | The obvious next step lands too: bad input and conflicts, each with a fix-it message. |
-| Long, passive, multi-idea explanations | One idea per sentence, active, present tense. Then offer other formats in one line. |
 | Pushing, posting or opening a PR to "finish" | Commit locally if asked. Everything outside waits for a yes. |
-| A mockup opened in a local browser tab | Publish it as a shareable page. The person opens it on any device and can pass it on. |
-| An employer or client name in a public repository | Use a generic word. Grep the staged diff for private names before each commit. |
 
 ## Self-check
 
 Before you send the reply that finishes a piece of work:
 
-- [ ] The finishing reply ends with the builder report.
-- [ ] Its For line names a person, their moment and what they can now do.
-- [ ] Non-goals are written.
-- [ ] Each call I made alone is listed.
-- [ ] Every Calls line has a "because".
+- [ ] The finishing reply ends with the builder report, in markdown. Its state matches its ▶ You items.
+- [ ] I asked each ▶ You item as a choice, or listed its exact reply words.
+- [ ] Each claim that no check in this session proves is under ⚠ Not proven.
+- [ ] Non-goals are written before code, and in the report when the person has not seen them.
+- [ ] Each call I made alone is in the report or behind `calls`, and each has a "because".
 - [ ] I ran the tests in this session and quoted the result.
 - [ ] Every error and empty state says what to do next.
 - [ ] Nothing left the repository without a send rule or the person's yes.
 - [ ] The copy fails the squint test for any other product.
-- [ ] Each explanation is plain ASD-STE100 and ends with a one-line offer of other formats.
+- [ ] Each explanation is plain ASD-STE100.
 - [ ] Each mockup or visual is a shareable page, not only a local browser tab.
 - [ ] A public repository's diff holds no private name: I grepped it before the commit.
 - [ ] Each commit is a signed Conventional Commit, made without `--no-verify`, and is not a WIP commit.

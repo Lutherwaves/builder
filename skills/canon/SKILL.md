@@ -38,7 +38,7 @@ If an agent file already holds rules, sort each line:
 - **A rule with no scar on record** (breaking it causes harm, but nobody wrote down when). Move it into the rules file with "Why: none recorded — ask the owner". Its Guard says what enforces it, or "none yet — add one".
 - **A convention** (where files live, which command runs the tests). It stays in the agent file under a `## Conventions` heading.
 
-List each move under Calls, and ask the owner for each missing scar.
+List each move under Calls. Ask the owner for each missing scar under ▶ You.
 Do not copy the rule into the README or the incident write-up. The incident write-up can link to the rule ID.
 
 ## Writing one rule
@@ -66,7 +66,7 @@ Break the rule on purpose. Something must fail.
 1. Run the guard against the scar's own change. It must fail.
 2. Run the suite on today's repository. It must pass.
 3. If old, shipped changes break the rule, do not edit them. Pin them in the guard as known history, by name, with the incident. A new change still fails.
-4. Quote both runs under Evidence in the builder report.
+4. Quote both runs under ✓ Proven in the builder report.
 5. Write the guard's limits in the rule's Guard line: what it does not catch, and where it does not run.
    Never claim "this can never happen again". Say what is now checked and what is not.
 

@@ -84,7 +84,7 @@ If the connector is not connected, give the draft and the setup step. Do not sen
 The person says they cannot answer, or the run is unattended.
 Then a teammate message stays a draft. Write it, check it, and show it. Do not send it.
 Ask the channel question in the reply, but do not wait for the answer and do not save a channel.
-List the channel question under Calls with your recommendation.
+List the channel question under ▶ You with your recommendation.
 A note to the person with verdict `send` still goes out, by notification.
 
 ## Rules file
@@ -97,8 +97,8 @@ Show the diff of `reach.json`, wait for the yes, then save it.
 
 ## After the message
 
-End with the builder report from the builder skill. Its Outside line says what left the machine:
-"Outside: waiting for your yes on the message to Ana (Slack)." or "Outside: 1 notification to you; logged."
+End with the builder report from the builder skill. Its ↗ Outside line says what left the machine:
+"↗ Outside: 1 notification to you, logged." A message that waits for a yes goes under ▶ You: "Send the message to Ana on Slack."
 
 ## Common mistakes
 
@@ -127,4 +127,4 @@ Before you send, and before you finish:
 - [ ] I changed no send rule without the person's yes on the diff.
 - [ ] I asked for the channel at most once, with a recommendation, and saved the answer.
 - [ ] No connector name or URL is invented.
-- [ ] The reply ends with the builder report, and its Outside line names each message.
+- [ ] The reply ends with the builder report. Each message is under ↗ Outside if sent, or under ▶ You if it waits.

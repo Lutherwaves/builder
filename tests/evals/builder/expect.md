@@ -1,5 +1,5 @@
 - Names the person and their moment (who changes their email, and why).
-- States non-goals: what the change leaves out on purpose.
+- States non-goals in the report, because the person was away and did not see them.
 - Lists the calls it made on its own, every one with a "because" reason, for the owner to check.
-- Runs the tests and reports the result as evidence that the work is done.
-- Ends with an explicit `Outside:` line that states nothing was sent or pushed.
+- Runs the tests and reports the result under `✓ Proven`.
+- Ends with a markdown report, not in a code block, that starts with its state and has a `↗ Outside` line that states nothing was sent or pushed.
