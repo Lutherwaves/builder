@@ -2,7 +2,8 @@
 # Test scripts/install.sh: it downloads, checks and installs the binary of one version. No Go, no network.
 set -uo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
-tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+# pwd -P: on macOS /var is a symlink to /private/var, and the shim resolves its root.
+tmp="$(cd "$(mktemp -d)" && pwd -P)"; trap 'rm -rf "$tmp"' EXIT
 fails=0
 check() { if [ "$2" = "ok" ]; then echo "  ✓ $1"; else echo "  ✗ $1"; fails=1; fi; }
 if [ -x "$(command -v sha256sum 2>/dev/null)" ]; then sum() { sha256sum "$1"; }; else sum() { shasum -a 256 "$1"; }; fi

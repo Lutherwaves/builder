@@ -3,7 +3,8 @@
 # Needs no Go and no jq. Runs under Bash 3.2.
 set -uo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
-tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+# pwd -P: on macOS /var is a symlink to /private/var, and the shim resolves its root.
+tmp="$(cd "$(mktemp -d)" && pwd -P)"; trap 'rm -rf "$tmp"' EXIT
 fails=0
 check() { if [ "$2" = "ok" ]; then echo "  ✓ $1"; else echo "  ✗ $1"; fails=1; fi; }
 now="$(date +%s)"

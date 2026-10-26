@@ -2,7 +2,8 @@
 # Test bin/builder: it runs the binary pinned to the plugin version, or says how to install it.
 set -uo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
-tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+# pwd -P: on macOS /var is a symlink to /private/var, and the shim resolves its root.
+tmp="$(cd "$(mktemp -d)" && pwd -P)"; trap 'rm -rf "$tmp"' EXIT
 fails=0
 # Each case sets BUILDER_BIN itself; a caller's BUILDER_BIN would skip the version lookup.
 unset BUILDER_BIN
