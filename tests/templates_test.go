@@ -321,6 +321,5 @@ func TestWhyBuilderClaimsHold(t *testing.T) {
 }
 
 func TestBudgetFindsTheOldWatcher(t *testing.T) {
-	// Split so that validate.sh, which forbids the old tool name outside the budget skill, passes this file.
-	mustContain(t, read(t, "budget", "SKILL.md"), "`builder budget` or the old `burn-proj"+".py`")
+	mustContain(t, read(t, "budget", "SKILL.md"), "`builder budget` or the old `burn-proj.py`")
 }

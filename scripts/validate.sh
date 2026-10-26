@@ -136,7 +136,7 @@ py_guard git ls-files '*.py' ':!tests/evals/*/*' \
   && note "✓ no Python file"
 py_guard git grep -n -I -w -e python3 -- . ':!tests/evals/*/*' ':!docs/superpowers' ':!CHANGELOG.md' ':!scripts/validate.sh' ':!tests/test_validate.sh' \
   && note "✓ no python3 command"
-py_guard git grep -n -E 'lib/(harness|ledger|reach|security|signals)\.py|burn-proj\.py|session_start\.py|support-table\.py' -- . ':!docs/superpowers' ':!CHANGELOG.md' ':!scripts/validate.sh' ':!tests/test_validate.sh' ':!skills/budget/SKILL.md' \
+py_guard git grep -n -E 'lib/(harness|ledger|reach|security|signals)\.py|burn-proj\.py|session_start\.py|support-table\.py' -- . ':!docs/superpowers' ':!CHANGELOG.md' ':!scripts/validate.sh' ':!tests/test_validate.sh' ':!skills/budget/SKILL.md' ':!tests/templates_test.go' \
   && note "✓ no deleted Python tool named"
 
 echo "→ go"
