@@ -25,6 +25,8 @@ The weekly window has `window_minutes` 10080. The 5-hour window has `window_minu
 
 ## 2. Project the week
 
+If a `bin/builder` command exits 3, stop. Show its error line, and offer once to run the install command in it. Do not work around the missing binary.
+
 ```
 "${CLAUDE_PLUGIN_ROOT}/bin/builder" budget --from-matchblox
 "${CLAUDE_PLUGIN_ROOT}/bin/builder" budget <used_pct> <resets_at_epoch>   # without matchblox

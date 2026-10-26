@@ -248,6 +248,13 @@ printf '%s\n' '"<plugin root>/bin/builder" budget 19 1783504800' >> "$tmp/py/ski
 out="$(run_in "$tmp/py")"; rc=$?
 ! grep -q 'runs the shim without' <<<"$out" && check "README plugin root allowed" ok || check "README plugin root allowed (got $rc)" bad
 
+# Case 32 (missing_binary_line_required): a skill that runs the shim must stop at a missing binary.
+rm -rf "$tmp/py"; mkrepo "$tmp/clean" "$tmp/py"
+sed -i.bak '/command exits 3, stop/d' "$tmp/py/skills/reach/SKILL.md"; rm -f "$tmp/py/skills/reach/SKILL.md.bak"
+out="$(run_in "$tmp/py")"; rc=$?
+[ "$rc" -eq 1 ] && grep -q '✗ guard: skills/reach/SKILL.md runs the shim but does not stop at a missing binary' <<<"$out" \
+  && check "missing binary line required" ok || check "missing binary line required (got $rc)" bad
+
 # Case 16: the run left the real repo's HEAD, refs and working tree as they were.
 [ "$(snapshot)" = "$before" ] && check "real repo untouched by the test run" ok || check "real repo untouched by the test run" bad
 

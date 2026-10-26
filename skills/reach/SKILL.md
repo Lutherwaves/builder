@@ -26,6 +26,8 @@ No rule changes this route. Do not offer to change it.
 
 Do these steps in this order. Never change the order. Never skip a step.
 
+If a `bin/builder` command exits 3, stop. Show its error line, and offer once to run the install command in it. Do not work around the missing binary.
+
 1. **Write** the exact text. Pick the recipient and a kind: `waiting`, `morning`, `needs-yes`, or a short word such as `fyi`.
    Pick the kind from what the text is. Never pick a kind to get a send.
 2. **Check** before any send:

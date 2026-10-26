@@ -101,13 +101,18 @@ fi
 # Only files agents read are guarded (SKILL.md, *-prompt.md, scripts); a README is for people and says "<plugin root>".
 # A script beside a skill has no CLAUDE_PLUGIN_ROOT on every harness, so it runs "$PLUGIN_ROOT/bin/builder".
 shim_hits="$(grep -rn 'bin/builder' --include=SKILL.md --include='*-prompt.md' --include='*.sh' skills \
-  | sed -e 's|"${CLAUDE_PLUGIN_ROOT}/bin/builder"||g' -e '/^[^:]*\.sh:/s|"$PLUGIN_ROOT/bin/builder"||g' \
+  | sed -e 's|"${CLAUDE_PLUGIN_ROOT}/bin/builder"||g' -e 's|`bin/builder` command exits 3, stop||g' -e '/^[^:]*\.sh:/s|"$PLUGIN_ROOT/bin/builder"||g' \
   | grep 'bin/builder' | cut -d: -f1,2 || true)"
 if [ -n "$shim_hits" ]; then
   while IFS= read -r h; do err "guard: $h runs the shim without the quoted plugin root"; done <<<"$shim_hits"
 else
   note "✓ every skill runs the shim through the quoted plugin root"
 fi
+
+# A skill that runs the shim stops at exit 3 (missing binary) and offers the install.
+while IFS= read -r f; do
+  grep -q 'command exits 3, stop' "$f" || err "guard: $f runs the shim but does not stop at a missing binary"
+done < <(grep -l 'bin/builder' skills/*/SKILL.md)
 
 # A string-valued `how` runs on every harness, so it names no slash command. A map-valued `how` is per harness.
 if ! how_hits="$(jq -r '.[] | select(.how | type == "string") | select(.how | test("(^|[\\s(\\x60])/(loop|usage|compact|clear|plugin|builder:[a-z-]+)\\b"))
