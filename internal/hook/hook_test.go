@@ -41,7 +41,7 @@ func TestHookAfterOnboardingShowsAtMostOneBlock(t *testing.T) {
 	os.MkdirAll(e["BUILDER_HOME"], 0o755)
 	os.WriteFile(filepath.Join(e["BUILDER_HOME"], "ledger.json"), []byte(`{"answers": {}, "onboarded": true}`), 0o644)
 	text := Build(root, "claude", e, home, home, 1)
-	if n := strings.Count(text, "builder recommends:"); n > 1 {
+	if n := strings.Count(text, "builder recommends:"); n != 1 {
 		t.Fatalf("%d blocks", n)
 	}
 	if strings.Contains(text, "builder onboarding") {

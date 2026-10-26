@@ -60,13 +60,34 @@ for lang in py go; do
   side $lang "$tmp/sec-$lang" "${cmd[@]}" baseline save "$fx/findings.json" --today 2026-10-01 >/dev/null
   side $lang "$tmp/sec-$lang" "${cmd[@]}" baseline diff "$fx/findings.json" --today 2026-10-08 > "$tmp/sec-$lang.out"
 done
-[ "$(head -n -1 "$tmp/sec-py.out" | jq -S .)" = "$(head -n -1 "$tmp/sec-go.out" | jq -S .)" ] && check "security baseline save then diff" ok || check "security baseline save then diff" bad
-[ "$(jq -S . "$tmp/sec-py/b/security/"*.json)" = "$(jq -S . "$tmp/sec-go/b/security/"*.json)" ] && check "security baseline file" ok || check "security baseline file" bad
+sa="$(head -n -1 "$tmp/sec-py.out" | jq -S .)"; sb="$(head -n -1 "$tmp/sec-go.out" | jq -S .)"
+[ "$(tail -n 1 "$tmp/sec-py.out")" = rc=0 ] && [ "$(tail -n 1 "$tmp/sec-go.out")" = rc=0 ] && [ -n "$sa" ] && [ "$sa" = "$sb" ] \
+  && check "security baseline save then diff" ok || check "security baseline save then diff" bad
+ba="$(jq -S . "$tmp/sec-py/b/security/"*.json 2>/dev/null)"; bb="$(jq -S . "$tmp/sec-go/b/security/"*.json 2>/dev/null)"
+[ -n "$ba" ] && [ "$ba" = "$bb" ] && check "security baseline file" ok || check "security baseline file" bad
 
 echo "reach"
 same json "reach check teammate" "$root/lib/reach.py" check --to teammate --kind waiting --text hi --recipient Ana -- reach check --to teammate --kind waiting --text hi --recipient Ana
 same json "reach check self" "$root/lib/reach.py" check --to self --kind waiting --text hi -- reach check --to self --kind waiting --text hi
 same text "reach channel needs a room" "$root/lib/reach.py" check --to channel --kind x --text hi -- reach check --to channel --kind x --text hi
+
+echo "reach files across languages"
+reach_run() { local lang="$1" home="$2"; shift 2
+  if [ "$lang" = py ]; then side py "$home" "$py" "$root/lib/reach.py" "$@"; else side go "$home" "$root/bin/builder" reach "$@"; fi; }
+for w in py go; do
+  r=go; [ $w = go ] && r=py
+  # Python's casefold folds both sigmas to σ: a message logged as ΟΔΟΣ is a duplicate of οδος.
+  reach_run $w "$tmp/r-$w" log --to teammate --recipient Ana --kind fyi --text "Build ΟΔΟΣ is green" --verdict send >/dev/null
+  out="$(reach_run $r "$tmp/r-$w" check --to teammate --recipient ana --kind fyi --text "build  οδος is GREEN")"
+  [ "$(printf '%s' "${out%rc=*}" | jq -r .reason)" = duplicate ] && check "$r dedupes a send that $w logged" ok || check "$r dedupes a send that $w logged ($out)" bad
+  reach_run $w "$tmp/c-$w" channel Slack >/dev/null
+  printf '{"to_teammate": {"allow": ["fyi"]}}' > "$tmp/c-$w.tmp"
+  jq -s '.[0] * .[1]' "$tmp/c-$w/b/reach.json" "$tmp/c-$w.tmp" > "$tmp/c-$w/b/reach.json.new" && mv "$tmp/c-$w/b/reach.json.new" "$tmp/c-$w/b/reach.json"
+  reach_run $r "$tmp/c-$w" channel teams >/dev/null
+  out="$(reach_run $w "$tmp/c-$w" check --to teammate --recipient Ana --kind fyi --text hi)"
+  [ "$(jq -r .channel "$tmp/c-$w/b/reach.json")" = teams ] && [ "$(printf '%s' "${out%rc=*}" | jq -r .verdict)" = send ] \
+    && check "reach.json: $r keeps what $w wrote" ok || check "reach.json: $r keeps what $w wrote" bad
+done
 
 echo "ledger and hook"
 same json "ledger next, empty home" "$root/lib/ledger.py" next --harness claude -- ledger next --harness claude
@@ -82,6 +103,15 @@ b="$(side go "$tmp/hookj-go" "$root/bin/builder" hook --harness cursor)"
 a="${a%rc=*}"; b="${b%rc=*}"
 [ "$(jq -r .additional_context <<<"$a" | sed "s|python3 \"$root/lib/ledger.py\"|\"$root/bin/builder\" ledger|g")" = "$(jq -r .additional_context <<<"$b")" ] \
   && check "hook JSON, cursor" ok || check "hook JSON, cursor" bad
+
+for lang in py go; do
+  if [ $lang = py ]; then run=("$py" "$root/lib/ledger.py"); hk=("$py" "$root/hooks/session_start.py"); else run=("$root/bin/builder" ledger); hk=("$root/bin/builder" hook); fi
+  side $lang "$tmp/on-$lang" "${run[@]}" onboarded >/dev/null
+  side $lang "$tmp/on-$lang" "${hk[@]}" --harness claude --format text > "$tmp/on-$lang.out"
+done
+a="$(sed "s|python3 \"$root/lib/ledger.py\"|\"$root/bin/builder\" ledger|g" "$tmp/on-py.out")"
+grep -q 'builder recommends:' "$tmp/on-go.out" && [ "$a" = "$(cat "$tmp/on-go.out")" ] \
+  && check "hook text after onboarding" ok || { check "hook text after onboarding" bad; diff <(echo "$a") "$tmp/on-go.out" | head -10; }
 
 echo "cross-writer ledger"
 run_ledger() { local lang="$1" home="$2"; shift 2
