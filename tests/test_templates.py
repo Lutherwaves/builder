@@ -138,5 +138,10 @@ class Readme(unittest.TestCase):
         self.assertNotIn("| no |\n| Unproven", section)
 
 
+class BudgetWatcher(unittest.TestCase):
+    def test_budget_finds_the_old_watcher(self):
+        self.assertIn("`builder budget` or the old `burn-proj.py`", read("budget", "SKILL.md"))
+
+
 if __name__ == "__main__":
     unittest.main()

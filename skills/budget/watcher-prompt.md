@@ -10,7 +10,7 @@ Run one budget pass. Only read. Do not compact, stop or start a session.
 
 1. **Weekly.** Run `matchblox usage --json`. For each account, find the window with `window_minutes` 10080.
    Report its `used_pct` (measured) and the time until `resets_at`.
-   Then run `python3 "${CLAUDE_PLUGIN_ROOT}/skills/budget/burn-proj.py" --from-matchblox`.
+   Then run `"${CLAUDE_PLUGIN_ROOT}/bin/builder" budget --from-matchblox`.
    Report profile_aware first, as the forecast. Report naive as the ceiling. Both are estimated.
    Flag the account only when profile_aware is over 100%, or `used_pct` is 80 or more.
    If the script exits non-zero, quote its stderr line and stop this step. Never report a 0% you did not read.

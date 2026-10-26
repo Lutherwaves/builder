@@ -30,7 +30,7 @@ Do these steps in this order. Never change the order. Never skip a step.
    Pick the kind from what the text is. Never pick a kind to get a send.
 2. **Check** before any send:
    ```
-   python3 "${CLAUDE_PLUGIN_ROOT}/lib/reach.py" check --to teammate --recipient Ana --kind fyi --text "<exact text>"
+   "${CLAUDE_PLUGIN_ROOT}/bin/builder" reach check --to teammate --recipient Ana --kind fyi --text "<exact text>"
    ```
    `--recipient` is the teammate's name. For a room, use `--to channel --recipient releases`. For a note to the person, use `--to self` and no recipient. The check prints `{"verdict": ..., "reason": ...}`.
 3. **Act on the verdict:**
@@ -43,7 +43,7 @@ Do these steps in this order. Never change the order. Never skip a step.
 4. **Send** through the route in the table. Use the exact text the person saw.
 5. **Log** after the send, and after each skip:
    ```
-   python3 "${CLAUDE_PLUGIN_ROOT}/lib/reach.py" log --to teammate --recipient Ana --kind fyi --text "<exact text>" --verdict send
+   "${CLAUDE_PLUGIN_ROOT}/bin/builder" reach log --to teammate --recipient Ana --kind fyi --text "<exact text>" --verdict send
    ```
    For a skip, use `--verdict skip --reason duplicate` (or `rate`). The log is `reach-log.jsonl` in the builder home.
 
@@ -53,11 +53,11 @@ A send with no check before it is a defect. A send with no log after it is a def
 
 Use the first route that works:
 
-1. matchblox: `python3 "${CLAUDE_PLUGIN_ROOT}/lib/reach.py" matchblox-notify --text "<exact text>"`.
+1. matchblox: `"${CLAUDE_PLUGIN_ROOT}/bin/builder" reach matchblox-notify --text "<exact text>"`.
    It sends only when `matchblox --help` lists a `notify` command. It exits 3 when matchblox has none. Then use route 2.
    Never run `matchblox notify` yourself. A bare `matchblox <word>` opens a console.
 2. Send the person a notification with the tool of your harness, if this session has one (see your harness mapping).
-3. An OS notification: `python3 "${CLAUDE_PLUGIN_ROOT}/lib/reach.py" notify --text "<exact text>"`.
+3. An OS notification: `"${CLAUDE_PLUGIN_ROOT}/bin/builder" reach notify --text "<exact text>"`.
    It uses `osascript` on macOS and `notify-send` on Linux.
    It exits non-zero when neither works. Then put the note in the conversation.
 
@@ -75,7 +75,7 @@ If `channel` is missing, ask once, with your recommendation. Ask it in every run
 | Slack | The claude.ai Slack connector first. Slack's official MCP server second. |
 | Any other | Name a connector only when you know it exists and it can post. Else say "draft only". |
 
-Then save the answer: `python3 "${CLAUDE_PLUGIN_ROOT}/lib/reach.py" channel slack` (or `channel none` for draft only).
+Then save the answer: `"${CLAUDE_PLUGIN_ROOT}/bin/builder" reach channel slack` (or `channel none` for draft only).
 Do not ask again in later sessions. Never invent a connector name or a URL.
 If the connector is not connected, give the draft and the setup step. Do not send through another tool.
 
@@ -111,7 +111,7 @@ End with the builder report from the builder skill. Its ↗ Outside line says wh
 | Adding a kind or room to `allow` so a message can go out | Keep the rules. Show the draft and wait for a yes. A rule change needs its own yes on the diff. |
 | A post to a room nobody named | `deny`. Ask the person to name the room in reach.json. |
 | The same update sent again after a retry | The check returns `skip`/`duplicate`. Log the skip. Do not send. |
-| Asking for the channel in every session | Ask once. Save it with `reach.py channel`. |
+| Asking for the channel in every session | Ask once. Save it with `builder reach channel`. |
 | A made-up connector for Teams or Discord | Name a connector only when you know it exists. Else "draft only". |
 | Saving "ping me on Slack" to memory | Do not save a route that breaks the table. Save the notification route. |
 
@@ -119,11 +119,11 @@ End with the builder report from the builder skill. Its ↗ Outside line says wh
 
 Before you send, and before you finish:
 
-- [ ] I ran `reach.py check` before the send, and quoted its verdict.
+- [ ] I ran `builder reach check` before the send, and quoted its verdict.
 - [ ] A teammate or room message went out only on a `send` verdict, or after a yes in this conversation on the exact text shown.
 - [ ] The person saw the exact text and the recipient before the yes.
 - [ ] A note to the person went by notification, not by the team channel.
-- [ ] I ran `reach.py log` after each send and each skip.
+- [ ] I ran `builder reach log` after each send and each skip.
 - [ ] I changed no send rule without the person's yes on the diff.
 - [ ] I asked for the channel at most once, with a recommendation, and saved the answer.
 - [ ] No connector name or URL is invented.
