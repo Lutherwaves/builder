@@ -88,6 +88,7 @@ run_in() { (cd "$1" && env -u BUILDER_DENYLIST bash scripts/validate.sh 2>&1); }
 rm -rf "$tmp/cc"; mkrepo "$tmp/clean" "$tmp/cc"
 commit_in "$tmp/cc" "feat(scope)!: a person can do a new thing"
 commit_in "$tmp/cc" "chore: release 1.2.3"
+commit_in "$tmp/cc" "docs: v1.2.3 is released"
 out="$(run_in "$tmp/cc")"; rc=$?
 [ "$rc" -eq 0 ] && check "good and release subjects pass" ok || check "good and release subjects pass (got $rc)" bad
 commit_in "$tmp/cc" "wip stuff"

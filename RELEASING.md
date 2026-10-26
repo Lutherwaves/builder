@@ -69,7 +69,7 @@ Then: squash-merge `feat/go` with a `feat!:` title, so the release is 3.0.0.
 | Publish, from a runner or network hiccup | Publish the tag again: `gh workflow run publish.yml --ref vX.Y.Z` |
 | Publish says the release is published without a file | It went out before its binaries and cannot take them now. Merge a fix: the next release carries them |
 | Publish, from a bug in the code or the workflow | Merge the fix: the next release is published and becomes the latest. The broken one stays a pre-release |
-| The changelog pull request did not merge itself | Update it with `main` (`gh pr update-branch <branch>`), then merge it once its checks pass |
+| The changelog pull request did not merge itself | Update it with `main` (`gh pr update-branch --rebase <branch>`: a merge commit fails the subject check), then merge it once its checks pass |
 | No changelog pull request after a release | Run `.github/scripts/promote-changelog.sh X.Y.Z <date>` and `.github/scripts/bump-version.sh X.Y.Z`, and open the pull request yourself |
 
 Tags are immutable: a bad release is followed by a fixed one, never moved.

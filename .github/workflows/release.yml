@@ -192,6 +192,7 @@ jobs:
 
       # main takes only up-to-date branches, and auto-merge never updates
       # one: a pull request that merged meanwhile would hold this one back.
+      # --rebase, because a merge commit fails validate's subject check.
       - name: Keep the pull request up to date until it merges
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
@@ -206,7 +207,7 @@ jobs:
             case "$state" in
               MERGED*) echo "merged"; exit 0 ;;
               CLOSED*) echo "::warning::the v${VERSION} pull request was closed"; exit 0 ;;
-              *BEHIND) gh pr update-branch "$branch" || true ;;
+              *BEHIND) gh pr update-branch --rebase "$branch" || true ;;
             esac
             sleep 60
           done

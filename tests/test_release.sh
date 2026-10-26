@@ -92,4 +92,13 @@ bash "$scripts/check-next-version.sh" 2.10.0 2.9.0 >/dev/null 2>&1; rc=$?
 bash "$scripts/check-next-version.sh" 2.1.0 2.1.0 >/dev/null 2>&1; rc=$?
 [ "$rc" -eq 1 ] && check "2.1.0 after 2.1.0 exits 1" ok || check "2.1.0 after 2.1.0 exits 1 (rc=$rc)" bad
 
+echo "bot_subject_passes"
+title="$(grep -o 'title="docs: v${VERSION} is released"' "$root/.github/workflows/release.yml")"
+[ -n "$title" ] && check "release.yml titles the bot pull request docs: v<V> is released" ok || check "release.yml titles the bot pull request docs: v<V> is released" bad
+printf '%s\n' "docs: v3.0.0 is released" | bash "$root/scripts/check-subjects.sh" >/dev/null; rc=$?
+[ "$rc" -eq 0 ] && check "docs: v3.0.0 is released is a Conventional Commit" ok || check "docs: v3.0.0 is released is a Conventional Commit (rc=$rc)" bad
+grep -qF 'gh pr update-branch --rebase "$branch"' "$root/.github/workflows/release.yml" \
+  && check "the up-to-date loop rebases, so no merge commit fails the subject check" ok \
+  || check "the up-to-date loop rebases, so no merge commit fails the subject check" bad
+
 exit "$fails"
