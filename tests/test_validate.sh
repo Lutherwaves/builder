@@ -251,7 +251,7 @@ out="$(run_in "$tmp/py")"; rc=$?
 
 # Case 32 (missing_binary_line_required): a skill that runs the shim must stop at a missing binary.
 rm -rf "$tmp/py"; mkrepo "$tmp/clean" "$tmp/py"
-sed -i.bak '/command exits 3, stop/d' "$tmp/py/skills/reach/SKILL.md"; rm -f "$tmp/py/skills/reach/SKILL.md.bak"
+sed -i.bak '/says the binary is not installed or is off, stop/d' "$tmp/py/skills/reach/SKILL.md"; rm -f "$tmp/py/skills/reach/SKILL.md.bak"
 out="$(run_in "$tmp/py")"; rc=$?
 [ "$rc" -eq 1 ] && grep -q '✗ guard: skills/reach/SKILL.md runs the shim but does not stop at a missing binary' <<<"$out" \
   && check "missing binary line required" ok || check "missing binary line required (got $rc)" bad

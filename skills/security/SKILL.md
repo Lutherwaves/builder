@@ -55,7 +55,7 @@ Mark each finding "measured" (a probe ran: quote the input and the output) or "f
 
 ## 4. Score
 
-If a `bin/builder` command exits 3, stop. Show its error line, and offer once to run the install command in it. Do not work around the missing binary.
+If a `bin/builder` command exits 3 and says the binary is not installed or is off, stop. Show its error line, and offer once to run the install command in it. Do not work around the missing binary.
 
 1. Write the findings file: JSON with `mode`, `repo` (the absolute path of the person's checkout, never the probe worktree), `sha`, `dimensions` (the ones you covered) and `findings`.
    Each finding has `id` (`<dimension>/<CWE>/<file>/<symbol>`), `dimension`, `cwe`, `location`, `vector` (`CVSS:3.1/...`) and `title`.

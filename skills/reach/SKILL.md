@@ -26,7 +26,7 @@ No rule changes this route. Do not offer to change it.
 
 Do these steps in this order. Never change the order. Never skip a step.
 
-If a `bin/builder` command exits 3, stop. Show its error line, and offer once to run the install command in it. Do not work around the missing binary.
+If a `bin/builder` command exits 3 and says the binary is not installed or is off, stop. Show its error line, and offer once to run the install command in it. Do not work around the missing binary.
 
 1. **Write** the exact text. Pick the recipient and a kind: `waiting`, `morning`, `needs-yes`, or a short word such as `fyi`.
    Pick the kind from what the text is. Never pick a kind to get a send.
@@ -56,7 +56,7 @@ A send with no check before it is a defect. A send with no log after it is a def
 Use the first route that works:
 
 1. matchblox: `"${CLAUDE_PLUGIN_ROOT}/bin/builder" reach matchblox-notify --text "<exact text>"`.
-   It sends only when `matchblox --help` lists a `notify` command. It exits 3 when matchblox has none. Then use route 2.
+   It sends only when `matchblox --help` lists a `notify` command. When matchblox has none, it exits 3 and says "use the next route". Then use route 2.
    Never run `matchblox notify` yourself. A bare `matchblox <word>` opens a console.
 2. Send the person a notification with the tool of your harness, if this session has one (see your harness mapping).
 3. An OS notification: `"${CLAUDE_PLUGIN_ROOT}/bin/builder" reach notify --text "<exact text>"`.
