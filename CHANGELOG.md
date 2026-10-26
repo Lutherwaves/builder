@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/Lutherwaves/builder/compare/builder-v2.0.0...builder-v2.1.0) (2026-10-26)
+
+
+### Features
+
+* **go:** one builder binary that answers as the Python does ([#27](https://github.com/Lutherwaves/builder/issues/27)) ([614cc74](https://github.com/Lutherwaves/builder/commit/614cc74505ce2d47b227556174c66d90a429e0b6))
+
 ## [2.0.0](https://github.com/Lutherwaves/builder/compare/builder-v1.1.0...builder-v2.0.0) (2026-10-26)
 
 

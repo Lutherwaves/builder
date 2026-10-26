@@ -122,6 +122,17 @@ grep -qE 'elapsed=.* naive=.* profile_aware=.* reset_in=' <<<"$out" \
   || err "burn-proj.py output shape changed: $out"
 note "✓ burn-proj smoke: $out"
 
+echo "→ go"
+if command -v go >/dev/null 2>&1; then
+  if fmt_out="$(gofmt -l . 2>&1)" && [ -z "$fmt_out" ]; then note "✓ gofmt"; else printf '%s\n' "$fmt_out"; err "gofmt: these files need gofmt -w"; fi
+  if vet_out="$(go vet ./... 2>&1)"; then note "✓ go vet"; else printf '%s\n' "$vet_out"; err "go vet failed"; fi
+  if gt_out="$(go test ./... 2>&1)"; then note "✓ go test"; else printf '%s\n' "$gt_out"; err "go tests failed"; fi
+  if sh_out="$(bash tests/test_shim.sh 2>&1)"; then note "✓ shim"; else printf '%s\n' "$sh_out"; err "shim tests failed"; fi
+  if pa_out="$(bash tests/test_parity.sh 2>&1)"; then note "✓ parity with the Python"; else printf '%s\n' "$pa_out"; err "the Go binary and the Python disagree"; fi
+else
+  note "go: skipped (no go)"
+fi
+
 echo "→ unit tests"
 if ut_out="$(python3 -m unittest discover -s tests -p 'test_*.py' 2>&1)"; then note "✓ unittest"; else printf '%s\n' "$ut_out"; err "unit tests failed"; fi
 
