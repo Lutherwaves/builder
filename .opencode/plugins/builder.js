@@ -37,8 +37,8 @@ const readSoul = () => {
 const runHook = () => {
   try {
     const result = spawn(
-      path.join(root, "bin", "builder"),
-      ["hook", "--harness", "opencode", "--format", "text"],
+      path.join(root, "hooks", "session-start"),
+      ["--harness", "opencode", "--format", "text"],
       { timeout: 1000, encoding: "utf8" },
     );
     if (result && !result.error && result.status === 0 && typeof result.stdout === "string" && result.stdout.trim()) {

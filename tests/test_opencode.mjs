@@ -42,8 +42,8 @@ test("injects_once_per_session", async () => {
   const first = await transform(plugin, messages(id));
   const second = await transform(plugin, messages(id));
   assert.equal(calls.length, 1);
-  assert.ok(calls[0].cmd.endsWith(path.join("bin", "builder")));
-  assert.deepEqual(calls[0].args, ["hook", "--harness", "opencode", "--format", "text"]);
+  assert.ok(calls[0].cmd.endsWith(path.join("hooks", "session-start")));
+  assert.deepEqual(calls[0].args, ["--harness", "opencode", "--format", "text"]);
   assert.equal(calls[0].opts.timeout, 1000);
   assert.equal(first[0].parts.length, 2);
   assert.match(first[0].parts[0].text, /hello soul/);

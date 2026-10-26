@@ -173,6 +173,7 @@ else
 fi
 
 echo "→ hook tests"
+if of_out="$(bash tests/test_offer.sh 2>&1)"; then note "✓ install offer"; else printf '%s\n' "$of_out"; err "install offer tests failed"; fi
 if [ -n "${BUILDER_BIN:-}" ]; then
   if hk_out="$(bash tests/test_hook.sh 2>&1)"; then note "✓ hook"; else printf '%s\n' "$hk_out"; err "hook tests failed"; fi
 else

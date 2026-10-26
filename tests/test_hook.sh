@@ -114,13 +114,16 @@ nobin() {
 for h in claude codex unknown auto; do
   nobin --harness $h; out="$(<"$tmp/out")"
   grep -q 'Build the right thing' <<<"$(jq -er '.hookSpecificOutput.additionalContext' <<<"$out")" && check "$h: hookSpecificOutput" ok || check "$h: hookSpecificOutput" bad
+  grep -qF 'builder install:' <<<"$(jq -er '.hookSpecificOutput.additionalContext' <<<"$out")" && check "$h: install offer" ok || check "$h: install offer" bad
 done
 nobin --harness cursor; out="$(<"$tmp/out")"
 grep -q 'Build the right thing' <<<"$(jq -er '.additional_context' <<<"$out")" && check "cursor: additional_context" ok || check "cursor: additional_context" bad
+grep -qF 'builder install:' <<<"$(jq -er '.additional_context' <<<"$out")" && check "cursor: install offer" ok || check "cursor: install offer" bad
 CLAUDECODE=1 CURSOR_VERSION=x nobin --harness auto; out="$(<"$tmp/out")"
 grep -q 'Build the right thing' <<<"$(jq -er '.hookSpecificOutput.additionalContext' <<<"$out")" && check "no binary, auto + CURSOR_VERSION: Claude shape" ok || check "no binary, auto + CURSOR_VERSION: Claude shape" bad
 nobin --harness opencode; out="$(<"$tmp/out")"
 jq -e . >/dev/null 2>&1 <<<"$out" && check "opencode: plain text" bad || { grep -q 'Build the right thing' <<<"$out" && check "opencode: plain text" ok || check "opencode: plain text" bad; }
+grep -qF 'builder install:' <<<"$out" && check "opencode: install offer" ok || check "opencode: install offer" bad
 nobin --harness claude --format text; out="$(<"$tmp/out")"
 jq -e . >/dev/null 2>&1 <<<"$out" && check "--format text: plain text" bad || check "--format text: plain text" ok
 
