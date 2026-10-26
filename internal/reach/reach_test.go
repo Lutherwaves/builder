@@ -243,3 +243,12 @@ func TestNotifyLinuxUsesNotifySend(t *testing.T) {
 		t.Fatalf("%q", b)
 	}
 }
+
+func TestNormIsPythonCasefold(t *testing.T) {
+	// Each want is Python's " ".join(s.split()).casefold().
+	for in, want := range map[string]string{"ΟΔΟΣ ς": "οδοσ σ", "ﬁle": "file", "ŉ": "ʼn", "ſ": "s", "ẞ": "ss", "İ": "i̇", "Ǆ": "ǆ"} {
+		if got := norm(in); got != want {
+			t.Fatalf("%q: got %q want %q", in, got, want)
+		}
+	}
+}

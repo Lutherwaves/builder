@@ -26,9 +26,18 @@ const (
 	NoRoute = 3 // exit code: this route does not work here; use the next route
 )
 
-// norm: case and spacing do not make a new message.
+// norm: case and spacing do not make a new message. The fold is Python's str.casefold, rune by rune,
+// so a message logged by the Python dedupes against the same message checked by Go.
 func norm(text string) string {
-	return strings.ReplaceAll(strings.ToLower(strings.Join(strings.Fields(text), " ")), "ß", "ss")
+	var b strings.Builder
+	for _, r := range strings.Join(strings.Fields(text), " ") {
+		if f, ok := casefold[r]; ok {
+			b.WriteString(f)
+		} else {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }
 
 func who(to, recipient, channelName string) string {
