@@ -1,6 +1,6 @@
 {
   "name": "builder",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Builder habits for coding agents: guided setup, decisions with reasons, proof before done, and nothing sent without your yes.",
   "type": "module",
   "main": ".opencode/plugins/builder.js",
