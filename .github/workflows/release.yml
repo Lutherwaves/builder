@@ -145,14 +145,14 @@ jobs:
 
   # The release's changelog and the plugin version: [Unreleased] moves under
   # the version, and the four manifests name it. A pull request, because main
-  # takes no direct push; it merges itself once its checks pass. RELEASE_TOKEN
-  # opens it, since a pull request opened with the built-in token runs no CI
-  # and would never merge.
+  # takes no direct push; it merges itself once publish.yml verified the
+  # release and the checks pass. RELEASE_TOKEN opens it, since a pull request
+  # opened with the built-in token runs no CI and would never merge.
   changelog:
     name: Promote changelog
     needs: [version, release]
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 110
     permissions:
       contents: read
     steps:
@@ -164,6 +164,7 @@ jobs:
           persist-credentials: false
 
       - name: Promote the changelog, bump the version, open a pull request
+        id: promote
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
           GH_REPO: ${{ github.repository }}
@@ -186,7 +187,21 @@ jobs:
           git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GH_REPO}.git" "$branch:$branch"
           gh pr view "$branch" >/dev/null 2>&1 ||
             gh pr create --base main --head "$branch" --title "$title" \
-              --body "Opened by the Release workflow after v${VERSION}. It moves the [Unreleased] entries under v${VERSION}, and sets the plugin version to ${VERSION} in the four manifests. It merges itself once its checks pass."
+              --body "Opened by the Release workflow after v${VERSION}. It moves the [Unreleased] entries under v${VERSION}, and sets the plugin version to ${VERSION} in the four manifests. It merges itself once the release is published and its checks pass."
+          # The shim pins the binary by the plugin version, so main names
+          # X.Y.Z only after publish.yml verified the binaries and took the
+          # release out of pre-release.
+          published=""
+          for _ in $(seq 1 60); do
+            state="$(gh release view "v${VERSION}" --json isDraft,isPrerelease -q '"\(.isDraft) \(.isPrerelease)"' 2>/dev/null)" || state=""
+            if [ "$state" = "false false" ]; then published=yes; break; fi
+            sleep 60
+          done
+          if [ -z "$published" ]; then
+            echo "::warning::release v${VERSION} is not published and verified after 60 min: the v${VERSION} pull request stays open without auto-merge. RELEASING.md says what to do"
+            exit 0
+          fi
+          echo "merging=true" >> "$GITHUB_OUTPUT"
           gh pr merge "$branch" --squash --auto ||
             echo "::warning::Auto-merge is off: merge the v${VERSION} pull request by hand."
 
@@ -194,6 +209,7 @@ jobs:
       # one: a pull request that merged meanwhile would hold this one back.
       # --rebase, because a merge commit fails validate's subject check.
       - name: Keep the pull request up to date until it merges
+        if: steps.promote.outputs.merging == 'true'
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
           GH_REPO: ${{ github.repository }}

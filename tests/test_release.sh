@@ -101,4 +101,15 @@ grep -qF 'gh pr update-branch --rebase "$branch"' "$root/.github/workflows/relea
   && check "the up-to-date loop rebases, so no merge commit fails the subject check" ok \
   || check "the up-to-date loop rebases, so no merge commit fails the subject check" bad
 
+echo "bot_pr_waits_for_publish"
+wf="$root/.github/workflows/release.yml"
+wait_line="$(grep -nF 'gh release view "v${VERSION}" --json isDraft,isPrerelease' "$wf" | head -1 | cut -d: -f1)"
+merge_line="$(grep -nF 'gh pr merge "$branch" --squash --auto' "$wf" | head -1 | cut -d: -f1)"
+[ -n "$wait_line" ] && [ -n "$merge_line" ] && [ "$wait_line" -lt "$merge_line" ] \
+  && check "the bot pull request waits for the published release before auto-merge" ok \
+  || check "the bot pull request waits for the published release before auto-merge (wait=$wait_line merge=$merge_line)" bad
+grep -qF '[ "$state" = "false false" ]' "$wf" \
+  && check "the wait needs isDraft and isPrerelease both false" ok \
+  || check "the wait needs isDraft and isPrerelease both false" bad
+
 exit "$fails"
