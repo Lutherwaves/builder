@@ -11,15 +11,16 @@ if [[ $src == */* ]]; then dir="${src%/*}"; else dir=.; fi
 root="$(cd "${dir:-/}/.." && pwd -P)"
 
 version=""
+have_version=""
 while [ $# -gt 0 ]; do
   case "$1" in
-    --version) [ $# -ge 2 ] || { echo "$usage" >&2; exit 2; }; version="$2"; shift 2 ;;
+    --version) [ $# -ge 2 ] || { echo "$usage" >&2; exit 2; }; version="$2"; have_version=1; shift 2 ;;
     -h|--help) echo "$usage"; exit 0 ;;
     *) echo "$usage" >&2; exit 2 ;;
   esac
 done
 
-if [ -z "$version" ]; then
+if [ -z "$have_version" ]; then
   manifest="$root/.claude-plugin/plugin.json"
   while IFS= read -r line || [[ -n $line ]]; do
     if [[ $line =~ \"version\"[[:space:]]*:[[:space:]]*\"([^\"]*)\" ]]; then
@@ -43,7 +44,7 @@ command -v curl >/dev/null 2>&1 || die "curl is required. Install it, then run a
 
 asset="builder-$os-$arch"
 url="${BUILDER_RELEASE_URL:-https://github.com/$repo/releases/download}/v$version/$asset"
-fetch() { curl -fsSL --proto '=https,file' "$@" 2>/dev/null; }
+fetch() { curl -fsSL --proto '=https,file' --proto-redir '=https,file' "$@" 2>/dev/null; }
 
 builder_home="${BUILDER_HOME:-$HOME/.config/builder}"
 bin_dir="$builder_home/bin"
@@ -55,9 +56,9 @@ fetch -o "$tmp" "$url" || die "cannot download $url. Check the network and the v
 sums="$(fetch "$url.sha256")" || die "cannot download $url.sha256. Check the network and the version, then run again."
 
 if command -v sha256sum >/dev/null 2>&1; then
-  got="$(sha256sum "$tmp")"
+  got="$(sha256sum < "$tmp")"
 elif command -v shasum >/dev/null 2>&1; then
-  got="$(shasum -a 256 "$tmp")"
+  got="$(shasum -a 256 < "$tmp")"
 else
   die "sha256sum or shasum is required. Install one, then run again."
 fi

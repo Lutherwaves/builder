@@ -65,6 +65,13 @@ echo "test_bad_version"
 fresh; run --version 'x;1'
 [ "$rc" -eq 2 ] && [ "$err" = 'builder: "x;1" is not a version like 3.0.0' ] && check "a bad version exits 2" ok || check "a bad version exits 2 (got $rc: $err)" bad
 
+fresh; run --version ''
+[ "$rc" -eq 2 ] && [ "$err" = 'builder: "" is not a version like 3.0.0' ] && check "an empty --version exits 2" ok || check "an empty --version exits 2 (got $rc: $err)" bad
+
+echo "test_backslash_in_home"
+fresh; mkrel 9.9.9; bhome="$tmp/back\\slash home"; rm -rf "$bhome"; run
+[ "$rc" -eq 0 ] && [ -x "$bhome/bin/builder-9.9.9" ] && check "a BUILDER_HOME with a backslash installs" ok || check "a BUILDER_HOME with a backslash installs (got $rc: $out / $err)" bad
+
 echo "test_unsupported_target"
 fresh; mkrel 9.9.9; FAKE_OS=FreeBSD run
 [ "$rc" -eq 1 ] && [ "$err" = "builder: no binary for FreeBSD/x86_64. builder ships for Linux and macOS on amd64 and arm64." ] \
