@@ -74,7 +74,8 @@ class ReportShape(unittest.TestCase):
         self.assertTrue(labels and order == sorted(order), labels)
 
     def test_no_skill_uses_an_old_report_line(self):
-        old = re.compile(r"\b(For|Evidence):|(?<!↗ )\bOutside(:| line)")
+        # A review or security finding keeps its own "Evidence:" field; only the old report's aligned labels and names fail.
+        old = re.compile(r"^(For|Evidence|Outside):\s{2,}|\bunder Evidence\b|\b(For|Evidence) line\b|(?<!↗ )\bOutside(:| line)")
         for root, _, files in os.walk(SKILLS):
             for name in files:
                 if name.endswith(".md"):
