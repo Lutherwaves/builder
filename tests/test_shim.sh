@@ -83,6 +83,63 @@ out="$(cd "$plugin/bin" && PATH=/nonexistent BUILDER_HOME="$bhome" /bin/bash bui
 [ "$rc" -eq 0 ] && [ "$out" = "ran $bhome/bin/builder-9.9.9 root=$plugin args=version" ] \
   && check "a bare-name run finds the root" ok || check "a bare-name run finds the root (got $rc: $out)" bad
 
+printf '{\n  "name": "builder",\n  "version": "9.9.9"\n}\n' > "$plugin/.claude-plugin/plugin.json"
+usage="usage: builder install-answer later|never. To say yes, run: bash \"$plugin/scripts/install.sh\""
+
+echo "test_install_answer_later"
+rm -rf "$bhome"
+out="$(env -u BUILDER_BIN BUILDER_HOME="$bhome" "$plugin/bin/builder" install-answer later)"; rc=$?
+[ "$rc" -eq 0 ] && [ "$out" = 'builder: saved "not now". The install offer comes back in 7 days.' ] \
+  && [[ "$(cat "$bhome/install.answer")" =~ ^later\ [0-9]+$ ]] \
+  && check "later: exit 0, the line, and 'later <epoch>' in the file" ok || check "later: exit 0, the line, and 'later <epoch>' in the file (got $rc: $out)" bad
+
+echo "test_install_answer_never"
+rm -rf "$bhome"
+out="$(env -u BUILDER_BIN BUILDER_HOME="$bhome" "$plugin/bin/builder" install-answer never)"; rc=$?
+[ "$rc" -eq 0 ] && [ "$out" = "builder: saved \"never\". To turn the binary on, run: bash \"$plugin/scripts/install.sh\"" ] \
+  && [[ "$(cat "$bhome/install.answer")" =~ ^never\ [0-9]+$ ]] \
+  && check "never: exit 0, the line, and 'never <epoch>' in the file" ok || check "never: exit 0, the line, and 'never <epoch>' in the file (got $rc: $out)" bad
+
+echo "test_install_answer_bad"
+rm -rf "$bhome"
+err="$(env -u BUILDER_BIN BUILDER_HOME="$bhome" "$plugin/bin/builder" install-answer yes 2>&1 >/dev/null)"; rc=$?
+[ "$rc" -eq 2 ] && [ "$err" = "$usage" ] && [ ! -e "$bhome/install.answer" ] \
+  && check "a bad verdict: exit 2, the usage line, no file" ok || check "a bad verdict: exit 2, the usage line, no file (got $rc: $err)" bad
+err="$(env -u BUILDER_BIN BUILDER_HOME="$bhome" "$plugin/bin/builder" install-answer 2>&1 >/dev/null)"; rc=$?
+[ "$rc" -eq 2 ] && [ "$err" = "$usage" ] \
+  && check "no verdict: exit 2 and the usage line" ok || check "no verdict: exit 2 and the usage line (got $rc: $err)" bad
+
+echo "test_install_answer_beats_builder_bin"
+rm -rf "$bhome"
+fakebin "$tmp/dev/builder"
+out="$(BUILDER_BIN="$tmp/dev/builder" BUILDER_HOME="$bhome" "$plugin/bin/builder" install-answer later)"; rc=$?
+[ "$rc" -eq 0 ] && [[ $out != ran* ]] && [ -f "$bhome/install.answer" ] \
+  && check "install-answer runs in the shim, not in BUILDER_BIN" ok || check "install-answer runs in the shim, not in BUILDER_BIN (got $rc: $out)" bad
+
+echo "test_never_says_off"
+rm -rf "$bhome"; mkdir -p "$bhome"; echo "never 1" > "$bhome/install.answer"
+err="$(env -u BUILDER_BIN BUILDER_HOME="$bhome" "$plugin/bin/builder" x 2>&1 >/dev/null)"; rc=$?
+[ "$rc" -eq 3 ] && [ "$err" = "builder 9.9.9 is off: the person said never. Turn it on: bash \"$plugin/scripts/install.sh\"" ] \
+  && check "never and no binary: exit 3 and the off line" ok || check "never and no binary: exit 3 and the off line (got $rc: $err)" bad
+err="$(PATH=/nonexistent BUILDER_HOME="$bhome" /bin/bash "$plugin/bin/builder" x 2>&1 >/dev/null)"; rc=$?
+[ "$rc" -eq 3 ] && [[ $err == *"is off: the person said never"* ]] \
+  && check "the off line needs no PATH" ok || check "the off line needs no PATH (got $rc: $err)" bad
+
+echo "test_later_keeps_install_line"
+for ans in "later 1" "yes 1" "" "garbage"; do
+  rm -rf "$bhome"; mkdir -p "$bhome"; printf '%s\n' "$ans" > "$bhome/install.answer"
+  err="$(env -u BUILDER_BIN BUILDER_HOME="$bhome" "$plugin/bin/builder" x 2>&1 >/dev/null)"; rc=$?
+  [ "$rc" -eq 3 ] && [ "$err" = "builder 9.9.9 is not installed. Install it: bash \"$plugin/scripts/install.sh\"" ] \
+    && check "answer '$ans' and no binary: today's install line" ok || check "answer '$ans' and no binary: today's install line (got $rc: $err)" bad
+done
+
+echo "test_never_does_not_block_an_installed_binary"
+rm -rf "$bhome"; mkdir -p "$bhome"; echo "never 1" > "$bhome/install.answer"
+fakebin "$bhome/bin/builder-9.9.9"
+out="$(env -u BUILDER_BIN BUILDER_HOME="$bhome" "$plugin/bin/builder" v)"; rc=$?
+[ "$rc" -eq 0 ] && grep -q "builder-9.9.9 " <<<"$out" \
+  && check "an installed binary runs despite never" ok || check "an installed binary runs despite never (got $rc: $out)" bad
+
 echo "test_real_binary_through_the_shim"
 if command -v go >/dev/null 2>&1; then
   (cd "$root" && go build -o "$tmp/real-builder" ./cmd/builder) \

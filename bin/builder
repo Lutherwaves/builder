@@ -6,6 +6,22 @@ src="${BASH_SOURCE[0]}"
 if [[ $src == */* ]]; then dir="${src%/*}"; else dir=.; fi
 BUILDER_ROOT="$(cd "${dir:-/}/.." && pwd -P)"
 export BUILDER_ROOT
+builder_home="${BUILDER_HOME:-$HOME/.config/builder}"
+if [ "${1:-}" = install-answer ]; then
+  case "${2:-}" in
+    later)
+      mkdir -p "$builder_home" && echo "later $(date +%s)" > "$builder_home/install.answer"
+      echo 'builder: saved "not now". The install offer comes back in 7 days.'
+      exit 0 ;;
+    never)
+      mkdir -p "$builder_home" && echo "never $(date +%s)" > "$builder_home/install.answer"
+      echo "builder: saved \"never\". To turn the binary on, run: bash \"$BUILDER_ROOT/scripts/install.sh\""
+      exit 0 ;;
+    *)
+      echo "usage: builder install-answer later|never. To say yes, run: bash \"$BUILDER_ROOT/scripts/install.sh\"" >&2
+      exit 2 ;;
+  esac
+fi
 if [ -n "${BUILDER_BIN:-}" ]; then
   exec "$BUILDER_BIN" "$@"
 fi
@@ -23,9 +39,15 @@ if [ -z "$version" ]; then
   echo "builder: cannot read the version in $manifest" >&2
   exit 3
 fi
-bin="${BUILDER_HOME:-$HOME/.config/builder}/bin/builder-$version"
+bin="$builder_home/bin/builder-$version"
 if [ -x "$bin" ]; then
   exec "$bin" "$@"
+fi
+verdict=""
+{ read -r verdict _ < "$builder_home/install.answer"; } 2>/dev/null || true
+if [ "$verdict" = never ]; then
+  echo "builder $version is off: the person said never. Turn it on: bash \"$BUILDER_ROOT/scripts/install.sh\"" >&2
+  exit 3
 fi
 echo "builder $version is not installed. Install it: bash \"$BUILDER_ROOT/scripts/install.sh\"" >&2
 exit 3
