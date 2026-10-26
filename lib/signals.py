@@ -13,7 +13,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import harness as harnesses  # noqa: E402
-import ledger  # noqa: E402
 
 try:
     import tomllib
@@ -270,11 +269,6 @@ def collect(cwd, timeout=0.5, harness=None):
         cmds["signkey"] = ["git", "config", "--get", "user.signingkey"]
     res = _run_all(cmds, cwd, timeout) if cmds else {}
 
-    try:
-        channel = json.loads((ledger.home() / "reach.json").read_text()).get("channel")
-        channel = channel if isinstance(channel, str) and channel else None
-    except (OSError, ValueError, AttributeError):
-        channel = None
     sessions = _json(res.get("sessions"))
     root = _git_root(cwd, res.get("git"))
     servers = _mcp_servers(spec, harness, {root, Path(cwd).resolve()})
@@ -284,7 +278,6 @@ def collect(cwd, timeout=0.5, harness=None):
         "gstack": _gstack(harness, spec),
         "gh": bool(res.get("gh")) and res["gh"][0] == 0,
         "signing": _stdout(res.get("gpgsign")) == "true" and bool(_stdout(res.get("signkey"))),
-        "channel": channel,
         "matchblox": has["matchblox"],
         "matchblox_hooks": _matchblox_hooks(harness, spec) if has["matchblox"] else False,
         "code_graph": any(n in servers for n in GRAPH_SERVERS),

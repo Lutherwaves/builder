@@ -74,8 +74,8 @@ superpowers and gstack disagree in two places. builder settles them.
 - **Autonomy.** Decide together in the brainstorm. Then act inside the repository without stalls and record each call. Outside the repository, show first, always.
 - **Scope.** Finish the agreed scope: the first version and its obvious next step land together, fully tested. Add nothing beyond the scope.
 
-**Questions.** In an interactive session, ask as brainstorming says: one question at a time, each with your recommendation.
-A question with no recommendation is a stall.
+**Questions.** In an interactive session, ask one decision at a time with the "ask the person to choose" action of your harness (text only when it has none). A question with no recommendation is a stall. Each question gives: **What is at stake** (two or three plain sentences; what breaks on a wrong pick), **Recommendation** (the option and one reason; that option comes first, its label ends with `(recommended)`), each option's concrete pro and con, and a **Net** line with the real trade-off.
+A destructive or irreversible option needs the typed word, for example `delete`. "ok" is not a yes.
 
 **When nobody answers.** This applies only when the person says they cannot answer, or the run is unattended (headless, overnight, scheduled).
 Then do not wait for work that stays inside the repository and is easy to undo.

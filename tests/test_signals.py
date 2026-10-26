@@ -151,13 +151,6 @@ fi''')
         self.assertLess(time.time() - t, 1.0)
         self.assertFalse(out["signing"])
 
-    def test_channel(self):
-        self.assertIsNone(signals.collect(str(self.cwd), timeout=GENEROUS)["channel"])
-        (self.bhome / "reach.json").write_text('{"channel": "slack"}')
-        self.assertEqual(signals.collect(str(self.cwd), timeout=GENEROUS)["channel"], "slack")
-        (self.bhome / "reach.json").write_text("{bad")
-        self.assertIsNone(signals.collect(str(self.cwd), timeout=GENEROUS)["channel"])
-
     def test_has_canon(self):
         self.assertFalse(signals.collect(str(self.cwd), timeout=GENEROUS)["has_canon"])
         (self.cwd / "DESIGN.md").write_text("x")

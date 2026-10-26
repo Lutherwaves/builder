@@ -105,5 +105,38 @@ class SendRuleWording(unittest.TestCase):
         self.assertNotIn("Nothing left the repository without a yes.", skill)
 
 
+class QuestionFormat(unittest.TestCase):
+    def test_questions_follow_the_decision_brief(self):
+        section = read("builder", "SKILL.md").split("**Questions.**", 1)[1].split("\n\n**", 1)[0]
+        for part in ("What is at stake", "Recommendation", "(recommended)", "pro", "con", "Net", "typed word"):
+            self.assertIn(part, section)
+        self.assertNotIn("Completeness", section)
+
+
+class Readme(unittest.TestCase):
+    def setUp(self):
+        with open(os.path.join(SKILLS, "..", "README.md"), encoding="utf-8") as f:
+            self.readme = f.read()
+
+    def test_readme_links_resolve(self):
+        root = os.path.join(SKILLS, "..")
+        for target in re.findall(r"\]\(((?!https?://|#)[^)\s]+)\)", self.readme):
+            self.assertTrue(os.path.exists(os.path.join(root, target.split("#")[0])), target)
+
+    def test_readme_says_why_builder(self):
+        self.assertIn("## Why builder", self.readme)
+        section = self.readme.split("## Why builder", 1)[1].split("\n## ", 1)[0]
+        for name in ("superpowers", "gstack", "CLAUDE.md"):
+            self.assertIn(name, section)
+
+    def test_why_builder_claims_hold(self):
+        section = self.readme.split("## Why builder", 1)[1].split("\n## ", 1)[0]
+        # superpowers also injects itself at every session start, and the report comes once per piece of work.
+        self.assertNotIn("when that\nskill runs", section)
+        self.assertNotIn("every reply", section)
+        # A hand-written CLAUDE.md can ask for a reason and for proof too.
+        self.assertNotIn("| no |\n| Unproven", section)
+
+
 if __name__ == "__main__":
     unittest.main()

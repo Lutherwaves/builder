@@ -64,17 +64,6 @@
     "how": "Use SSH signing. On macOS, use a Secure Enclave SSH agent (for example the open-source Secretive app) and create the key there with \"notify\" protection, so agents can sign without you. Otherwise run `ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_signing` and keep the passphrase in the OS keychain or agent. Then run `git config --global gpg.format ssh`, `git config --global user.signingkey <path-or-key>`, `git config --global commit.gpgsign true` and `git config --global tag.gpgsign true`. Last, register the public key on GitHub as a signing key: `gh auth refresh -h github.com -s admin:ssh_signing_key`, then `gh ssh-key add <key.pub> --type signing`."
   },
   {
-    "id": "channel",
-    "order": 5,
-    "onboarding": true,
-    "when": {
-      "channel": null
-    },
-    "say": "Builder does not know where your team talks, so it cannot draft messages to your teammates there.",
-    "why": "reach drafts teammate messages for that channel. Notes to you go by matchblox, a push or an OS notification, never by the channel.",
-    "how": "Ask me: \"set up reach\" (the reach skill walks you through it)."
-  },
-  {
     "id": "matchblox",
     "order": 6,
     "onboarding": false,
