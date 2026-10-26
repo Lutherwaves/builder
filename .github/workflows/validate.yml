@@ -61,3 +61,28 @@ jobs:
           go-version-file: go.mod
       - name: Test the validator's guards
         run: bash tests/test_validate.sh
+
+  macos:
+    # The shim, the hook's install offer and the installer run under macOS /bin/bash 3.2, with no Go.
+    if: github.event.action != 'edited'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Put /bin/bash first on PATH as bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/bash32"
+          ln -sf /bin/bash "$RUNNER_TEMP/bash32/bash"
+          echo "$RUNNER_TEMP/bash32" >> "$GITHUB_PATH"
+      - name: bash is 3.2
+        run: |
+          v="$(bash --version)"
+          printf '%s\n' "$v"
+          grep -q 'version 3\.2' <<<"$v"
+      - name: Test the shim, the install offer and the installer
+        run: |
+          bash tests/test_shim.sh
+          bash tests/test_offer.sh
+          bash tests/test_install.sh

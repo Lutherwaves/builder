@@ -3,6 +3,4 @@
 
 # CI / release automation
 /.github/                       @Lutherwaves
-/release-please-config.json     @Lutherwaves
-/.release-please-manifest.json  @Lutherwaves
 /scripts/                       @Lutherwaves

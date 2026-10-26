@@ -24,6 +24,7 @@ This guide routes an agent that works on builder itself.
 | The support table in the README | `cmd/support-table` (never edit the block by hand) | `go test ./cmd/support-table/` |
 | The shim that finds the binary | `bin/builder` | `bash tests/test_shim.sh` |
 | The eval runner of one harness | `tests/evals/lib.sh` (`eval_base_<harness>`, `eval_prepare_<harness>`) | `bash tests/test_evals.sh`, then `bash tests/evals/run.sh --harness <harness> <skill>` |
+| The release workflows and their scripts (see [RELEASING.md](RELEASING.md)) | `.github/workflows/release.yml`, `.github/workflows/publish.yml`, `.github/scripts/` | `bash tests/test_release.sh`, `actionlint .github/workflows/*.yml` |
 
 Before every commit, run `bash scripts/validate.sh`. It runs all of the checks above except the paid eval runs.
 
@@ -38,7 +39,7 @@ Before every commit, run `bash scripts/validate.sh`. It runs all of the checks a
 - The repository is public. Keep employer, client, product and private repository names out of files, commits and pull requests.
 - Never commit an eval transcript. Transcripts live outside the repository.
 - Commits follow Conventional Commits and are signed. See [CONTRIBUTING.md](CONTRIBUTING.md).
-- Never edit `CHANGELOG.md` or the `version` in a manifest. release-please owns both.
+- Write your change under `## [Unreleased]` in `CHANGELOG.md`. Never edit a released section or a manifest `version`: the release bot owns both.
 
 ## Attribution
 

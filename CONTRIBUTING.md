@@ -43,12 +43,12 @@ bash scripts/validate.sh
 
 It checks that:
 
-- the manifests and the release config parse;
+- the manifests parse, the release scripts pass their tests, and the workflows pass `actionlint` when it is installed;
 - every commit subject since `origin/main` follows Conventional Commits;
 - every skill has the skill shape (see below);
 - the Go code builds, passes `go vet` and its tests, and `builder budget` keeps its output shape;
 - no Python is left outside the sample projects of the eval fixtures;
-- the shim tests, the hook tests, the drift tests and the eval runner tests pass;
+- the shim tests, the hook tests, the installer tests, the drift tests and the eval runner tests pass;
 - every eval fixture is valid;
 - no tracked file holds a deny-listed name, when `BUILDER_DENYLIST` is set (see "Scrub guard").
 
@@ -99,7 +99,7 @@ Every commit follows two rules.
    `scripts/check-subjects.sh` enforces this rule in `validate.sh` and in the CI job, for every commit and the pull request title.
 2. **Signed commits.** Sign every commit. Never use `--no-verify`. Never make a WIP commit.
 
-The release pipeline ([release-please](https://github.com/googleapis/release-please)) reads the subjects:
+The release workflow (go-semantic-release) reads the subjects on `main`:
 
 - `feat: ...` adds a feature (a minor bump).
 - `fix: ...` fixes a bug (a patch bump).
@@ -115,10 +115,8 @@ The release pipeline ([release-please](https://github.com/googleapis/release-ple
 
 ## Release process
 
-The release is automated.
+A merge to `main` that `validate` passed is released: the four binaries, the release notes and the plugin version.
+Nobody tags by hand, and there is no release pull request to merge.
+[RELEASING.md](RELEASING.md) says how it works and what to do when a step fails.
 
-1. Merge pull requests with Conventional Commit titles.
-2. release-please opens a release pull request with the next version and the changelog.
-3. Merging that pull request tags the version, cuts a GitHub release, and bumps the manifest versions.
-
-Never edit `CHANGELOG.md` or the `version` in a manifest by hand.
+Write your change under `## [Unreleased]` in `CHANGELOG.md`. Never edit a released section or a manifest `version`: the release bot owns both.

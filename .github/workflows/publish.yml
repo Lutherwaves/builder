@@ -1,0 +1,259 @@
+name: Publish
+
+# A v* tag gets its binaries: builder-{linux,darwin}-{amd64,arm64}, a
+# .sha256 for each, a CycloneDX SBOM, and build provenance and SBOM
+# attestations that `gh attestation verify` checks. The release is a draft
+# until they are attached, then a pre-release until scripts/install.sh
+# installed it on each OS and arch; then it becomes the latest release.
+#
+# To publish a tag again (a failed run):
+#   gh workflow run publish.yml --ref v3.0.0
+# Dispatched ON the tag: the attestations name the ref the run started from.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-${{ github.ref_name }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    name: Build (${{ matrix.goos }}/${{ matrix.goarch }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    strategy:
+      # A cancelled leg would leave a release that misses one platform.
+      fail-fast: false
+      matrix:
+        goos: [linux, darwin]
+        goarch: [amd64, arm64]
+    steps:
+      # Before checkout: a dispatch on a branch never gets to build.
+      - name: Resolve and validate the tag
+        id: tag
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [ "$REF_TYPE" != tag ] || [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "refusing to publish $REF_TYPE '$TAG': dispatch this workflow on a release tag" >&2
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # No cache: a release binary does not depend on what earlier runs left.
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      # -buildvcs=false: the stamp is the only version the binary carries.
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          bin="builder-${GOOS}-${GOARCH}"
+          CGO_ENABLED=0 go build -trimpath -buildvcs=false -ldflags "-s -w -X main.version=${TAG}" -o "$bin" ./cmd/builder
+          sha256sum "$bin" > "$bin.sha256"
+
+      # The verify job runs every binary on its own OS and arch; this one runs
+      # here, before anything is signed.
+      - name: The binary names its tag
+        if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          got="$(./builder-linux-amd64 version)"
+          [ "$got" = "$TAG" ] || { echo "the binary says '$got', not '$TAG'" >&2; exit 1; }
+
+      # From the binary, not go.mod: the SBOM lists what was linked in. The
+      # tool is pinned through the Go checksum database, and runs in a job
+      # that cannot sign.
+      - name: Generate the SBOM
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          bin="builder-${GOOS}-${GOARCH}"
+          env -u GOOS -u GOARCH go run github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.12.0 \
+            bin -json -version "$TAG" -output "$bin.cdx.json" "$bin"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: builder-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: builder-${{ matrix.goos }}-${{ matrix.goarch }}*
+          if-no-files-found: error
+          retention-days: 7
+
+  attest:
+    name: Attest and attach (${{ matrix.target }})
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # upload the release assets
+      id-token: write # sign the attestations
+      attestations: write
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [linux-amd64, linux-arm64, darwin-amd64, darwin-arm64]
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: builder-${{ matrix.target }}
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: builder-${{ matrix.target }}
+
+      - name: Attest the SBOM
+        uses: actions/attest-sbom@c604332985a26aa8cf1bdc465b92731239ec6b9e # v4.1.0
+        with:
+          subject-path: builder-${{ matrix.target }}
+          sbom-path: builder-${{ matrix.target }}.cdx.json
+
+      # The tag can exist a moment before its release object; wait for it
+      # rather than create one that races the other legs.
+      - name: Attach to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.build.outputs.tag }}
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          for _ in $(seq 1 12); do
+            gh release view "$TAG" >/dev/null 2>&1 && break
+            sleep 10
+          done
+          gh release view "$TAG" >/dev/null 2>&1 || { echo "no release for $TAG after 120 s" >&2; exit 1; }
+          bin="builder-${TARGET}"
+          if [ "$(gh release view "$TAG" --json isDraft -q .isDraft)" != true ]; then
+            # Published releases are immutable: a re-run finds its assets there.
+            have="$(gh release view "$TAG" --json assets -q '.assets[].name')"
+            for f in "$bin" "$bin.sha256" "$bin.cdx.json"; do
+              grep -qxF "$f" <<<"$have" || { echo "$TAG is published without $f: publish a new version (RELEASING.md)" >&2; exit 1; }
+            done
+            echo "$TAG is published with $bin"
+            exit 0
+          fi
+          gh release upload "$TAG" "$bin" "$bin.sha256" "$bin.cdx.json" --clobber
+
+  # Every binary attached: the draft becomes a pre-release, the moment the
+  # release turns immutable. The installer can fetch it from here on.
+  publish:
+    name: Publish the pre-release
+    needs: [build, attest]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.build.outputs.tag }}
+        run: |
+          set -euo pipefail
+          n="$(gh release view "$TAG" --json assets -q '.assets | length')"
+          [ "$n" = 12 ] || { echo "$TAG has $n assets, not 12" >&2; exit 1; }
+          if [ "$(gh release view "$TAG" --json isDraft -q .isDraft)" = true ]; then
+            gh release edit "$TAG" --draft=false --prerelease
+          fi
+
+  # The release, installed the way a person installs it: scripts/install.sh
+  # of the tag, under the system Bash, on each OS and arch.
+  verify:
+    name: Verify (${{ matrix.os }})
+    needs: [build, publish]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      attestations: read # gh attestation verify
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-15-intel, macos-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.build.outputs.tag }}
+          persist-credentials: false
+
+      # GH_TOKEN signs gh in, so the installer checks the provenance too.
+      - name: bash scripts/install.sh --version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.build.outputs.tag }}
+        run: |
+          set -euo pipefail
+          BUILDER_HOME="$RUNNER_TEMP/bh" /bin/bash scripts/install.sh --version "$TAG" | tee "$RUNNER_TEMP/install.log"
+          grep -qF "checksum ok, provenance ok" "$RUNNER_TEMP/install.log"
+          got="$("$RUNNER_TEMP/bh/bin/builder-${TAG#v}" version)"
+          [ "$got" = "$TAG" ] || { echo "builder version says '$got', not '$TAG'" >&2; exit 1; }
+          echo "verified $TAG on $(uname -s)/$(uname -m)"
+
+      - name: The SBOM is attested
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.build.outputs.tag }}
+        run: |
+          set -euo pipefail
+          gh attestation verify "$RUNNER_TEMP/bh/bin/builder-${TAG#v}" --repo "$GH_REPO" \
+            --signer-workflow "$GH_REPO/.github/workflows/publish.yml" \
+            --source-ref "refs/tags/$TAG" \
+            --predicate-type https://cyclonedx.org/bom
+
+  # Verified: the release becomes the latest, unless a newer one is.
+  promote:
+    name: Make it the latest release
+    needs: [build, verify]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Promote
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.build.outputs.tag }}
+        run: |
+          set -euo pipefail
+          newest="$(gh api "repos/$GH_REPO/tags" --paginate -q '.[].name' |
+            grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)"
+          if [ "$newest" = "$TAG" ]; then
+            gh release edit "$TAG" --prerelease=false --latest
+          else
+            gh release edit "$TAG" --prerelease=false --latest=false
+            echo "$TAG is published; $newest stays the latest"
+          fi

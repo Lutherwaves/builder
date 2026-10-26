@@ -1,19 +1,213 @@
-name: release-please
+name: Release
 
-on:
-  push:
+# A merge to main that validate passed becomes a release: go-semantic-release
+# picks the version from the conventional commits, and the tag starts
+# publish.yml (the binaries).
+#
+# Held until the owner's go: the release job runs only while the repository
+# variable RELEASE_ENABLED is "true".
+#
+# workflow_run runs with this repository's secrets. It is safe here only
+# because the job acts on a push to this repository's main that validate
+# passed, on exactly the commit validate verified, and never checks out pull
+# request code.
+on: # zizmor: ignore[dangerous-triggers]
+  workflow_run:
+    workflows: [validate]
     branches: [main]
+    types: [completed]
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
-  release-please:
+  version:
+    name: Next version
+    # A pull request from a fork's main branch also fires workflow_run here;
+    # only a push to this repository's main releases.
+    if: >-
+      vars.RELEASE_ENABLED == 'true' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.semrel.outputs.version }}
+      sha: ${{ github.event.workflow_run.head_sha }}
     steps:
-      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+      # main may have moved on since this event; the newer commit's own
+      # validate run releases it.
+      - name: Release only the commit validate verified
+        id: verified
+        env:
+          VERIFIED_SHA: ${{ github.event.workflow_run.head_sha }}
+          TIP_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [ "$VERIFIED_SHA" = "$TIP_SHA" ]; then
+            echo "current=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "main moved on to $TIP_SHA while validate verified $VERIFIED_SHA; the newer run releases"
+            echo "current=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.verified.outputs.current == 'true'
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          config-file: release-please-config.json
-          manifest-file: .release-please-manifest.json
+          fetch-depth: 0
+          persist-credentials: false
+
+      # Dry, and in a job of its own: the action fetches the semantic-release
+      # binary at run time, so it runs on a machine that never holds
+      # RELEASE_TOKEN. It counts from the newest v* tag; the seed tag v2.1.0
+      # (RELEASING.md) is the first.
+      - name: Compute the next version
+        id: semrel
+        if: steps.verified.outputs.current == 'true'
+        uses: go-semantic-release/action@2e9dc4247a6004f8377781bef4cb9dad273a741f # v1.24.1
+        with:
+          dry: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  release:
+    name: Create Release
+    needs: version
+    if: needs.version.outputs.version != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.version.outputs.sha }}
+          persist-credentials: false
+
+      # Without the seed tag, go-semantic-release starts at 0.1.0, below the
+      # plugin's version: stop before a tag goes out.
+      - name: The next version is above the plugin's
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: .github/scripts/check-next-version.sh "$VERSION" "$(jq -r .version .claude-plugin/plugin.json)"
+
+      - name: Release notes from the changelog
+        run: .github/scripts/release-notes.sh > "$RUNNER_TEMP/notes.md"
+
+      # A tag pushed with the built-in token starts no workflow, so the tag
+      # would never reach publish.yml. RELEASE_TOKEN is a fine-grained token
+      # for this repository: Contents and Pull requests, read and write.
+      #
+      # A draft until publish.yml attached its binaries: the repository's
+      # releases are immutable once published, so a published release takes
+      # no assets. A draft makes no tag, so this step pushes the tag itself,
+      # and the tag starts publish.yml. publish.yml then publishes it as a
+      # pre-release and, once verified, the latest.
+      - name: Tag the verified commit
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.version.outputs.version }}
+          SHA: ${{ needs.version.outputs.sha }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "refusing version '$VERSION': not semver" >&2
+            exit 1
+          fi
+          if [ -z "$GH_TOKEN" ]; then
+            echo "RELEASE_TOKEN is not set: RELEASING.md says how to add it" >&2
+            exit 1
+          fi
+          if gh release view "v${VERSION}" >/dev/null 2>&1; then
+            echo "v${VERSION} exists"
+          else
+            gh release create "v${VERSION}" --target "$SHA" --title "v${VERSION}" \
+              --notes-file "$RUNNER_TEMP/notes.md" --prerelease --draft ||
+              { echo "gh release create failed: RELEASE_TOKEN may have expired (RELEASING.md)" >&2; exit 1; }
+          fi
+          if gh api "repos/$GH_REPO/git/ref/tags/v${VERSION}" >/dev/null 2>&1; then
+            echo "tag v${VERSION} exists"
+          else
+            gh api "repos/$GH_REPO/git/refs" -f ref="refs/tags/v${VERSION}" -f sha="$SHA" >/dev/null ||
+              { echo "pushing tag v${VERSION} failed: RELEASE_TOKEN may have expired (RELEASING.md)" >&2; exit 1; }
+          fi
+
+  # The release's changelog and the plugin version: [Unreleased] moves under
+  # the version, and the four manifests name it. A pull request, because main
+  # takes no direct push; it merges itself once its checks pass. RELEASE_TOKEN
+  # opens it, since a pull request opened with the built-in token runs no CI
+  # and would never merge.
+  changelog:
+    name: Promote changelog
+    needs: [version, release]
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      # The released commit, not the tip: this branch carries that release's
+      # changelog and version, and nothing else.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.version.outputs.sha }}
+          persist-credentials: false
+
+      - name: Promote the changelog, bump the version, open a pull request
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          .github/scripts/promote-changelog.sh "$VERSION" "$(date -u +%Y-%m-%d)"
+          .github/scripts/bump-version.sh "$VERSION"
+          if git diff --quiet; then
+            echo "CHANGELOG.md and the manifests already have v${VERSION}"
+            exit 0
+          fi
+          branch="chore/release-v${VERSION}"
+          title="docs: v${VERSION} is released"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git commit -qam "$title"
+          # A re-run pushes the same change again and finds its pull request.
+          git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GH_REPO}.git" "$branch:$branch"
+          gh pr view "$branch" >/dev/null 2>&1 ||
+            gh pr create --base main --head "$branch" --title "$title" \
+              --body "Opened by the Release workflow after v${VERSION}. It moves the [Unreleased] entries under v${VERSION}, and sets the plugin version to ${VERSION} in the four manifests. It merges itself once its checks pass."
+          gh pr merge "$branch" --squash --auto ||
+            echo "::warning::Auto-merge is off: merge the v${VERSION} pull request by hand."
+
+      # main takes only up-to-date branches, and auto-merge never updates
+      # one: a pull request that merged meanwhile would hold this one back.
+      - name: Keep the pull request up to date until it merges
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          branch="chore/release-v${VERSION}"
+          for _ in $(seq 1 40); do
+            state="$(gh pr view "$branch" --json state,mergeStateStatus -q '.state + " " + .mergeStateStatus')" ||
+              { echo "no pull request for $branch"; exit 0; }
+            case "$state" in
+              MERGED*) echo "merged"; exit 0 ;;
+              CLOSED*) echo "::warning::the v${VERSION} pull request was closed"; exit 0 ;;
+              *BEHIND) gh pr update-branch "$branch" || true ;;
+            esac
+            sleep 60
+          done
+          echo "::warning::the v${VERSION} pull request has not merged in 40 min: RELEASING.md says what to do"

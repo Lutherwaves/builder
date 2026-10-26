@@ -45,10 +45,13 @@ else
   note "opencode adapter: skipped (no node)"
 fi
 
-echo "→ release config"
-for f in release-please-config.json .release-please-manifest.json; do
-  jq -e . "$f" >/dev/null 2>&1 && note "✓ $f" || err "$f is not valid JSON"
-done
+echo "→ release scripts"
+if rl_out="$(bash tests/test_release.sh 2>&1)"; then note "✓ release scripts"; else printf '%s\n' "$rl_out"; err "release script tests failed"; fi
+if command -v actionlint >/dev/null 2>&1; then
+  if al_out="$(actionlint .github/workflows/*.yml 2>&1)"; then note "✓ actionlint"; else printf '%s\n' "$al_out"; err "actionlint found problems in .github/workflows"; fi
+else
+  note "actionlint: skipped (not on PATH)"
+fi
 
 echo "→ commit subjects"
 if git rev-parse --verify -q origin/main >/dev/null 2>&1; then
@@ -179,6 +182,7 @@ fi
 
 echo "→ hook tests"
 if of_out="$(bash tests/test_offer.sh 2>&1)"; then note "✓ install offer"; else printf '%s\n' "$of_out"; err "install offer tests failed"; fi
+if in_out="$(bash tests/test_install.sh 2>&1)"; then note "✓ installer"; else printf '%s\n' "$in_out"; err "installer tests failed"; fi
 if [ -n "${BUILDER_BIN:-}" ]; then
   if hk_out="$(bash tests/test_hook.sh 2>&1)"; then note "✓ hook"; else printf '%s\n' "$hk_out"; err "hook tests failed"; fi
 else
