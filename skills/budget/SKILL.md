@@ -26,8 +26,8 @@ The weekly window has `window_minutes` 10080. The 5-hour window has `window_minu
 ## 2. Project the week
 
 ```
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/budget/burn-proj.py" --from-matchblox
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/budget/burn-proj.py" <used_pct> <resets_at_epoch>   # without matchblox
+"${CLAUDE_PLUGIN_ROOT}/bin/builder" budget --from-matchblox
+"${CLAUDE_PLUGIN_ROOT}/bin/builder" budget <used_pct> <resets_at_epoch>   # without matchblox
 ```
 
 It prints `elapsed=… naive=… profile_aware=… reset_in=…`, one line per account.
@@ -50,7 +50,7 @@ A quiet day stops the growth. It does not remove old usage.
 Lead with profile_aware. Give naive as the ceiling. Both are estimated. Say so.
 Flag the week only when profile_aware is over 100%, or the weekly `used_pct` is 80 or more.
 The default hours fit a person who works 09:00–02:00. If the person works other hours, say that the projection assumes these hours.
-To change them, edit `mult()` in `burn-proj.py`.
+To change them, edit `Mult` in `internal/budget/budget.go`.
 
 ## 3. Spend less: one compaction pick
 
@@ -79,7 +79,7 @@ Never start or stop a session to save usage. Recommend it. The person decides.
 A watcher reports every 30 minutes. It runs `watcher-prompt.md`, beside this file.
 
 1. **Guard against a second watcher.** List the scheduled jobs first (see your harness mapping).
-   A job whose prompt runs `burn-proj.py` already exists? Stop. Offer to replace it. Never add a second.
+   A job whose prompt runs `builder budget` or the old `burn-proj.py` already exists? Stop. Offer to replace it. Never add a second.
 2. **Schedule it** at `7,37 * * * *`. These minutes stay off :00 and :30 on purpose. With no cron tool, schedule a check every 30 minutes.
    Name the `7,37` schedule either way, also when the person must run the command.
 3. **Tell the limits.** Most scheduled jobs live only as long as the session. Many expire after 7 days. Tell the person to run this step again after a restart.
@@ -103,7 +103,7 @@ Then end with the builder report from the builder skill.
 | Mistake | Fix |
 |---|---|
 | "You will blow the cap" from the naive number | Lead with profile_aware. Naive is the ceiling. |
-| Straight-line math written in the reply | Run `burn-proj.py`. The sleep and weekend discount is the point. |
+| Straight-line math written in the reply | Run `builder budget`. The sleep and weekend discount is the point. |
 | A rolling 7-day window | The window is fixed. It resets in one step at `resets_at`. |
 | 0% for an account with no weekly window | Say "no weekly reading yet". Never invent a zero. |
 | A second watcher next to the first | List the jobs first. Replace, never stack. |
@@ -116,7 +116,7 @@ Then end with the builder report from the builder skill.
 Before you finish:
 
 - [ ] Each percent came from `matchblox usage --json` or from the person, not from a guess.
-- [ ] I ran `burn-proj.py` and quoted its line.
+- [ ] I ran `builder budget` and quoted its line.
 - [ ] I led with profile_aware, gave naive as the ceiling, and marked both as estimated.
 - [ ] I flagged the week only on profile_aware over 100% or weekly `used_pct` at 80 or more.
 - [ ] A missing reading shows as missing, with its cause.

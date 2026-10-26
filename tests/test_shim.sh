@@ -4,6 +4,8 @@ set -uo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
 fails=0
+# Each case sets BUILDER_BIN itself; a caller's BUILDER_BIN would skip the version lookup.
+unset BUILDER_BIN
 check() { if [ "$2" = "ok" ]; then echo "  ✓ $1"; else echo "  ✗ $1"; fails=1; fi; }
 
 plugin="$tmp/plug in"
@@ -62,6 +64,24 @@ rm -f "$plugin/.claude-plugin/plugin.json"
 err="$(env -u BUILDER_BIN BUILDER_HOME="$bhome" "$plugin/bin/builder" v 2>&1 >/dev/null)"; rc=$?
 [ "$rc" -eq 3 ] && [ "$err" = "builder: cannot read the version in $plugin/.claude-plugin/plugin.json" ] \
   && check "no manifest: exit 3 and the read error" ok || check "no manifest: exit 3 and the read error (got $rc: $err)" bad
+
+echo "test_broken_path"
+printf '{\n  "name": "builder",\n  "version": "9.9.9"\n}\n' > "$plugin/.claude-plugin/plugin.json"
+fakebin "$bhome/bin/builder-9.9.9"
+out="$(PATH=/nonexistent BUILDER_HOME="$bhome" /bin/bash "$plugin/bin/builder" version)"; rc=$?
+[ "$rc" -eq 0 ] && [ "$out" = "ran $bhome/bin/builder-9.9.9 root=$plugin args=version" ] \
+  && check "a broken PATH still runs the binary" ok || check "a broken PATH still runs the binary (got $rc: $out)" bad
+
+echo "test_one_line_manifest_with_more_keys"
+printf '{"name":"b","version":"9.9.9","description":"x"}' > "$plugin/.claude-plugin/plugin.json"
+out="$(PATH=/nonexistent BUILDER_HOME="$bhome" /bin/bash "$plugin/bin/builder" v)"; rc=$?
+[ "$rc" -eq 0 ] && grep -q "builder-9.9.9 " <<<"$out" \
+  && check "a one-line manifest with a key after the version reads" ok || check "a one-line manifest with a key after the version reads (got $rc: $out)" bad
+
+echo "test_shim_run_as_a_bare_name"
+out="$(cd "$plugin/bin" && PATH=/nonexistent BUILDER_HOME="$bhome" /bin/bash builder version)"; rc=$?
+[ "$rc" -eq 0 ] && [ "$out" = "ran $bhome/bin/builder-9.9.9 root=$plugin args=version" ] \
+  && check "a bare-name run finds the root" ok || check "a bare-name run finds the root (got $rc: $out)" bad
 
 echo "test_real_binary_through_the_shim"
 if command -v go >/dev/null 2>&1; then

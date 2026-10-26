@@ -2,4 +2,4 @@
 # schedules a job or steers a session: the runner denies CronCreate and the matchblox steering commands.
 Bash(matchblox usage:*)
 Bash(matchblox sessions:*)
-Bash(python3 *burn-proj.py*)
+Bash(*bin/builder* budget*)

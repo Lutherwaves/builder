@@ -116,7 +116,7 @@ func TestNormFoldsLikePython(t *testing.T) {
 }
 
 func TestDigestMatchesPython(t *testing.T) {
-	// python3 -c 'import sys; sys.path.insert(0,"lib"); import reach; print(reach.digest("teammate","Hello  World","Ana"))'
+	// pythonDigest is what the Python reach.digest("teammate", "Hello  World", "Ana") returned.
 	if got := Digest("teammate", "Hello  World", "Ana"); got != pythonDigest {
 		t.Fatal(got)
 	}

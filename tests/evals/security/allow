@@ -1,5 +1,6 @@
 # The agent may apply the change in a throwaway worktree and run the tests and its probes there.
 Bash(python3:*)
+Bash(*bin/builder* security *)
 Bash(git apply:*)
 Bash(git worktree:*)
 Bash(git diff:*)

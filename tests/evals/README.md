@@ -8,7 +8,7 @@ One directory per skill: `tests/evals/<skill>/`.
 
 - `prompt.md` is the task given to the agent.
 - `expect.md` lists 3 to 6 bullet lines. Each bullet is a behaviour the with-skill run shows and the baseline run does not.
-- `allow` is optional. Each line is a tool rule the agent may use without a prompt, e.g. `Bash(python3 -m unittest:*)`. Without it, the agent cannot run the fixture's tests. Blank lines and `#` lines are skipped.
+- `allow` is optional. Each line is a tool rule the agent may use without a prompt, e.g. `Bash(go test:*)`. Without it, the agent cannot run the fixture's tests. Blank lines and `#` lines are skipped.
 - `results/` is not a fixture: it holds the graded counts per harness.
 - `repo/` is optional. It is the starting project. Without it, the agent starts in an empty git repository.
 
@@ -61,9 +61,9 @@ Claude Code denies tools by name (see above). The other harnesses cannot, or the
 
 After a run, the runner writes `verdict.json` next to the transcripts. It holds the harness, its version, the date, the fixture name and one entry per `expect.md` bullet: `{"text", "met": null, "quote": null}`. It holds no transcript and no path. The grader sets `met` to `true` or `false` and may add a `quote`.
 
-    python3 scripts/support-table.py record <verdict.json>   # keep counts in tests/evals/results/<harness>.json
-    python3 scripts/support-table.py render                  # print the README table
-    python3 scripts/support-table.py check README.md         # fail when the README table differs
+    go run ./cmd/support-table record <verdict.json>   # keep counts in tests/evals/results/<harness>.json
+    go run ./cmd/support-table render                  # print the README table
+    go run ./cmd/support-table check README.md         # fail when the README table differs
 
 `record` refuses a verdict with a `met` still `null`. It stores counts only. `render` shows a harness only when it has a results file. A harness is `supported` only when every fixture under `tests/evals/` is graded and meets every bullet. Otherwise it is `experimental: <failed fixture met/total>; <n> not graded`. With no results file, the table is the line "No harness has passed its evals yet." `scripts/validate.sh` runs `check`.
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# builder SessionStart hook. Uses bash builtins only until python3 is found,
+# builder SessionStart hook. Uses bash builtins only until the binary runs,
 # because a hook can start with a broken PATH.
 case "$0" in
   */*) SCRIPT_DIR="$(cd "${0%/*}" && pwd)" ;;
@@ -8,12 +8,10 @@ esac
 PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 export CLAUDE_PLUGIN_ROOT="$PLUGIN_ROOT"
 
-if command -v python3 >/dev/null 2>&1; then
-  out="$(python3 "${SCRIPT_DIR}/session_start.py" "$@" 2>/dev/null)"
-  if [ -n "$out" ]; then
-    printf '%s\n' "$out"
-    exit 0
-  fi
+out="$("${BASH:-/bin/bash}" "$PLUGIN_ROOT/bin/builder" hook "$@" 2>/dev/null)"
+if [ -n "$out" ]; then
+  printf '%s\n' "$out"
+  exit 0
 fi
 
 harness=auto format=""

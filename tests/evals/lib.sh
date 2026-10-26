@@ -94,15 +94,10 @@ eval_prepare_cursor() { # the deny rules are best effort; the PATH shims are the
 eval_prepare_opencode() {
   local cfg="$tmp/opencode-$1"
   mkdir -p "$cfg" || return 1
-  python3 - "$cfg/opencode.json" "$1" "$root" <<'PY' || return 1
-import json, sys
-path, mode, root = sys.argv[1:]
-conf = {"permission": {"webfetch": "deny", "websearch": "deny",
-                       "bash": {"*": "allow", "git push*": "deny", "gh *": "deny", "crontab*": "deny"}}}
-if mode == "with":
-    conf = {"plugin": [root], **conf}
-json.dump(conf, open(path, "w"), indent=2)
-PY
+  jq -n --arg root "$root" --arg mode "$1" '(if $mode == "with" then {plugin: [$root]} else {} end)
+    + {permission: {webfetch: "deny", websearch: "deny",
+                    bash: {"*": "allow", "git push*": "deny", "gh *": "deny", "crontab*": "deny"}}}' \
+    > "$cfg/opencode.json" || return 1
   runenv=(OPENCODE_CONFIG_DIR="$cfg")
 }
 
@@ -117,17 +112,10 @@ eval_version() { # $1 = the runner's command name
 # $out/verdict.json: a stub for the grader. One bullet per expect.md line, met and quote still null.
 # It holds no transcript and no local path.
 eval_verdict() { # $1 harness, $2 version, $3 fixture name, $4 expect.md, $5 out dir
-  python3 - "$1" "$2" "$3" "$4" "$5/verdict.json" <<'PY'
-import datetime, json, re, sys
-harness, version, fixture, expect, path = sys.argv[1:]
-bullets = []
-for line in open(expect, encoding="utf-8"):
-    m = re.match(r"\s*[-*]\s+(\S.*)$", line)
-    if m:
-        bullets.append({"text": m.group(1).rstrip(), "met": None, "quote": None})
-json.dump({"harness": harness, "harness_version": version, "date": datetime.date.today().isoformat(),
-           "fixture": fixture, "bullets": bullets}, open(path, "w"), indent=2)
-PY
+  sed -nE 's/^[[:space:]]*[-*][[:space:]]+([^[:space:]].*)$/\1/p' "$4" | jq -R . \
+    | jq -s --arg h "$1" --arg v "$2" --arg d "$(date +%F)" --arg f "$3" \
+      '{harness: $h, harness_version: $v, date: $d, fixture: $f, bullets: map({text: sub("\\s+$"; ""), met: null, quote: null})}' \
+    > "$5/verdict.json"
 }
 
 # Claude Code names a session folder after its cwd, every char not [A-Za-z0-9] turned into "-".
@@ -209,11 +197,20 @@ SHIM
 
 # A temp builder home: onboarded, every recommendation answered "never". The hook then
 # injects only the soul, so no setup question pollutes the transcript.
+# The binary goes where the shim looks for it, and BUILDER_BIN is unset, so the agents run the real shim path.
 eval_builder_home() { # $1 = the builder repository root
   export BUILDER_HOME="$tmp/builder-home"
-  python3 "$1/lib/ledger.py" onboarded >/dev/null || return 1
-  local id
-  for id in $(python3 -c 'import json,sys; print(" ".join(i["id"] for i in json.load(open(sys.argv[1]))))' "$1/lib/recommendations.json"); do
-    python3 "$1/lib/ledger.py" answer "$id" never >/dev/null || return 1
+  local id version
+  version="$(jq -r .version "$1/.claude-plugin/plugin.json")" && [ -n "$version" ] && [ "$version" != null ] || return 1
+  mkdir -p "$BUILDER_HOME/bin" || return 1
+  if [ -n "${BUILDER_BIN:-}" ]; then
+    cp "$BUILDER_BIN" "$BUILDER_HOME/bin/builder-$version" || return 1
+  else
+    (cd "$1" && go build -o "$BUILDER_HOME/bin/builder-$version" ./cmd/builder) || return 1
+  fi
+  unset BUILDER_BIN
+  "$1/bin/builder" ledger onboarded >/dev/null || return 1
+  for id in $(jq -r '.[].id' "$1/lib/recommendations.json"); do
+    "$1/bin/builder" ledger answer "$id" never >/dev/null || return 1
   done
 }
