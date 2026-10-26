@@ -1,0 +1,2 @@
+[{"provider": "anthropic", "account": "work", "state": "measured", "windows": [{"used_pct": 83, "window_minutes": 300, "resets_at": "2026-07-02T14:00:00+00:00"}, {"used_pct": 19, "window_minutes": 10080, "resets_at": "2026-07-08T10:00:00+00:00"}]},
+ {"provider": "anthropic", "account": "home", "state": "stale", "windows": []}]

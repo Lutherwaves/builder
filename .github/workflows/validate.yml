@@ -32,6 +32,9 @@ jobs:
             cat "$RUNNER_TEMP/bad.txt"
             exit 1
           fi
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
       - name: Validate plugin manifests, skills, and scripts
         env:
           DENYLIST_SECRET: ${{ secrets.BUILDER_DENYLIST }}
@@ -53,5 +56,8 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
       - name: Test the validator's guards
         run: bash tests/test_validate.sh

@@ -1,0 +1,7 @@
+{"mode": "audit", "repo": "/tmp/parity-repo", "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "dimensions": ["memory", "authz"],
+ "findings": [
+  {"id": "memory/CWE-409/app/upload.py/extract", "dimension": "memory", "cwe": "CWE-409", "location": "app/upload.py:41",
+   "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H", "title": "One uploaded zip fills the disk", "extra": {"kept": true}},
+  {"id": "authz/CWE-862/app/admin.py/delete", "dimension": "authz", "cwe": "CWE-862", "location": "app/admin.py:9",
+   "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:L/I:L/A:N", "title": "Any user deletes any project"}
+ ]}
