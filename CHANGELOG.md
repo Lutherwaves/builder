@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.0.0](https://github.com/Lutherwaves/builder/compare/builder-v1.1.0...builder-v2.0.0) (2026-10-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* **builder:** the For, Non-goals, Calls, Evidence and Outside report lines are replaced by the state line, ▶ You, ⚠ Not proven, ✓ Proven, ↗ Outside and Calls.
+
+### Features
+
+* a README that says why builder, and one question format ([#25](https://github.com/Lutherwaves/builder/issues/25)) ([2908ff2](https://github.com/Lutherwaves/builder/commit/2908ff2e51899082fefe43400f723adedaae8fa9))
+* **builder:** the report leads with what you must do ([#24](https://github.com/Lutherwaves/builder/issues/24)) ([1199f64](https://github.com/Lutherwaves/builder/commit/1199f6420e657716c4c7349cde5a6bfd6be6c189))
+
 ## [1.1.0](https://github.com/Lutherwaves/builder/compare/builder-v1.0.0...builder-v1.1.0) (2026-10-24)
 
 
