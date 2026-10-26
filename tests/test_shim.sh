@@ -57,6 +57,12 @@ err="$(env -u BUILDER_BIN BUILDER_HOME="$bhome" "$plugin/bin/builder" v 2>&1 >/d
 [ "$rc" -eq 3 ] && [ "$err" = "builder: cannot read the version in $plugin/.claude-plugin/plugin.json" ] \
   && check "no version: exit 3 and the read error" ok || check "no version: exit 3 and the read error (got $rc: $err)" bad
 
+echo "test_missing_manifest_fails"
+rm -f "$plugin/.claude-plugin/plugin.json"
+err="$(env -u BUILDER_BIN BUILDER_HOME="$bhome" "$plugin/bin/builder" v 2>&1 >/dev/null)"; rc=$?
+[ "$rc" -eq 3 ] && [ "$err" = "builder: cannot read the version in $plugin/.claude-plugin/plugin.json" ] \
+  && check "no manifest: exit 3 and the read error" ok || check "no manifest: exit 3 and the read error (got $rc: $err)" bad
+
 echo "test_real_binary_through_the_shim"
 if command -v go >/dev/null 2>&1; then
   (cd "$root" && go build -o "$tmp/real-builder" ./cmd/builder) \
