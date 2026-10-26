@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Run the builder binary whose version matches this plugin, so plugin and binary never drift.
+set -euo pipefail
+BUILDER_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+export BUILDER_ROOT
+if [ -n "${BUILDER_BIN:-}" ]; then
+  exec "$BUILDER_BIN" "$@"
+fi
+manifest="$BUILDER_ROOT/.claude-plugin/plugin.json"
+version="$(sed -n 's/^.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$manifest" 2>/dev/null | head -n 1)"
+if [ -z "$version" ]; then
+  echo "builder: cannot read the version in $manifest" >&2
+  exit 3
+fi
+bin="${BUILDER_HOME:-$HOME/.config/builder}/bin/builder-$version"
+if [ -x "$bin" ]; then
+  exec "$bin" "$@"
+fi
+echo "builder $version is not installed. Install it: bash \"$BUILDER_ROOT/scripts/install.sh\"" >&2
+exit 3
