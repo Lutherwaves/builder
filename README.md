@@ -19,7 +19,7 @@ session hook; no server, no account, no network call at session start.
 >
 > **⚠ Not proven:** the confirmation email in a real inbox.
 >
-> **✓ Proven:** `python3 -m unittest` → 14 passed (example).
+> **✓ Proven:** `go test ./...` → 14 passed (example).
 >
 > **↗ Outside:** nothing sent.
 >

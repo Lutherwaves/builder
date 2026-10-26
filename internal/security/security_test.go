@@ -312,7 +312,7 @@ func TestKeyIsStable(t *testing.T) {
 }
 
 func TestBaselinePathMatchesPython(t *testing.T) {
-	// python3 -c 'import sys; sys.path.insert(0,"lib"); import security; print(security.baseline_path("/tmp/no-such-repo", {"BUILDER_HOME": "/b"}, "/h"))'
+	// pythonBaselinePath is what the Python security.baseline_path("/tmp/no-such-repo", {"BUILDER_HOME": "/b"}, "/h") returned.
 	if got := BaselinePath("/tmp/no-such-repo", map[string]string{"BUILDER_HOME": "/b"}, "/h"); got != pythonBaselinePath {
 		t.Fatal(got)
 	}

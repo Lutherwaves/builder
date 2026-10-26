@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Test the scrub step of scripts/validate.sh.
+# Test the checks and guards of scripts/validate.sh.
 set -uo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
@@ -130,13 +130,8 @@ out="$(run_in "$tmp/guard")"; rc=$?
 
 # Case 15b (guard_flags_slash_in_neutral_how): a string-valued `how` with a slash command fails; a map-valued `how` may have one.
 rm -rf "$tmp/guard"; mkrepo "$tmp/clean" "$tmp/guard"
-python3 - "$tmp/guard/lib/recommendations.json" <<'PY'
-import json, sys
-p = sys.argv[1]
-cat = json.load(open(p))
-next(i for i in cat if i["id"] == "fleet")["how"] = "Ask me: /builder:fleet"
-json.dump(cat, open(p, "w"), indent=2)
-PY
+jq '(.[] | select(.id == "fleet") | .how) = "Ask me: /builder:fleet"' "$tmp/guard/lib/recommendations.json" > "$tmp/guard/r.json" \
+  && mv "$tmp/guard/r.json" "$tmp/guard/lib/recommendations.json"
 out="$(run_in "$tmp/guard")"; rc=$?
 [ "$rc" -eq 1 ] && grep -q '✗ guard: lib/recommendations.json: fleet how' <<<"$out" && ! grep -q 'guard: lib/recommendations.json: superpowers' <<<"$out" \
   && check "guard flags slash command in a string how, allows it in a map how" ok || check "guard flags slash command in a string how, allows it in a map how (got $rc)" bad
@@ -180,14 +175,11 @@ fi
 
 # Case 22 (support_table_drift_fails): a README table that no results file backs fails validation.
 rm -rf "$tmp/man"; mkrepo "$tmp/clean" "$tmp/man"
-python3 - "$tmp/man/README.md" <<'PY'
-import re, sys
-p = sys.argv[1]
-s = open(p).read()
-fake = "| Harness | Version | Eval date | Status |\n| --- | --- | --- | --- |\n| Codex CLI | 1 | 2026-10-22 | supported |\n"
-s = re.sub(r"(<!-- support:start -->\n).*?(<!-- support:end -->)", lambda m: m.group(1) + fake + m.group(2), s, flags=re.S)
-open(p, "w").write(s)
-PY
+awk '
+  $0 == "<!-- support:start -->" { print; print "| Harness | Version | Eval date | Status |"; print "| --- | --- | --- | --- |"; print "| Codex CLI | 1 | 2026-10-22 | supported |"; skip = 1; next }
+  $0 == "<!-- support:end -->" { skip = 0 }
+  !skip
+' "$tmp/man/README.md" > "$tmp/man/r.md" && mv "$tmp/man/r.md" "$tmp/man/README.md"
 out="$(run_in "$tmp/man")"; rc=$?
 [ "$rc" -eq 1 ] && grep -q '✗ README support table is out of date' <<<"$out" \
   && check "support table with no results behind it fails" ok || check "support table with no results behind it fails (got $rc)" bad
@@ -213,6 +205,42 @@ rm -rf "$tmp/nogit"; mkrepo "$tmp/clean" "$tmp/nogit"; rm -rf "$tmp/nogit/.git"
 out="$(cd "$tmp/nogit" && GIT_CEILING_DIRECTORIES="$tmp" env -u BUILDER_DENYLIST bash scripts/validate.sh 2>&1)"; rc=$?
 [ "$rc" -eq 1 ] && grep -q '✗ hedge: git grep failed' <<<"$out" \
   && check "hedge git grep error fails" ok || check "hedge git grep error fails (got $rc)" bad
+
+# Case 26 (python_file_fails): a tracked .py file outside an eval fixture fails.
+rm -rf "$tmp/py"; mkrepo "$tmp/clean" "$tmp/py"
+echo 'print(1)' > "$tmp/py/skills/reach/x.py"
+git -C "$tmp/py" add -A >/dev/null
+out="$(run_in "$tmp/py")"; rc=$?
+[ "$rc" -eq 1 ] && grep -q '✗ python: skills/reach/x.py' <<<"$out" \
+  && check "python file fails" ok || check "python file fails (got $rc)" bad
+
+# Case 27 (python3_word_fails): the word python3 in a skill fails.
+rm -rf "$tmp/py"; mkrepo "$tmp/clean" "$tmp/py"
+printf '%s\n' 'Run `python3 x`.' >> "$tmp/py/skills/reach/SKILL.md"
+out="$(run_in "$tmp/py")"; rc=$?
+[ "$rc" -eq 1 ] && grep -q '✗ python: skills/reach/SKILL.md:' <<<"$out" \
+  && check "python3 word fails" ok || check "python3 word fails (got $rc)" bad
+
+# Case 28 (fixture_python_allowed): an eval fixture's sample project may hold Python.
+rm -rf "$tmp/py"; mkrepo "$tmp/clean" "$tmp/py"
+printf '%s\n' '#!/usr/bin/env python3' 'print(1)' > "$tmp/py/tests/evals/review/repo/y.py"
+git -C "$tmp/py" add -A >/dev/null
+out="$(run_in "$tmp/py")"; rc=$?
+! grep -q 'python:' <<<"$out" && check "fixture python allowed" ok || check "fixture python allowed (got $rc)" bad
+
+# Case 29 (old_tool_name_fails): a skill that names a deleted Python tool fails.
+rm -rf "$tmp/py"; mkrepo "$tmp/clean" "$tmp/py"
+printf '%s\n' 'Run lib/reach.py.' >> "$tmp/py/skills/reach/SKILL.md"
+out="$(run_in "$tmp/py")"; rc=$?
+[ "$rc" -eq 1 ] && grep -q '✗ python: skills/reach/SKILL.md:' <<<"$out" \
+  && check "old tool name fails" ok || check "old tool name fails (got $rc)" bad
+
+# Case 30 (unquoted_shim_fails): a skill that runs the shim without the quoted plugin root fails.
+rm -rf "$tmp/py"; mkrepo "$tmp/clean" "$tmp/py"
+printf '%s\n' 'Run bin/builder reach check.' >> "$tmp/py/skills/reach/SKILL.md"
+out="$(run_in "$tmp/py")"; rc=$?
+[ "$rc" -eq 1 ] && grep -q '✗ guard: skills/reach/SKILL.md:[0-9]* runs the shim without the quoted plugin root' <<<"$out" \
+  && check "unquoted shim fails" ok || check "unquoted shim fails (got $rc)" bad
 
 # Case 16: the run left the real repo's HEAD, refs and working tree as they were.
 [ "$(snapshot)" = "$before" ] && check "real repo untouched by the test run" ok || check "real repo untouched by the test run" bad

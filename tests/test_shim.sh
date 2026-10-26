@@ -4,6 +4,8 @@ set -uo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
 fails=0
+# Each case sets BUILDER_BIN itself; a caller's BUILDER_BIN would skip the version lookup.
+unset BUILDER_BIN
 check() { if [ "$2" = "ok" ]; then echo "  ✓ $1"; else echo "  ✗ $1"; fails=1; fi; }
 
 plugin="$tmp/plug in"
