@@ -208,6 +208,12 @@ git -C "$tmp/man" add -A >/dev/null
 out="$(run_in "$tmp/man")"; rc=$?
 [ "$rc" -eq 0 ] && check "Not proven in a user-facing doc passes" ok || check "Not proven in a user-facing doc passes (got $rc)" bad
 
+# Case 25 (hedge_grep_error_fails): a git grep error in the hedge step fails instead of passing.
+rm -rf "$tmp/nogit"; mkrepo "$tmp/clean" "$tmp/nogit"; rm -rf "$tmp/nogit/.git"
+out="$(cd "$tmp/nogit" && GIT_CEILING_DIRECTORIES="$tmp" env -u BUILDER_DENYLIST bash scripts/validate.sh 2>&1)"; rc=$?
+[ "$rc" -eq 1 ] && grep -q '✗ hedge: git grep failed' <<<"$out" \
+  && check "hedge git grep error fails" ok || check "hedge git grep error fails (got $rc)" bad
+
 # Case 16: the run left the real repo's HEAD, refs and working tree as they were.
 [ "$(snapshot)" = "$before" ] && check "real repo untouched by the test run" ok || check "real repo untouched by the test run" bad
 
