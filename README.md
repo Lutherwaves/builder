@@ -52,7 +52,7 @@ superpowers; the browser, QA and shipping go to gstack. Install all three.
 
 ## Install
 
-builder runs on macOS and Linux. It needs Bash, and it installs one small helper binary in your first session.
+builder runs on macOS and Linux. It needs Bash, and it offers to install one small helper binary in your first session.
 
 **Claude Code**
 

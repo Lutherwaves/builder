@@ -1,6 +1,6 @@
 # Installing builder
 
-builder runs on macOS and Linux. It needs Bash, and it installs one small helper binary
+builder runs on macOS and Linux. It needs Bash, and it offers to install one small helper binary
 in your first session. Its session hook makes no network call and finishes in under a
 second.
 
