@@ -98,8 +98,9 @@ else
 fi
 
 # A skill runs the shim through the quoted plugin root, so a root with a space still works.
+# Only files agents read are guarded (SKILL.md, *-prompt.md, scripts); a README is for people and says "<plugin root>".
 # A script beside a skill has no CLAUDE_PLUGIN_ROOT on every harness, so it runs "$PLUGIN_ROOT/bin/builder".
-shim_hits="$(grep -rn 'bin/builder' skills \
+shim_hits="$(grep -rn 'bin/builder' --include=SKILL.md --include='*-prompt.md' --include='*.sh' skills \
   | sed -e 's|"${CLAUDE_PLUGIN_ROOT}/bin/builder"||g' -e '/^[^:]*\.sh:/s|"$PLUGIN_ROOT/bin/builder"||g' \
   | grep 'bin/builder' | cut -d: -f1,2 || true)"
 if [ -n "$shim_hits" ]; then
@@ -140,35 +141,51 @@ py_guard git grep -n -E 'lib/(harness|ledger|reach|security|signals)\.py|burn-pr
   && note "✓ no deleted Python tool named"
 
 echo "→ go"
+unset BUILDER_BIN
 if ! command -v go >/dev/null 2>&1; then
   err "go is required: install the Go version in go.mod"
 else
   gotmp="$(mktemp -d)"; trap 'rm -rf "$gotmp"' EXIT
-  if bd_out="$(go build -o "$gotmp/builder" ./cmd/builder 2>&1)"; then note "✓ go build"; else printf '%s\n' "$bd_out"; err "go build failed"; fi
-  export BUILDER_BIN="$gotmp/builder"
-  if fmt_out="$(gofmt -l . 2>&1)" && [ -z "$fmt_out" ]; then note "✓ gofmt"; else printf '%s\n' "$fmt_out"; err "gofmt: these files need gofmt -w"; fi
-  if vet_out="$(go vet ./... 2>&1)"; then note "✓ go vet"; else printf '%s\n' "$vet_out"; err "go vet failed"; fi
-  if gt_out="$(go test ./... 2>&1)"; then note "✓ go test"; else printf '%s\n' "$gt_out"; err "go tests failed"; fi
-  if sh_out="$(bash tests/test_shim.sh 2>&1)"; then note "✓ shim"; else printf '%s\n' "$sh_out"; err "shim tests failed"; fi
-  # Fixed inputs give a fixed output shape.
-  out="$("$BUILDER_BIN" budget 19 1783504800 1782990571 2>&1)" || true
-  if grep -qE 'elapsed=.* naive=.* profile_aware=.* reset_in=' <<<"$out"; then
-    note "✓ builder budget smoke: $out"
+  if bd_out="$(go build -o "$gotmp/builder" ./cmd/builder 2>&1)"; then
+    note "✓ go build"; export BUILDER_BIN="$gotmp/builder"
+    if fmt_out="$(gofmt -l . 2>&1)" && [ -z "$fmt_out" ]; then note "✓ gofmt"; else printf '%s\n' "$fmt_out"; err "gofmt: these files need gofmt -w"; fi
+    if vet_out="$(go vet ./... 2>&1)"; then note "✓ go vet"; else printf '%s\n' "$vet_out"; err "go vet failed"; fi
+    if gt_out="$(go test ./... 2>&1)"; then note "✓ go test"; else printf '%s\n' "$gt_out"; err "go tests failed"; fi
+    if sh_out="$(bash tests/test_shim.sh 2>&1)"; then note "✓ shim"; else printf '%s\n' "$sh_out"; err "shim tests failed"; fi
+    # Fixed inputs give a fixed output shape.
+    out="$("$BUILDER_BIN" budget 19 1783504800 1782990571 2>&1)" || true
+    if grep -qE 'elapsed=.* naive=.* profile_aware=.* reset_in=' <<<"$out"; then
+      note "✓ builder budget smoke: $out"
+    else
+      err "builder budget output shape changed: $out"
+    fi
   else
-    err "builder budget output shape changed: $out"
+    printf '%s\n' "$bd_out"; err "go build failed"
+    for s in gofmt "go vet" "go test" shim "builder budget smoke"; do note "$s: skipped (no binary)"; done
   fi
 fi
-
 echo "→ harness drift tests"
-if dr_out="$(bash tests/test_drift.sh 2>&1)"; then note "✓ drift"; else printf '%s\n' "$dr_out"; err "drift tests failed"; fi
-if sp_out="$(bash tests/test_state_paths.sh 2>&1)"; then note "✓ state paths"; else printf '%s\n' "$sp_out"; err "state path tests failed"; fi
+if [ -n "${BUILDER_BIN:-}" ]; then
+  if dr_out="$(bash tests/test_drift.sh 2>&1)"; then note "✓ drift"; else printf '%s\n' "$dr_out"; err "drift tests failed"; fi
+  if sp_out="$(bash tests/test_state_paths.sh 2>&1)"; then note "✓ state paths"; else printf '%s\n' "$sp_out"; err "state path tests failed"; fi
+else
+  note "drift: skipped (no binary)"; note "state paths: skipped (no binary)"
+fi
 
 echo "→ hook tests"
-if hk_out="$(bash tests/test_hook.sh 2>&1)"; then note "✓ hook"; else printf '%s\n' "$hk_out"; err "hook tests failed"; fi
+if [ -n "${BUILDER_BIN:-}" ]; then
+  if hk_out="$(bash tests/test_hook.sh 2>&1)"; then note "✓ hook"; else printf '%s\n' "$hk_out"; err "hook tests failed"; fi
+else
+  note "hook: skipped (no binary)"
+fi
 
 echo "→ eval fixtures"
-if ev_out="$(bash tests/test_evals.sh 2>&1)"; then note "✓ eval runner tests"; else printf '%s\n' "$ev_out"; err "eval runner tests failed"; fi
-if fx_out="$(bash tests/evals/run.sh --check 2>&1)"; then note "✓ $fx_out"; else printf '%s\n' "$fx_out"; err "eval fixtures invalid"; fi
+if [ -n "${BUILDER_BIN:-}" ]; then
+  if ev_out="$(bash tests/test_evals.sh 2>&1)"; then note "✓ eval runner tests"; else printf '%s\n' "$ev_out"; err "eval runner tests failed"; fi
+  if fx_out="$(bash tests/evals/run.sh --check 2>&1)"; then note "✓ $fx_out"; else printf '%s\n' "$fx_out"; err "eval fixtures invalid"; fi
+else
+  note "evals: skipped (no binary)"
+fi
 if st_out="$(go run ./cmd/support-table check README.md 2>&1)"; then note "✓ $st_out"; else printf '%s\n' "$st_out"; err "README support table is out of date"; fi
 
 echo "→ hedges"

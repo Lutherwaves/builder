@@ -242,6 +242,12 @@ out="$(run_in "$tmp/py")"; rc=$?
 [ "$rc" -eq 1 ] && grep -q '✗ guard: skills/reach/SKILL.md:[0-9]* runs the shim without the quoted plugin root' <<<"$out" \
   && check "unquoted shim fails" ok || check "unquoted shim fails (got $rc)" bad
 
+# Case 31 (readme_shim_allowed): a README for people names the shim with "<plugin root>" without tripping the guard.
+rm -rf "$tmp/py"; mkrepo "$tmp/clean" "$tmp/py"
+printf '%s\n' '"<plugin root>/bin/builder" budget 19 1783504800' >> "$tmp/py/skills/budget/README.md"
+out="$(run_in "$tmp/py")"; rc=$?
+! grep -q 'runs the shim without' <<<"$out" && check "README plugin root allowed" ok || check "README plugin root allowed (got $rc)" bad
+
 # Case 16: the run left the real repo's HEAD, refs and working tree as they were.
 [ "$(snapshot)" = "$before" ] && check "real repo untouched by the test run" ok || check "real repo untouched by the test run" bad
 

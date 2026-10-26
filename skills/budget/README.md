@@ -3,10 +3,10 @@
 Run `builder budget` through the plugin shim:
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/bin/builder" budget <used_pct> <resets_at_epoch> [now_epoch]
-"${CLAUDE_PLUGIN_ROOT}/bin/builder" budget --from-matchblox [now_epoch]
+"<plugin root>/bin/builder" budget <used_pct> <resets_at_epoch> [now_epoch]
+"<plugin root>/bin/builder" budget --from-matchblox [now_epoch]
 
-"${CLAUDE_PLUGIN_ROOT}/bin/builder" budget 19 1783504800 1782990571
+"<plugin root>/bin/builder" budget 19 1783504800 1782990571
 # elapsed=15.0%  naive=127%  profile_aware=100%  reset_in=5.95d
 ```
 

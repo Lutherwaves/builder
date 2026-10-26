@@ -10,7 +10,7 @@ check() { if [ "$2" = "ok" ]; then echo "  ✓ $1"; else echo "  ✗ $1"; fails=
 printf '#!/bin/sh\necho %s\n' "'{\"status\":\"ready\"}'" > "$tmp/cbm"; chmod +x "$tmp/cbm"
 if [ -z "${BUILDER_BIN:-}" ]; then
   (cd "$root" && go build -o "$tmp/builder" ./cmd/builder) || { echo "go build failed"; exit 1; }
-  BUILDER_BIN="$tmp/builder"
+  export BUILDER_BIN="$tmp/builder"
 fi
 export HOME="$tmp/home" CBM_BIN="$tmp/cbm"
 repo="$tmp/repo"; mkdir -p "$repo" "$HOME/.claude/code-graph" "$HOME/.cache/codebase-memory-mcp"
