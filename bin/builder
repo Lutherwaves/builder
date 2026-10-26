@@ -7,14 +7,25 @@ if [[ $src == */* ]]; then dir="${src%/*}"; else dir=.; fi
 BUILDER_ROOT="$(cd "${dir:-/}/.." && pwd -P)"
 export BUILDER_ROOT
 builder_home="${BUILDER_HOME:-$HOME/.config/builder}"
+save_answer() {
+  local file="$builder_home/install.answer" now=""
+  now="$(/bin/date +%s 2>/dev/null || date +%s 2>/dev/null)" || now=""
+  if [[ $now =~ ^[0-9]+$ ]] \
+    && { mkdir -p "$builder_home" 2>/dev/null || /bin/mkdir -p "$builder_home" 2>/dev/null; } \
+    && { echo "$1 $now" > "$file"; } 2>/dev/null; then
+    return 0
+  fi
+  echo "builder: cannot write $file. Check that $builder_home is writable, then run again." >&2
+  exit 1
+}
 if [ "${1:-}" = install-answer ]; then
   case "${2:-}" in
     later)
-      mkdir -p "$builder_home" && echo "later $(date +%s)" > "$builder_home/install.answer"
+      save_answer later
       echo 'builder: saved "not now". The install offer comes back in 7 days.'
       exit 0 ;;
     never)
-      mkdir -p "$builder_home" && echo "never $(date +%s)" > "$builder_home/install.answer"
+      save_answer never
       echo "builder: saved \"never\". To turn the binary on, run: bash \"$BUILDER_ROOT/scripts/install.sh\""
       exit 0 ;;
     *)

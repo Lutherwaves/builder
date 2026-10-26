@@ -109,6 +109,18 @@ err="$(env -u BUILDER_BIN BUILDER_HOME="$bhome" "$plugin/bin/builder" install-an
 [ "$rc" -eq 2 ] && [ "$err" = "$usage" ] \
   && check "no verdict: exit 2 and the usage line" ok || check "no verdict: exit 2 and the usage line (got $rc: $err)" bad
 
+echo "test_install_answer_unwritable"
+printf 'x' > "$tmp/afile"
+err="$(env -u BUILDER_BIN BUILDER_HOME="$tmp/afile/h" "$plugin/bin/builder" install-answer never 2>&1)"; rc=$?
+[ "$rc" -eq 1 ] && [ "$err" = "builder: cannot write $tmp/afile/h/install.answer. Check that $tmp/afile/h is writable, then run again." ] \
+  && check "an unwritable BUILDER_HOME: exit 1, the fix line, nothing said saved" ok || check "an unwritable BUILDER_HOME: exit 1, the fix line, nothing said saved (got $rc: $err)" bad
+
+echo "test_install_answer_broken_path"
+rm -rf "$bhome"
+out="$(PATH=/nonexistent BUILDER_HOME="$bhome" /bin/bash "$plugin/bin/builder" install-answer later)"; rc=$?
+[[ "$(cat "$bhome/install.answer")" =~ ^later\ [0-9]+$ ]] && [ "$rc" -eq 0 ] \
+  && check "a broken PATH still saves 'later <epoch>'" ok || check "a broken PATH still saves 'later <epoch>' (got $rc: $out)" bad
+
 echo "test_install_answer_beats_builder_bin"
 rm -rf "$bhome"
 fakebin "$tmp/dev/builder"
