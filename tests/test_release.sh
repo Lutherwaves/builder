@@ -61,13 +61,13 @@ repo_copy() {
 
 echo "bump_sets_four_files"
 repo_copy "$tmp/bump"; repo_copy "$tmp/orig"
-out="$(bash "$tmp/bump/.github/scripts/bump-version.sh" 3.0.0 2>&1)"; rc=$?
+out="$(bash "$tmp/bump/.github/scripts/bump-version.sh" 99.0.0 2>&1)"; rc=$?
 [ "$rc" -eq 0 ] && check "exits 0" ok || check "exits 0 (rc=$rc out=$out)" bad
 for f in "${manifests[@]}"; do
-  [ "$(jq -r .version "$tmp/bump/$f")" = 3.0.0 ] && check "$f version is 3.0.0" ok || check "$f version is 3.0.0" bad
+  [ "$(jq -r .version "$tmp/bump/$f")" = 99.0.0 ] && check "$f version is 99.0.0" ok || check "$f version is 99.0.0" bad
   changed="$(diff "$tmp/orig/$f" "$tmp/bump/$f" | grep -E '^[<>]')"
   old="$(jq -r .version "$tmp/orig/$f")"
-  [ "$changed" = "$(printf '< %s\n> %s' "  \"version\": \"$old\"," '  "version": "3.0.0",')" ] \
+  [ "$changed" = "$(printf '< %s\n> %s' "  \"version\": \"$old\"," '  "version": "99.0.0",')" ] \
     && check "$f: only the version line changes" ok || check "$f: only the version line changes: $changed" bad
 done
 
