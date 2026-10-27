@@ -57,14 +57,14 @@ out="$(env -u BUILDER_BIN BUILDER_HOME="$bhome" "$plugin/bin/builder" v)"; rc=$?
 echo "test_no_version_fails"
 printf '{"name": "builder"}\n' > "$plugin/.claude-plugin/plugin.json"
 err="$(env -u BUILDER_BIN BUILDER_HOME="$bhome" "$plugin/bin/builder" v 2>&1 >/dev/null)"; rc=$?
-[ "$rc" -eq 3 ] && [ "$err" = "builder: cannot read the version in $plugin/.claude-plugin/plugin.json" ] \
-  && check "no version: exit 3 and the read error" ok || check "no version: exit 3 and the read error (got $rc: $err)" bad
+[ "$rc" -eq 4 ] && [ "$err" = "builder: cannot read the version in $plugin/.claude-plugin/plugin.json" ] \
+  && check "no version: exit 4 and the read error" ok || check "no version: exit 4 and the read error (got $rc: $err)" bad
 
 echo "test_missing_manifest_fails"
 rm -f "$plugin/.claude-plugin/plugin.json"
 err="$(env -u BUILDER_BIN BUILDER_HOME="$bhome" "$plugin/bin/builder" v 2>&1 >/dev/null)"; rc=$?
-[ "$rc" -eq 3 ] && [ "$err" = "builder: cannot read the version in $plugin/.claude-plugin/plugin.json" ] \
-  && check "no manifest: exit 3 and the read error" ok || check "no manifest: exit 3 and the read error (got $rc: $err)" bad
+[ "$rc" -eq 4 ] && [ "$err" = "builder: cannot read the version in $plugin/.claude-plugin/plugin.json" ] \
+  && check "no manifest: exit 4 and the read error" ok || check "no manifest: exit 4 and the read error (got $rc: $err)" bad
 
 echo "test_broken_path"
 printf '{\n  "name": "builder",\n  "version": "9.9.9"\n}\n' > "$plugin/.claude-plugin/plugin.json"

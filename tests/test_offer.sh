@@ -53,6 +53,7 @@ echo "yes_says_install"
 hook_run "$root" "yes $((now - 60))" "${text[@]}"
 has 'builder install: the helper binary of this plugin version is missing, and the person said yes to it before.' \
   && has "In your first reply, run: bash \"$root/scripts/install.sh\". Report it under ↗ Outside." \
+  && has "If the install fails, run: \"$root/bin/builder\" install-answer later" \
   && ! has 'ask this once' && has "$(root_line "$root")" && [ -z "$err" ] && check "yes block" ok || check "yes block" bad
 
 echo "corrupt_answer_offers"
@@ -67,6 +68,23 @@ mkdir -p "$spaced"
 cp -R "$root/hooks" "$root/bin" "$root/skills" "$root/.claude-plugin" "$spaced/"
 hook_run "$spaced" - "${text[@]}"
 offer_ok "$spaced" && has "$(root_line "$spaced")" && check "commands quote the spaced path" ok || check "commands quote the spaced path" bad
+
+echo "no_version_no_offer"
+nover="$tmp/nover"
+mkdir -p "$nover"
+cp -R "$root/hooks" "$root/bin" "$root/skills" "$root/.claude-plugin" "$nover/"
+printf '{"name": "builder"}\n' > "$nover/.claude-plugin/plugin.json"
+hook_run "$nover" - "${text[@]}"
+has 'Build the right thing' && has "$(root_line "$nover")" && ! has 'builder install:' && [ "$rc" -eq 0 ] && [ -z "$err" ] \
+  && check "a plugin with no version gets no install block" ok || check "a plugin with no version gets no install block (rc=$rc err=$err)" bad
+
+echo "failing_binary_no_offer"
+fake="$tmp/partial"
+printf '#!/bin/bash\necho partial\nexit 1\n' > "$fake"; chmod +x "$fake"
+rm -rf "$tmp/bh"; mkdir -p "$tmp/bh"
+out="$(env BUILDER_BIN="$fake" HOME="$tmp/home" BUILDER_HOME="$tmp/bh" PATH=/nonexistent /bin/bash "$root/hooks/session-start" "${text[@]}" 2>"$tmp/stderr")"; rc=$?
+err="$(<"$tmp/stderr")"
+quiet_ok && ! has partial && check "a binary that fails gets the soul only, without its output" ok || check "a binary that fails gets the soul only (rc=$rc err=$err)" bad
 
 echo "claude_json_offer"
 hook_run "$root" - --harness claude

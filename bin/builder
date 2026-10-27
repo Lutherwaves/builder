@@ -48,7 +48,7 @@ version=""
 } 2>/dev/null || true
 if [ -z "$version" ]; then
   echo "builder: cannot read the version in $manifest" >&2
-  exit 3
+  exit 4
 fi
 bin="$builder_home/bin/builder-$version"
 if [ -x "$bin" ]; then
