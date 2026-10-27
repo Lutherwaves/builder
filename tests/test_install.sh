@@ -18,6 +18,7 @@ printf '#!/bin/bash\ncase "$1" in -s) echo "${FAKE_OS:-Linux}";; -m) echo "${FAK
 cat > "$fakes/gh" <<'GH'
 #!/bin/bash
 if [ "$1 $2" = "auth status" ]; then exit "${GH_AUTH:-1}"; fi
+if [ "$1 $2" = "attestation --help" ]; then exit "${GH_NOATTEST:-0}"; fi
 if [ "$1 $2" = "attestation verify" ]; then
   echo "gh $*" > "$GH_LOG"
   if [ "${GH_VERIFY:-0}" -ne 0 ]; then echo "fake attestation failure" >&2; fi
@@ -26,6 +27,31 @@ fi
 GH
 chmod +x "$fakes/uname" "$fakes/gh"
 export GH_LOG="$tmp/gh.log"
+
+# A fake curl for the https sources: it logs its arguments and serves files from $tmp/rel.
+net="$tmp/net"; mkdir -p "$net"
+cat > "$net/curl" <<'CURL'
+#!/bin/bash
+echo "$*" >> "$CURL_LOG"
+o="" u=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -o) o="$2"; shift 2 ;;
+    --proto|--proto-redir|--connect-timeout|--max-time) shift 2 ;;
+    -*) shift ;;
+    *) u="$1"; shift ;;
+  esac
+done
+case "$u" in
+  https://github.com/Lutherwaves/builder/releases/download/*) f="$FAKE_REL/${u#https://github.com/Lutherwaves/builder/releases/download/}" ;;
+  https://mirror.test/dl/*) f="$FAKE_REL/${u#https://mirror.test/dl/}" ;;
+  *) exit 6 ;;
+esac
+[ -f "$f" ] || exit 22
+if [ -n "$o" ]; then cat "$f" > "$o"; else cat "$f"; fi
+CURL
+chmod +x "$net/curl"
+export CURL_LOG="$tmp/curl.log" FAKE_REL="$tmp/rel"
 
 # A fake release for one target: the binary prints "v<claimed>", the .sha256 line is the real one.
 mkrel() { # ver [claimed] [os-arch]
@@ -42,12 +68,18 @@ run() { # args...; sets out err rc
     bash "$plugin/scripts/install.sh" "$@" 2>"$tmp/err")"; rc=$?
   err="$(cat "$tmp/err")"
 }
+run_default() { # args...; the GitHub source through the fake curl; sets out err rc
+  : > "$CURL_LOG"
+  out="$(env -u BUILDER_RELEASE_URL BUILDER_HOME="$bhome" PATH="$net:$fakes:$PATH" \
+    bash "$plugin/scripts/install.sh" "$@" 2>"$tmp/err")"; rc=$?
+  err="$(cat "$tmp/err")"
+}
 installed() { ls "$bhome/bin" | grep -E '^builder-[0-9]+\.[0-9]+\.[0-9]+$' | sed 's/^builder-//' | sort -t. -k1,1n -k2,2n -k3,3n | sed 's/^/builder-/' | tr '\n' ' '; }
 mode() { stat -c %a "$1" 2>/dev/null || stat -f %Lp "$1"; }
 nothing_left() { [ -z "$(ls -A "$bhome/bin")" ]; }
 
 echo "test_installs_plugin_version"
-fresh; mkrel 9.9.9; run
+fresh; mkrel 9.9.9; run_default
 bin="$bhome/bin/builder-9.9.9"
 [ "$rc" -eq 0 ] && [ "$out" = "installed builder 9.9.9 at $bin (checksum ok, provenance not checked: gh is missing or signed out. Check it: gh attestation verify \"$bin\" --repo Lutherwaves/builder)" ] \
   && check "installs the plugin version and says provenance was not checked" ok || check "installs the plugin version (got $rc: $out / $err)" bad
@@ -55,6 +87,20 @@ bin="$bhome/bin/builder-9.9.9"
   && check "the binary is mode 755 and runs" ok || check "the binary is mode 755 and runs" bad
 [[ "$(cat "$bhome/install.answer")" =~ ^yes\ [0-9]+$ ]] && check "install.answer is 'yes <epoch>'" ok || check "install.answer is 'yes <epoch>'" bad
 [ "$(printf '%s\n' "$out" | wc -l | tr -d ' ')" = 1 ] && check "exactly one stdout line" ok || check "exactly one stdout line" bad
+
+grep -qF -- "--proto =https --proto-redir =https --connect-timeout 10 --max-time 300" "$CURL_LOG" \
+  && check "curl takes https only, with timeouts" ok || check "curl takes https only, with timeouts ($(cat "$CURL_LOG"))" bad
+
+echo "test_custom_source"
+fresh; mkrel 9.9.9; run
+bin="$bhome/bin/builder-9.9.9"
+[ "$rc" -eq 0 ] && [ "$out" = "installed builder 9.9.9 at $bin from file://$tmp/rel (checksum ok, provenance not checked: gh is missing or signed out. Check it: gh attestation verify \"$bin\" --repo Lutherwaves/builder)" ] \
+  && check "a BUILDER_RELEASE_URL install names its source" ok || check "a BUILDER_RELEASE_URL install names its source (got $rc: $out / $err)" bad
+[ ! -e "$bhome/install.answer" ] && check "a BUILDER_RELEASE_URL install writes no yes" ok || check "a BUILDER_RELEASE_URL install writes no yes ($(cat "$bhome/install.answer"))" bad
+fresh; mkrel 9.9.9; : > "$CURL_LOG"
+out="$(env BUILDER_HOME="$bhome" BUILDER_RELEASE_URL=https://mirror.test/dl PATH="$net:$fakes:$PATH" bash "$plugin/scripts/install.sh" 2>"$tmp/err")"; rc=$?
+[ "$rc" -eq 0 ] && grep -qF -- "--proto =https,file --proto-redir =https --connect-timeout 10" "$CURL_LOG" \
+  && check "a BUILDER_RELEASE_URL takes file too, but redirects stay https" ok || check "a BUILDER_RELEASE_URL takes file too, but redirects stay https (rc=$rc $(cat "$CURL_LOG"))" bad
 
 echo "test_version_flag_with_v"
 fresh; mkrel 9.8.0; run --version v9.8.0
@@ -68,6 +114,19 @@ fresh; run --version 'x;1'
 
 fresh; run --version ''
 [ "$rc" -eq 2 ] && [ "$err" = 'builder: "" is not a version like 3.0.0' ] && check "an empty --version exits 2" ok || check "an empty --version exits 2 (got $rc: $err)" bad
+
+echo "test_bad_flags"
+fresh; run --version
+[ "$rc" -eq 2 ] && [ "$err" = 'usage: install.sh [--version vX.Y.Z|X.Y.Z]' ] && check "--version with no value exits 2" ok || check "--version with no value exits 2 (got $rc: $err)" bad
+fresh; run --force
+[ "$rc" -eq 2 ] && [ "$err" = 'usage: install.sh [--version vX.Y.Z|X.Y.Z]' ] && check "an unknown flag exits 2" ok || check "an unknown flag exits 2 (got $rc: $err)" bad
+
+echo "test_missing_manifest"
+mv "$plugin/.claude-plugin/plugin.json" "$tmp/plugin.json.kept"
+fresh; mkrel 9.9.9; run
+mv "$tmp/plugin.json.kept" "$plugin/.claude-plugin/plugin.json"
+[ "$rc" -eq 1 ] && [ "$err" = "builder: cannot read the version in $plugin/.claude-plugin/plugin.json" ] \
+  && check "no plugin.json: exactly the clean line on stderr" ok || check "no plugin.json: exactly the clean line on stderr (got $rc: $err)" bad
 
 echo "test_backslash_in_home"
 fresh; mkrel 9.9.9; bhome="$tmp/back\\slash home"; rm -rf "$bhome"; run
@@ -94,6 +153,11 @@ fresh; run
 [ "$rc" -eq 1 ] && [ "$err" = "builder: cannot download file://$tmp/rel/v9.9.9/builder-linux-amd64. Check the network and the version, then run again." ] \
   && nothing_left && check "a missing release exits 1 with the download line" ok || check "a missing release exits 1 with the download line (got $rc: $err)" bad
 
+echo "test_missing_sha256"
+fresh; mkrel 9.9.9; rm -f "$tmp/rel/v9.9.9/builder-linux-amd64.sha256"; run
+[ "$rc" -eq 1 ] && [ "$err" = "builder: cannot download file://$tmp/rel/v9.9.9/builder-linux-amd64.sha256. Check the network and the version, then run again." ] \
+  && nothing_left && check "a missing .sha256 installs nothing" ok || check "a missing .sha256 installs nothing (got $rc: $err)" bad
+
 echo "test_checksum_mismatch"
 fresh; mkrel 9.9.9
 bad="$(printf '0%.0s' $(seq 64))"; printf '%s  builder-linux-amd64\n' "$bad" > "$tmp/rel/v9.9.9/builder-linux-amd64.sha256"
@@ -108,11 +172,23 @@ fresh; mkrel 9.9.9; GH_AUTH=0 GH_VERIFY=1 run
   && [ "$rc" -eq 1 ] && nothing_left && check "a failed provenance check installs nothing" ok || check "a failed provenance check installs nothing (got $rc: $err)" bad
 
 echo "test_provenance_ok"
-fresh; mkrel 9.9.9; GH_AUTH=0 run
+fresh; mkrel 9.9.9; GH_AUTH=0 run_default
 [ "$rc" -eq 0 ] && [ "$out" = "installed builder 9.9.9 at $bhome/bin/builder-9.9.9 (checksum ok, provenance ok)" ] \
   && check "a passing provenance check is reported" ok || check "a passing provenance check is reported (got $rc: $out / $err)" bad
 grep -q -- "--repo Lutherwaves/builder --signer-workflow Lutherwaves/builder/.github/workflows/publish.yml --source-ref refs/tags/v9.9.9" "$GH_LOG" \
   && check "gh gets the repo, signer workflow and tag" ok || check "gh gets the repo, signer workflow and tag ($(cat "$GH_LOG"))" bad
+
+echo "test_gh_without_attestation"
+fresh; mkrel 9.9.9; rm -f "$GH_LOG"; GH_AUTH=0 GH_NOATTEST=1 run_default
+bin="$bhome/bin/builder-9.9.9"
+[ "$rc" -eq 0 ] && [ "$out" = "installed builder 9.9.9 at $bin (checksum ok, provenance not checked: this gh has no attestation command (gh 2.49 or newer has it). Check it: gh attestation verify \"$bin\" --repo Lutherwaves/builder)" ] \
+  && [ ! -e "$GH_LOG" ] && check "a gh with no attestation command installs, not checked, with the reason" ok \
+  || check "a gh with no attestation command installs, not checked, with the reason (got $rc: $out / $err)" bad
+
+echo "test_unwritable_answer"
+fresh; mkrel 9.9.9; mkdir -p "$bhome/install.answer"; run_default
+[ "$rc" -eq 1 ] && [ "$err" = "builder: cannot write $bhome/install.answer. Check that $bhome is writable, then run again." ] \
+  && check "an unwritable install.answer exits 1 with the cannot write line" ok || check "an unwritable install.answer exits 1 with the cannot write line (got $rc: $err)" bad
 
 echo "test_wrong_version_inside"
 fresh; mkrel 9.9.9 1.2.3; run

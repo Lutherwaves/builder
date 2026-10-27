@@ -22,12 +22,14 @@ done
 
 if [ -z "$have_version" ]; then
   manifest="$root/.claude-plugin/plugin.json"
-  while IFS= read -r line || [[ -n $line ]]; do
-    if [[ $line =~ \"version\"[[:space:]]*:[[:space:]]*\"([^\"]*)\" ]]; then
-      version="${BASH_REMATCH[1]}"
-      break
-    fi
-  done < "$manifest" 2>/dev/null || true
+  {
+    while IFS= read -r line || [[ -n $line ]]; do
+      if [[ $line =~ \"version\"[[:space:]]*:[[:space:]]*\"([^\"]*)\" ]]; then
+        version="${BASH_REMATCH[1]}"
+        break
+      fi
+    done < "$manifest"
+  } 2>/dev/null || true
   [ -n "$version" ] || die "cannot read the version in $manifest"
 fi
 version="${version#v}"
@@ -43,8 +45,14 @@ fi
 command -v curl >/dev/null 2>&1 || die "curl is required. Install it, then run again."
 
 asset="builder-$os-$arch"
-url="${BUILDER_RELEASE_URL:-https://github.com/$repo/releases/download}/v$version/$asset"
-fetch() { curl -fsSL --proto '=https,file' --proto-redir '=https,file' "$@" 2>/dev/null; }
+# A BUILDER_RELEASE_URL is a test or a mirror: it may be file://, and it is no yes of the person.
+if [ -n "${BUILDER_RELEASE_URL:-}" ]; then
+  base="$BUILDER_RELEASE_URL" protos='=https,file' source=" from $BUILDER_RELEASE_URL"
+else
+  base="https://github.com/$repo/releases/download" protos='=https' source=""
+fi
+url="$base/v$version/$asset"
+fetch() { curl -fsSL --proto "$protos" --proto-redir '=https' --connect-timeout 10 --max-time 300 "$@" 2>/dev/null; }
 
 builder_home="${BUILDER_HOME:-$HOME/.config/builder}"
 bin_dir="$builder_home/bin"
@@ -68,12 +76,15 @@ want="${sums%%[[:space:]]*}"
 
 final="$bin_dir/builder-$version"
 if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
-  if ! verdict="$(gh attestation verify "$tmp" --repo "$repo" \
+  if ! gh attestation --help >/dev/null 2>&1; then
+    provenance="provenance not checked: this gh has no attestation command (gh 2.49 or newer has it). Check it: gh attestation verify \"$final\" --repo $repo"
+  elif ! verdict="$(gh attestation verify "$tmp" --repo "$repo" \
       --signer-workflow "$repo/.github/workflows/publish.yml" --source-ref "refs/tags/v$version" 2>&1)"; then
     echo "$verdict" >&2
     die "the provenance check failed for $asset v$version. Nothing was installed."
+  else
+    provenance="provenance ok"
   fi
-  provenance="provenance ok"
 else
   provenance="provenance not checked: gh is missing or signed out. Check it: gh attestation verify \"$final\" --repo $repo"
 fi
@@ -97,7 +108,10 @@ if [ -n "$others" ]; then
   done
 fi
 
-now="$(/bin/date +%s 2>/dev/null || date +%s)"
-echo "yes $now" > "$builder_home/install.answer" || die "cannot write $builder_home/install.answer. Check that $builder_home is writable, then run again."
+if [ -z "$source" ]; then
+  now="$(/bin/date +%s 2>/dev/null || date +%s)"
+  { echo "yes $now" > "$builder_home/install.answer"; } 2>/dev/null \
+    || die "cannot write $builder_home/install.answer. Check that $builder_home is writable, then run again."
+fi
 
-echo "installed builder $version at $final (checksum ok, $provenance)"
+echo "installed builder $version at $final$source (checksum ok, $provenance)"
