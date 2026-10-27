@@ -13,7 +13,7 @@ check() {
   for d in "$evals"/*/; do
     [ -d "$d" ] || continue
     name="$(basename "$d")"
-    [ "$name" = results ] && continue   # graded results (support-table.py), not a fixture
+    [ "$name" = results ] && continue   # graded results (cmd/support-table), not a fixture
     n=$((n + 1))
     [ -s "$d/prompt.md" ] || { echo "✗ $name: prompt.md is missing or empty" >&2; bad=$((bad + 1)); continue; }
     if [ ! -f "$d/expect.md" ]; then echo "✗ $name: expect.md is missing" >&2; bad=$((bad + 1)); continue; fi

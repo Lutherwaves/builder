@@ -6,6 +6,12 @@ tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
 fails=0
 check() { if [ "$2" = "ok" ]; then echo "  ✓ $1"; else echo "  ✗ $1"; fails=1; fi; }
 run() { BUILDER_EVAL_DIR="$tmp/evals" bash "$root/tests/evals/run.sh" "$@"; }
+if [ -z "${BUILDER_BIN:-}" ]; then
+  (cd "$root" && go build -o "$tmp/builder" ./cmd/builder) || { echo "  ✗ cannot build the builder binary"; exit 1; }
+  export BUILDER_BIN="$tmp/builder"
+fi
+# The runs below set HOME to a fake home; the Go cache stays where it is.
+GOCACHE="$(go env GOCACHE)"; GOMODCACHE="$(go env GOMODCACHE)"; export GOCACHE GOMODCACHE
 
 mkdir -p "$tmp/evals"
 out="$(run --check 2>&1)"; rc=$?
@@ -103,7 +109,7 @@ rm -rf "$tmp/evals/shim"
 mkdir -p "$tmp/evals/allowed"
 echo "Do it." > "$tmp/evals/allowed/prompt.md"
 printf -- '- a\n- b\n- c\n' > "$tmp/evals/allowed/expect.md"
-printf '# tests\nBash(python3 -m unittest:*)\n\n' > "$tmp/evals/allowed/allow"
+printf '# tests\nBash(go test:*)\n\n' > "$tmp/evals/allowed/allow"
 out="$(run allowed --dry-run 2>&1)"
 deny_ok=1
 for rule in 'Bash(matchblox send:*)' 'Bash(matchblox compact:*)' 'Bash(matchblox hold:*)' 'Bash(matchblox release:*)' \
@@ -113,7 +119,7 @@ for rule in 'Bash(matchblox send:*)' 'Bash(matchblox compact:*)' 'Bash(matchblox
   [ "$(grep -cF -- "$q" <<<"$out")" -eq 2 ] || { deny_ok=0; echo "    missing: $rule"; }
 done
 [ "$deny_ok" -eq 1 ] && check "both runs deny session-steering and existing tools" ok || check "both runs deny session-steering and existing tools" bad
-[ "$(grep -c -- '--allowedTools Bash\\(python3\\ -m\\ unittest:\\\*\\) --disallowedTools' <<<"$out")" -eq 2 ] \
+[ "$(grep -c -- '--allowedTools Bash\\(go\\ test:\\\*\\) --disallowedTools' <<<"$out")" -eq 2 ] \
   && ! grep -q -- '--allowedTools.*#' <<<"$out" \
   && check "allow file adds --allowedTools" ok || check "allow file adds --allowedTools ($out)" bad
 out="$(run good --dry-run 2>&1)"
@@ -289,6 +295,10 @@ for bad in "$tmp/repo-copy" "$tmp/other"; do
   { [ "$rc" -eq 2 ] && grep -q 'not empty' <<<"$out" && [ "$before" = "$after" ] && [ -d "$bad/skills" ]; } \
     || { guard_ok=0; echo "    non-empty dir not refused or changed: $bad ($rc: $out)"; }
 done
+# A ".." after a missing part resolves as Python's realpath does: $ph/missing/.. is $ph, which holds the real config.
+out="$(prun BUILDER_PARITY_CONFIG_DIR="$ph/missing/.." BUILDER_EVAL_OUT="$tmp/pout-g" bash "$parity" 2>&1)"; rc=$?
+{ [ "$rc" -eq 2 ] && grep -q 'holds your real config dir' <<<"$out" && [ ! -e "$ph/missing" ]; } \
+  || { guard_ok=0; echo "    not refused: $ph/missing/.. ($rc: $out)"; }
 [ "$guard_ok" -eq 1 ] && [ "$(cat "$ph/.claude/settings.json")" = "$real_settings" ] && [ ! -e "$ph/.claude/sub" ] && [ ! -e "$tmp/pout-g" ] \
   && check "parity refuses a config dir that is or holds the real one" ok || check "parity refuses a config dir that is or holds the real one" bad
 out="$(prun BUILDER_EVAL_OUT="$tmp/pout1" bash "$parity" 2>&1)"; rc=$?

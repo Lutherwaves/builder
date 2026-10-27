@@ -31,8 +31,8 @@ func TestHookOnboardingNamesTheShim(t *testing.T) {
 			t.Fatalf("missing %q in\n%s", want, text)
 		}
 	}
-	if strings.Contains(text, "python3") {
-		t.Fatal("the hook text names python3")
+	if strings.Contains(text, "python") {
+		t.Fatal("the hook text names python")
 	}
 }
 

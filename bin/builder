@@ -1,20 +1,64 @@
 #!/usr/bin/env bash
 # Run the builder binary whose version matches this plugin, so plugin and binary never drift.
+# Bash builtins only: a session hook can start with a broken PATH.
 set -euo pipefail
-BUILDER_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+src="${BASH_SOURCE[0]}"
+if [[ $src == */* ]]; then dir="${src%/*}"; else dir=.; fi
+BUILDER_ROOT="$(cd "${dir:-/}/.." && pwd -P)"
 export BUILDER_ROOT
+builder_home="${BUILDER_HOME:-$HOME/.config/builder}"
+save_answer() {
+  local file="$builder_home/install.answer" now=""
+  now="$(/bin/date +%s 2>/dev/null || date +%s 2>/dev/null)" || now=""
+  if [[ $now =~ ^[0-9]+$ ]] \
+    && { mkdir -p "$builder_home" 2>/dev/null || /bin/mkdir -p "$builder_home" 2>/dev/null; } \
+    && { echo "$1 $now" > "$file"; } 2>/dev/null; then
+    return 0
+  fi
+  echo "builder: cannot write $file. Check that $builder_home is writable, then run again." >&2
+  exit 1
+}
+if [ "${1:-}" = install-answer ]; then
+  case "${2:-}" in
+    later)
+      save_answer later
+      echo 'builder: saved "not now". The install offer comes back in 7 days.'
+      exit 0 ;;
+    never)
+      save_answer never
+      echo "builder: saved \"never\". To turn the binary on, run: bash \"$BUILDER_ROOT/scripts/install.sh\""
+      exit 0 ;;
+    *)
+      echo "usage: builder install-answer later|never. To say yes, run: bash \"$BUILDER_ROOT/scripts/install.sh\"" >&2
+      exit 2 ;;
+  esac
+fi
 if [ -n "${BUILDER_BIN:-}" ]; then
   exec "$BUILDER_BIN" "$@"
 fi
 manifest="$BUILDER_ROOT/.claude-plugin/plugin.json"
-version="$(sed -n 's/^.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$manifest" 2>/dev/null | head -n 1 || true)"
+version=""
+{
+  while IFS= read -r line || [[ -n $line ]]; do
+    if [[ $line =~ \"version\"[[:space:]]*:[[:space:]]*\"([^\"]*)\" ]]; then
+      version="${BASH_REMATCH[1]}"
+      break
+    fi
+  done < "$manifest"
+} 2>/dev/null || true
 if [ -z "$version" ]; then
   echo "builder: cannot read the version in $manifest" >&2
-  exit 3
+  exit 4
 fi
-bin="${BUILDER_HOME:-$HOME/.config/builder}/bin/builder-$version"
+bin="$builder_home/bin/builder-$version"
 if [ -x "$bin" ]; then
   exec "$bin" "$@"
+fi
+verdict=""
+{ read -r verdict _ < "$builder_home/install.answer"; } 2>/dev/null || true
+if [ "$verdict" = never ]; then
+  echo "builder $version is off: the person said never. Turn it on: bash \"$BUILDER_ROOT/scripts/install.sh\"" >&2
+  exit 3
 fi
 echo "builder $version is not installed. Install it: bash \"$BUILDER_ROOT/scripts/install.sh\"" >&2
 exit 3

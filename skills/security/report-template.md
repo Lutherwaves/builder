@@ -6,7 +6,7 @@ Leave out "Since the last audit" only when no baseline exists and the mode is ch
 ## What I ran
 
 One short paragraph: the mode (change or audit), the base and head (or the audited SHA), and each command with its result.
-Name the build, the tests, every probe, and the `security.py score` and `baseline` calls.
+Name the build, the tests, every probe, and the `builder security score` and `baseline` calls.
 
 ## Coverage
 
@@ -47,7 +47,7 @@ One entry per finding:
 **<One-line headline that states the harm to a person.>** `path/to/file:line` — <Critical | High | Medium | Low>
 What goes wrong: <who, in which concrete situation, and what they lose>.
 Standards: <CWE-n (Top 25)> · <CAPEC-n> · <OWASP Axx:2025> · <APIx:2023> · <ASVS 5.0 Vn> · <VRT category> · <NIST control> · <CIS safeguard>
-CVSS: <vector> → <score> <rating> (computed by security.py score)
+CVSS: <vector> → <score> <rating> (computed by builder security score)
 Escalation: <none | why the real blast radius is bigger than the base score, and the severity you use>
 Prevention: <plan | design | implement | review>: <the control that would have stopped it there>
 Evidence: <measured: probe, input → output | from reading> · <static | live>
@@ -60,7 +60,7 @@ Take each identifier from `standards.md`. Copy the score, the rating and the Top
 
 ## Since the last audit
 
-From `security.py baseline diff` (change mode) or `baseline save` (audit mode):
+From `builder security baseline diff` (change mode) or `baseline save` (audit mode):
 
 - New: <ids>.
 - Still open: <id>, open <n> days since <first_seen> (<first_sha>).

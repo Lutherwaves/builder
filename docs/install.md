@@ -1,7 +1,8 @@
 # Installing builder
 
-builder needs Bash and Python 3, on macOS or Linux. Its session hook makes no network
-call and finishes in under a second.
+builder runs on macOS and Linux. It needs Bash, and it offers to install one small helper binary
+in your first session. Its session hook makes no network call and finishes in under a
+second.
 
 ## Claude Code
 
@@ -58,3 +59,24 @@ Or use the git form that opencode documents:
 ```json
 {"plugin": ["builder@git+https://github.com/Lutherwaves/builder.git"]}
 ```
+
+## The helper binary
+
+The binary lives in `~/.config/builder/bin` as `builder-<version>`. Set `BUILDER_HOME` to
+move the folder. The version is in the name, so the plugin always runs the binary of its
+own version, and the two cannot drift apart.
+
+`bash <plugin root>/scripts/install.sh` downloads the binary for your system from the
+GitHub release of the plugin's version. It checks the checksum. When `gh` is signed in, it
+also checks the build provenance. Then it runs `builder version` and compares the tag. Pass
+`--version vX.Y.Z` to install another version.
+
+Without a signed-in `gh`, the installer skips the provenance check and prints the command.
+Run it yourself: `gh attestation verify <binary> --repo Lutherwaves/builder`.
+
+The installer keeps the version it installs and the newest others, three in all. It
+removes the rest.
+
+The first session offers the install once. "Not now" is quiet for 7 days, and "never"
+holds across versions. Both live in `~/.config/builder/install.answer`. Running the
+installer turns "never" off.

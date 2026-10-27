@@ -47,7 +47,30 @@ trap 'exit 130' INT TERM
 # Never touch the real config. Refuse a cfg that is the real config dir, sits inside it, or holds it
 # (for example $HOME, whose .claude.json is real). Refuse a cfg that parity did not create: it must
 # not exist yet, be empty, or hold parity's marker. Parity never deletes anything in a foreign folder.
-realpath_() { python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$1"; }
+# realpath_ works as os.path.realpath: it resolves each part left to right, follows a symlink where it
+# finds one, and keeps a missing part as written. ".." drops the part before it only after that part is resolved.
+realpath_() {
+  local rest="$1" out="" part t hops=0
+  [[ $rest == /* ]] || rest="$PWD/$rest"
+  while [ -n "$rest" ]; do
+    part="${rest%%/*}"
+    if [[ $rest == */* ]]; then rest="${rest#*/}"; else rest=""; fi
+    case "$part" in
+      ''|.) ;;
+      ..) out="${out%/*}" ;;
+      *)
+        if [ -L "$out/$part" ] && [ "$hops" -lt 40 ]; then
+          t="$(readlink "$out/$part")" || return 0
+          hops=$((hops + 1))
+          [[ $t == /* ]] && out=""
+          rest="$t${rest:+/$rest}"
+        else
+          out="$out/$part"
+        fi ;;
+    esac
+  done
+  printf '%s\n' "${out:-/}"
+}
 refuse() {
   echo "✗ parity refuses CLAUDE_CONFIG_DIR=$cfg: $1" >&2
   echo "  Pick a separate, empty folder for BUILDER_PARITY_CONFIG_DIR. Your real config dir is $src." >&2
@@ -72,92 +95,8 @@ fi
 # It never copies credentials or account data.
 make_config() {
   mkdir -p "$cfg" && : > "$cfg/.builder-parity" || return 1
-  python3 - "$src" "$src_state" "$cfg" <<'PY'
-import json, os, shutil, sys
-from pathlib import Path
-src, src_state, cfg = Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3])
-
-def load(p):
-    try:
-        d = json.loads(Path(p).read_text())
-    except (OSError, ValueError):
-        return {}
-    return d if isinstance(d, dict) else {}
-
-def clear(p):  # remove a link without following it, or a folder parity owns
-    if p.is_symlink() or p.is_file():
-        p.unlink()
-    elif p.is_dir():
-        shutil.rmtree(p)
-
-def copy_in(path):  # copy one folder under the person's plugins folder to the same place under cfg
-    try:
-        rel = Path(path).relative_to(src / "plugins")
-    except ValueError:
-        print("note: %s is outside your plugins folder; parity does not copy it" % path, file=sys.stderr)
-        return
-    if Path(path).is_dir():
-        shutil.copytree(path, cfg / "plugins" / rel)
-
-def relink(obj):  # paths into the person's plugins folder now point to cfg's copies
-    return json.loads(json.dumps(obj).replace(json.dumps(str(src / "plugins"))[1:-1], json.dumps(str(cfg / "plugins"))[1:-1]))
-
-for d in ("plugins", "skills"):
-    clear(cfg / d)
-(cfg / "plugins").mkdir()
-installed = load(src / "plugins/installed_plugins.json")
-sp = {k: v for k, v in (installed.get("plugins") or {}).items() if k.startswith("superpowers@")}
-if not sp:
-    print("note: superpowers is not installed; the builder-led run has no superpowers", file=sys.stderr)
-for entries in sp.values():
-    for e in entries if isinstance(entries, list) else []:
-        if isinstance(e, dict) and e.get("installPath"):
-            copy_in(e["installPath"])
-(cfg / "plugins/installed_plugins.json").write_text(json.dumps(relink(dict(installed, plugins=sp)), indent=2))
-markets = {k.split("@", 1)[1] for k in sp}
-known = {k: v for k, v in load(src / "plugins/known_marketplaces.json").items() if k in markets}
-for v in known.values():
-    if isinstance(v, dict) and v.get("installLocation"):
-        copy_in(v["installLocation"])
-(cfg / "plugins/known_marketplaces.json").write_text(json.dumps(relink(known), indent=2))
-
-gstack = src / "skills/gstack"
-if gstack.is_dir():
-    (cfg / "skills").mkdir()
-    os.symlink(gstack, cfg / "skills/gstack")
-    for d in sorted((src / "skills").iterdir()):
-        if d.name != "gstack" and (d / ".gstack-owned").is_file():
-            shutil.copytree(d, cfg / "skills" / d.name, symlinks=True)
-else:
-    print("note: gstack is not installed; the builder-led run has no gstack", file=sys.stderr)
-
-# The matchblox hooks and status line that `matchblox setup` wrote to the person's settings.
-settings = load(src / "settings.json")
-hooks = {}
-for event, groups in (settings.get("hooks") or {}).items():
-    for g in groups if isinstance(groups, list) else []:
-        keep = [h for h in (g.get("hooks") or []) if isinstance(h, dict) and "matchblox hook" in str(h.get("command", ""))]
-        if keep:
-            hooks.setdefault(event, []).append(dict(g, hooks=keep))
-status = settings.get("statusLine") if "matchblox hook" in str((settings.get("statusLine") or {}).get("command", "")) else None
-if not hooks:
-    print("note: your settings have no matchblox hooks, so the builder-led run has none. Run `matchblox setup` first for a fair run.", file=sys.stderr)
-new = {"enabledPlugins": {k: True for k in sp}, "env": {"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "85"}}
-if hooks:
-    new["hooks"] = hooks
-if status:
-    new["statusLine"] = status
-(cfg / "settings.json").write_text(json.dumps(new, indent=2))
-
-# The code graph server, merged into cfg's own .claude.json so a kept sign-in survives.
-server = (load(src_state).get("mcpServers") or {}).get("codebase-memory-mcp")
-if server is None:
-    print("note: codebase-memory-mcp is not set up; the builder-led run has no code graph", file=sys.stderr)
-else:
-    state = load(cfg / ".claude.json")
-    state.setdefault("mcpServers", {})["codebase-memory-mcp"] = server
-    (cfg / ".claude.json").write_text(json.dumps(state, indent=2))
-PY
+  (cd "$root" && go build -o "$tmp/parity-config" ./cmd/parity-config) \
+    && "$tmp/parity-config" "$src" "$src_state" "$cfg"
 }
 
 make_config || { echo "✗ parity: cannot write the builder-led config in $cfg" >&2; exit 1; }
@@ -176,7 +115,7 @@ fi
 
 # Claude Code keeps its sign-in per config dir. Check it before any model run.
 auth="$(CLAUDE_CONFIG_DIR="$cfg" claude auth status --json 2>/dev/null)"   # stdout only: a warning on stderr is not JSON
-if ! python3 -c 'import json,sys; sys.exit(0 if json.loads(sys.argv[1]).get("loggedIn") is True else 1)' "$auth" 2>/dev/null; then
+if ! jq -e '.loggedIn == true' >/dev/null 2>&1 <<<"$auth"; then
   cat >&2 <<EOF
 ✗ parity: Claude Code is not signed in under CLAUDE_CONFIG_DIR=$cfg.
   Claude Code keeps its sign-in per config dir, so your normal sign-in does not carry over.

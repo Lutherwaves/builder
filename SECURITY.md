@@ -31,9 +31,10 @@ Security-relevant surfaces:
   adds text to the session context. It runs local commands only (`git`,
   `gh auth token`, `ps`, `matchblox sessions --json`, `matchblox usage --json`)
   under one 0.5 s budget, and reads local files.
-- `lib/` — `ledger.py`, `signals.py` and `reach.py`. The hook and the skills run them.
+- The `builder` binary (`cmd/builder`, `internal/*`) and its shim `bin/builder`.
+  The hook and the skills run it through the shim. It runs locally.
 - `skills/*/SKILL.md` — instructions the harness treats as trusted content.
-- `skills/*/*.sh`, `skills/*/*.py` and `scripts/*.sh` — run locally.
+- `skills/*/*.sh` and `scripts/*.sh` — run locally.
 - Files under `~/.config/builder/` (or `$BUILDER_HOME`): `ledger.json` (setup
   answers), `reach.json` (send rules and the team channel) and `reach-log.jsonl`.
   **`reach-log.jsonl` holds the full text of each message** that `reach` sent or

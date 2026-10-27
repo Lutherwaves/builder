@@ -1,13 +1,13 @@
 # Contributing to builder
 
 Thanks for your interest. builder is a plugin for coding agents: ten skills, one session-start hook,
-and a small Python library. It runs on Claude Code, Codex CLI, Cursor CLI and opencode. [AGENTS.md](AGENTS.md) tells you which file to change for each job.
+and one Go binary, `builder`. It runs on Claude Code, Codex CLI, Cursor CLI and opencode. [AGENTS.md](AGENTS.md) tells you which file to change for each job.
 
 ## Quick start
 
 1. Fork and clone the repository.
 2. Load your checkout in a session (see below).
-3. A skill lives in `skills/<name>/SKILL.md`. Its tools sit beside it, for example `skills/budget/burn-proj.py`.
+3. A skill lives in `skills/<name>/SKILL.md`. Its tool is a command of the `builder` binary, for example the budget forecast in `internal/budget`.
 
 ## Load your checkout
 
@@ -26,10 +26,10 @@ A new harness needs six things. Do them in this order.
 
 1. **Manifest.** Add the harness's plugin manifest, with the same description and keywords as the other manifests. Keep `version` equal.
 2. **Mapping file.** Add `skills/builder/harnesses/<harness>.md`. It holds the `<!-- hook -->` block and one row per action. A tool you did not verify starts with `not verified:` and names a safe fallback.
-3. **Detection marker.** Add the harness to `lib/harness.py`: its state directory, its plugin-root variable and its process match. Add an environment marker only after you saw a real session set it. Extend `tests/test_harness.py`.
+3. **Detection marker.** Add the harness to `internal/harness/harness.go`: its state directory, its plugin-root variable and its process match. Add an environment marker only after you saw a real session set it. Extend `internal/harness/harness_test.go`.
 4. **Eval runner.** Add `eval_base_<harness>`, `eval_notes_<harness>` and `eval_prepare_<harness>` to `tests/evals/lib.sh`, so that `bash tests/evals/run.sh --harness <harness> <skill>` runs every fixture. The runner writes nothing outside its temp dirs.
 5. **Results.** Run the fixtures and commit the result files that `tests/evals/README.md` describes. Never commit a transcript.
-6. **Support table.** Run `python3 scripts/support-table.py render` and paste the block it prints into the README. Never write a support claim by hand. A harness shows as supported only after every fixture passes on it.
+6. **Support table.** Run `go run ./cmd/support-table render` and paste the block it prints into the README. Never write a support claim by hand. A harness shows as supported only after every fixture passes on it.
 
 Then add its install block to the README, and its state directory to the scope in `SECURITY.md`.
 
@@ -43,11 +43,12 @@ bash scripts/validate.sh
 
 It checks that:
 
-- the manifests and the release config parse;
+- the manifests parse, the release scripts pass their tests, and the workflows pass `actionlint` when it is installed;
 - every commit subject since `origin/main` follows Conventional Commits;
 - every skill has the skill shape (see below);
-- the Python tools compile, and `burn-proj.py` keeps its output shape;
-- the unit tests, the hook tests, the drift tests and the eval runner tests pass;
+- the Go code builds, passes `go vet` and its tests, and `builder budget` keeps its output shape;
+- no Python is left outside the sample projects of the eval fixtures;
+- the shim tests, the hook tests, the installer tests, the drift tests and the eval runner tests pass;
 - every eval fixture is valid;
 - no tracked file holds a deny-listed name, when `BUILDER_DENYLIST` is set (see "Scrub guard").
 
@@ -98,7 +99,7 @@ Every commit follows two rules.
    `scripts/check-subjects.sh` enforces this rule in `validate.sh` and in the CI job, for every commit and the pull request title.
 2. **Signed commits.** Sign every commit. Never use `--no-verify`. Never make a WIP commit.
 
-The release pipeline ([release-please](https://github.com/googleapis/release-please)) reads the subjects:
+The release workflow (go-semantic-release) reads the subjects on `main`:
 
 - `feat: ...` adds a feature (a minor bump).
 - `fix: ...` fixes a bug (a patch bump).
@@ -114,10 +115,8 @@ The release pipeline ([release-please](https://github.com/googleapis/release-ple
 
 ## Release process
 
-The release is automated.
+A merge to `main` that `validate` passed is released: the four binaries, the release notes and the plugin version.
+Nobody tags by hand, and there is no release pull request to merge.
+[RELEASING.md](RELEASING.md) says how it works and what to do when a step fails.
 
-1. Merge pull requests with Conventional Commit titles.
-2. release-please opens a release pull request with the next version and the changelog.
-3. Merging that pull request tags the version, cuts a GitHub release, and bumps the manifest versions.
-
-Never edit `CHANGELOG.md` or the `version` in a manifest by hand.
+Write your change under `## [Unreleased]` in `CHANGELOG.md`. Never edit a released section or a manifest `version`: the release bot owns both.

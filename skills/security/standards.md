@@ -10,7 +10,7 @@ If a finding fits no row, find its CWE at <https://cwe.mitre.org> and say "no ro
 | OWASP Top 10 | 2025 | <https://top10.owasp.org/2025> |
 | OWASP API Security Top 10 | 2023 | <https://owasp.org/API-Security/editions/2023/en/0x11-t10/> |
 | OWASP ASVS | 5.0 | <https://github.com/OWASP/ASVS/tree/master/5.0/en> |
-| CWE Top 25 | 2025 | `TOP25_2025` in `lib/security.py`. The `score` command sets the flag |
+| CWE Top 25 | 2025 | `Top25_2025` in `internal/security/security.go`. The `score` command sets the flag |
 | CAPEC | current | <https://capec.mitre.org> |
 | Bugcrowd VRT | release of 2026-07-08 | <https://github.com/bugcrowd/vulnerability-rating-taxonomy> |
 | NIST SP 800-53 | Rev. 5 | <https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final> |
@@ -18,7 +18,7 @@ If a finding fits no row, find its CWE at <https://cwe.mitre.org> and say "no ro
 
 ## The map
 
-Dimension names are the values `lib/security.py` accepts. A dash means that the standard has no fitting entry.
+Dimension names are the values `builder security` accepts. A dash means that the standard has no fitting entry.
 A † marks a Top 10:2025 category that fits by theme only: the row's CWE is in no 2025 category's mapped CWE list. Say "by theme" when you cite it.
 Each CWE here is ALLOWED or ALLOWED-WITH-REVIEW in MITRE's vulnerability-mapping notes. Do not map to a DISCOURAGED one, such as CWE-200, CWE-345 or CWE-400.
 

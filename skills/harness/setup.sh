@@ -33,12 +33,13 @@ BIN="$(find_bin)" || {
   exit 2
 }
 
+PLUGIN_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 REPO="$(cd "${1:-$PWD}" && pwd)"
 echo "→ binary: $BIN"
 echo "→ repo:   $REPO"
 
 # ── Wire a project-scoped .mcp.json (merge-safe — never clobber other servers).
-#    An existing file is merged with jq, else with python3. With neither, refuse.
+#    An existing file is merged with jq, else with the builder binary. With neither, refuse.
 MCP="${REPO}/.mcp.json"
 if [ -f "$MCP" ]; then
   tmp="$(mktemp)"
@@ -47,23 +48,18 @@ if [ -f "$MCP" ]; then
     jq --arg bin "$BIN" \
        '.mcpServers = (.mcpServers // {}) | .mcpServers["codebase-memory"] = {command:$bin, args:["--ui=false"], env:{}}' \
        "$MCP" > "$tmp" 2>/dev/null && merged=1
-  elif command -v python3 >/dev/null 2>&1; then
-    python3 - "$MCP" "$BIN" > "$tmp" 2>/dev/null <<'PY' && merged=1
-import json, sys
-data = json.load(open(sys.argv[1]))
-if not isinstance(data, dict):
-    sys.exit(1)
-servers = data.get("mcpServers") if isinstance(data.get("mcpServers"), dict) else {}
-servers["codebase-memory"] = {"command": sys.argv[2], "args": ["--ui=false"], "env": {}}
-data["mcpServers"] = servers
-print(json.dumps(data, indent=2))
-PY
   else
-    rm -f "$tmp"
-    echo "error: $MCP exists, and this machine has neither jq nor python3 to merge into it. It is unchanged." >&2
-    echo "Fix: install jq or python3 and re-run, or add this server to its mcpServers by hand:" >&2
-    echo "  \"codebase-memory\": {\"command\": \"$BIN\", \"args\": [\"--ui=false\"], \"env\": {}}" >&2
-    exit 2
+    "$PLUGIN_ROOT/bin/builder" mcp-merge "$MCP" "$BIN" > "$tmp" 2>"$tmp.err" && merged=1 || rc=$?
+    if [ "${rc:-0}" -ne 0 ] && [ "${rc:-0}" -ne 1 ]; then
+      err="$(head -n 1 "$tmp.err" 2>/dev/null || true)"
+      rm -f "$tmp" "$tmp.err"
+      echo "error: $MCP exists, and this machine has neither jq nor the builder binary to merge into it. It is unchanged." >&2
+      [ -z "$err" ] || echo "$err" >&2
+      echo "Fix: install jq or the builder binary and re-run, or add this server to its mcpServers by hand:" >&2
+      echo "  \"codebase-memory\": {\"command\": \"$BIN\", \"args\": [\"--ui=false\"], \"env\": {}}" >&2
+      exit 2
+    fi
+    rm -f "$tmp.err"
   fi
   if [ "$merged" -ne 1 ]; then
     rm -f "$tmp"

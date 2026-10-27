@@ -235,7 +235,7 @@ func check(stdout io.Writer, resultsDir, evalsDir, readme string) {
 	}
 	block := strings.TrimSpace(text[i+len(start) : j])
 	if block != render(resultsDir, evalsDir) {
-		fail("the support table in %s is out of date: paste the output of `scripts/support-table.py render` between the markers", readme)
+		fail("the support table in %s is out of date: paste the output of `go run ./cmd/support-table render` between the markers", readme)
 	}
 	fmt.Fprintln(stdout, "support table ok")
 }

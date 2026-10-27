@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# builder SessionStart hook. Uses bash builtins only until python3 is found,
+# builder SessionStart hook. Uses bash builtins only until the binary runs,
 # because a hook can start with a broken PATH.
 case "$0" in
   */*) SCRIPT_DIR="$(cd "${0%/*}" && pwd)" ;;
@@ -8,12 +8,11 @@ esac
 PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 export CLAUDE_PLUGIN_ROOT="$PLUGIN_ROOT"
 
-if command -v python3 >/dev/null 2>&1; then
-  out="$(python3 "${SCRIPT_DIR}/session_start.py" "$@" 2>/dev/null)"
-  if [ -n "$out" ]; then
-    printf '%s\n' "$out"
-    exit 0
-  fi
+out="$("${BASH:-/bin/bash}" "$PLUGIN_ROOT/bin/builder" hook "$@" 2>/dev/null)"
+rc=$?
+if [ "$rc" -eq 0 ] && [ -n "$out" ]; then
+  printf '%s\n' "$out"
+  exit 0
 fi
 
 harness=auto format=""
@@ -32,6 +31,39 @@ fi
 
 soul="$(<"${PLUGIN_ROOT}/skills/builder/soul-compact.md")" 2>/dev/null
 [ -n "$soul" ] || soul="builder is installed. Load the builder skill for its rules."
+
+install_block() {
+  local verdict="" at="" now="" age snooze_s=604800  # 7 days; bin/builder's "not now" line says 7 days
+  { read -r verdict at < "${BUILDER_HOME:-$HOME/.config/builder}/install.answer"; } 2>/dev/null || true
+  now="$(/bin/date +%s 2>/dev/null || date +%s 2>/dev/null)" || now=""
+  case "$verdict" in
+    never) return ;;
+    later)
+      if [[ $at =~ ^[0-9]{1,15}$ && $now =~ ^[0-9]{1,15}$ ]]; then
+        age=$((10#$now - 10#$at))
+        [ "$age" -ge 0 ] && [ "$age" -lt "$snooze_s" ] && return
+      fi ;;
+    yes)
+      printf '%s\n%s\n%s' \
+        "builder install: the helper binary of this plugin version is missing, and the person said yes to it before." \
+        "In your first reply, run: bash \"$PLUGIN_ROOT/scripts/install.sh\". Report it under ↗ Outside." \
+        "If the install fails, run: \"$PLUGIN_ROOT/bin/builder\" install-answer later"
+      return ;;
+  esac
+  printf '%s\n%s\n%s\n%s\n%s\n%s' \
+    "builder install: the helper binary is missing." \
+    "Answer the person's request first. At the end of that reply, ask this once, word for word:" \
+    "  builder's helper binary is not installed. It runs the setup steps, send checks and forecasts. Install it now? yes, not now, or never." \
+    "On yes, run: bash \"$PLUGIN_ROOT/scripts/install.sh\". It downloads from GitHub, so report it under ↗ Outside." \
+    "On not now, run: \"$PLUGIN_ROOT/bin/builder\" install-answer later" \
+    "On never, run: \"$PLUGIN_ROOT/bin/builder\" install-answer never"
+}
+if [ "$rc" -eq 3 ]; then
+  block="$(install_block)"
+  [ -z "$block" ] || soul="$soul"$'\n\n'"$block"
+fi
+soul="$soul"$'\n\n'"builder root: $PLUGIN_ROOT. Where a builder skill says \${CLAUDE_PLUGIN_ROOT}, use this path."
+
 if [ "$format" = text ]; then
   printf '%s\n' "$soul"
   exit 0

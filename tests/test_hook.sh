@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Test the SessionStart hook: first run, quiet when onboarded, no python3, speed.
+# Test the SessionStart hook: first run, quiet when onboarded, no binary, speed.
 set -uo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 hook="$root/hooks/session-start"
@@ -9,6 +9,11 @@ check() { if [ "$2" = "ok" ]; then echo "  ✓ $1"; else echo "  ✗ $1"; fails=
 ctx() { jq -r '.hookSpecificOutput.additionalContext'; }
 run() { HOME="$tmp/home" BUILDER_HOME="$tmp/bh" CLAUDE_PLUGIN_ROOT="$root" "$@"; }
 mkdir -p "$tmp/home"
+if [ -z "${BUILDER_BIN:-}" ]; then
+  (cd "$root" && go build -o "$tmp/builder" ./cmd/builder) || { echo "go build failed"; exit 1; }
+  export BUILDER_BIN="$tmp/builder"
+fi
+now_ms() { echo $(( $(date +%s%N) / 1000000 )); }
 
 echo "test_first_run"
 out="$(run "$hook")"
@@ -17,8 +22,8 @@ text="$(jq -er '.hookSpecificOutput.additionalContext' <<<"$out")" && check "val
 grep -q 'builder onboarding' <<<"$text" && check "onboarding marker present" ok || check "onboarding marker present" bad
 grep -q 'builder recommends' <<<"$text" && check "no recommendation block" bad || check "no recommendation block" ok
 grep -q 'Build the right thing' <<<"$text" && check "soul present" ok || check "soul present" bad
-grep -q 'ledger.py" onboarded' <<<"$text" && check "onboarded command named" ok || check "onboarded command named" bad
-grep -qF "To find the next due step, run: python3 \"$root/lib/ledger.py\" next" <<<"$text" && check "next-step command named" ok || check "next-step command named" bad
+grep -q 'bin/builder" ledger onboarded' <<<"$text" && check "onboarded command named" ok || check "onboarded command named" bad
+grep -qF "To find the next due step, run: \"$root/bin/builder\" ledger next" <<<"$text" && check "next-step command named" ok || check "next-step command named" bad
 grep -qF 'Never invent a step' <<<"$text" && check "no invented steps" ok || check "no invented steps" bad
 grep -qF 'This is required, even when the request is one line.' <<<"$text" && check "intro is required" ok || check "intro is required" bad
 grep -qF 'builder: you decide. I propose, build, and end each piece of work with a report.' <<<"$text" && check "literal intro given" ok || check "literal intro given" bad
@@ -26,10 +31,10 @@ grep -qF 'builder: you decide. I propose, build, and end each piece of work with
 echo "test_next_command_names_the_harness"
 for h in claude codex cursor opencode; do
   text="$(run "$hook" --harness "$h" --format text)"
-  grep -qF "ledger.py\" next --harness $h" <<<"$text" && check "$h: next command carries --harness $h" ok || check "$h: next command carries --harness $h" bad
+  grep -qF "bin/builder\" ledger next --harness $h" <<<"$text" && check "$h: next command carries --harness $h" ok || check "$h: next command carries --harness $h" bad
 done
 text="$(run "$hook" --harness unknown --format text)"
-grep -qF 'ledger.py" next --harness claude' <<<"$text" && check "unknown: next command carries --harness claude" ok || check "unknown: next command carries --harness claude" bad
+grep -qF 'bin/builder" ledger next --harness claude' <<<"$text" && check "unknown: next command carries --harness claude" ok || check "unknown: next command carries --harness claude" bad
 
 echo "test_onboarded_quiet"
 ids="$(jq -r '.[].id' "$root/lib/recommendations.json")"
@@ -47,14 +52,14 @@ grep -qF 'Conventional Commit' <<<"$text" && grep -qF -- '--no-verify' <<<"$text
 echo "test_recommendation_block"
 printf '{"onboarded": true, "answers": {}}' > "$tmp/bh/ledger.json"
 text="$(run "$hook" | ctx)"
-grep -q 'builder recommends: ' <<<"$text" && grep -q 'ledger.py" answer ' <<<"$text" && check "block with answer command" ok || check "block with answer command" bad
+grep -q 'builder recommends: ' <<<"$text" && grep -q 'bin/builder" ledger answer ' <<<"$text" && check "block with answer command" ok || check "block with answer command" bad
 [ "$(grep -c 'builder recommends' <<<"$text")" -eq 1 ] && check "at most one block" ok || check "at most one block" bad
 
-echo "test_hook_without_python"
+echo "test_hook_broken_path"
 rm -f "$tmp/bh/ledger.json"
 out="$(HOME="$tmp/home" BUILDER_HOME="$tmp/bh" CLAUDE_PLUGIN_ROOT="$root" PATH=/nonexistent /bin/bash "$hook")"
 text="$(jq -er '.hookSpecificOutput.additionalContext' <<<"$out")" && check "valid JSON" ok || check "valid JSON" bad
-grep -q 'Build the right thing' <<<"$text" && check "soul present" ok || check "soul present" bad
+grep -q 'builder onboarding' <<<"$text" && check "full hook text, not the fallback" ok || check "full hook text, not the fallback" bad
 
 echo "test_without_plugin_root"
 out="$(env -u CLAUDE_PLUGIN_ROOT HOME="$tmp/home" BUILDER_HOME="$tmp/bh" bash "$hook")"
@@ -63,11 +68,11 @@ grep -q 'Build the right thing' <<<"$(jq -er '.hookSpecificOutput.additionalCont
 echo "test_hook_fast"
 mkdir -p "$tmp/fakebin"
 printf '#!/bin/sh\nsleep 5\n' > "$tmp/fakebin/matchblox"; chmod +x "$tmp/fakebin/matchblox"
-s=$(python3 -c 'import time;print(time.time())')
+s=$(now_ms)
 out="$(PATH="$tmp/fakebin:$PATH" run "$hook")"
-e=$(python3 -c 'import time;print(time.time())')
+e=$(now_ms)
 jq -e . >/dev/null <<<"$out" && check "valid JSON" ok || check "valid JSON" bad
-python3 -c "import sys;sys.exit(0 if $e-$s < 1.0 else 1)" && check "under 1 s" ok || check "under 1 s" bad
+[ $(( e - s )) -lt 1000 ] && check "under 1 s" ok || check "under 1 s" bad
 
 echo "test_shape_cursor"
 out="$(run "$hook" --harness cursor)"
@@ -95,23 +100,41 @@ grep -q 'Build the right thing' <<<"$(jq -er '.hookSpecificOutput.additionalCont
 
 echo "test_ledger_path_without_claude_root"
 out="$(env -u CLAUDE_PLUGIN_ROOT HOME="$tmp/home" BUILDER_HOME="$tmp/bh" "$hook" --harness cursor)"
-grep -qF "$root/lib/ledger.py" <<<"$(jq -r '.additional_context' <<<"$out")" && check "ledger path uses root" ok || check "ledger path uses root" bad
+grep -qF "$root/bin/builder" <<<"$(jq -r '.additional_context' <<<"$out")" && check "ledger path uses root" ok || check "ledger path uses root" bad
 
-echo "test_no_python_each_shape"
-nopy() { HOME="$tmp/home" BUILDER_HOME="$tmp/bh" PATH=/nonexistent /bin/bash "$hook" "$@"; }
+echo "test_no_binary_each_shape"
+mkdir -p "$tmp/nohome"
+nobin() {
+  s=$(now_ms)
+  env -u BUILDER_BIN HOME="$tmp/home" BUILDER_HOME="$tmp/nohome" PATH=/nonexistent /bin/bash "$hook" "$@" >"$tmp/out" 2>"$tmp/stderr"
+  rc=$?
+  e=$(now_ms)
+  [ "$rc" -eq 0 ] && [ ! -s "$tmp/stderr" ] && [ $(( e - s )) -lt 1000 ] && check "  exit 0, quiet stderr, under 1 s" ok || check "  exit 0, quiet stderr, under 1 s (rc=$rc)" bad
+}
 for h in claude codex unknown auto; do
-  out="$(nopy --harness $h)"
+  nobin --harness $h; out="$(<"$tmp/out")"
   grep -q 'Build the right thing' <<<"$(jq -er '.hookSpecificOutput.additionalContext' <<<"$out")" && check "$h: hookSpecificOutput" ok || check "$h: hookSpecificOutput" bad
+  grep -qF 'builder install:' <<<"$(jq -er '.hookSpecificOutput.additionalContext' <<<"$out")" && check "$h: install offer" ok || check "$h: install offer" bad
 done
-out="$(nopy --harness cursor)"
+nobin --harness cursor; out="$(<"$tmp/out")"
 grep -q 'Build the right thing' <<<"$(jq -er '.additional_context' <<<"$out")" && check "cursor: additional_context" ok || check "cursor: additional_context" bad
-out="$(CLAUDECODE=1 CURSOR_VERSION=x nopy --harness auto)"
-grep -q 'Build the right thing' <<<"$(jq -er '.hookSpecificOutput.additionalContext' <<<"$out")" && check "no python, auto + CURSOR_VERSION: Claude shape" ok || check "no python, auto + CURSOR_VERSION: Claude shape" bad
-out="$(nopy --harness opencode)"
+grep -qF 'builder install:' <<<"$(jq -er '.additional_context' <<<"$out")" && check "cursor: install offer" ok || check "cursor: install offer" bad
+CLAUDECODE=1 CURSOR_VERSION=x nobin --harness auto; out="$(<"$tmp/out")"
+grep -q 'Build the right thing' <<<"$(jq -er '.hookSpecificOutput.additionalContext' <<<"$out")" && check "no binary, auto + CURSOR_VERSION: Claude shape" ok || check "no binary, auto + CURSOR_VERSION: Claude shape" bad
+nobin --harness opencode; out="$(<"$tmp/out")"
 jq -e . >/dev/null 2>&1 <<<"$out" && check "opencode: plain text" bad || { grep -q 'Build the right thing' <<<"$out" && check "opencode: plain text" ok || check "opencode: plain text" bad; }
-out="$(nopy --harness claude --format text)"
+grep -qF 'builder install:' <<<"$out" && check "opencode: install offer" ok || check "opencode: install offer" bad
+nobin --harness claude --format text; out="$(<"$tmp/out")"
 jq -e . >/dev/null 2>&1 <<<"$out" && check "--format text: plain text" bad || check "--format text: plain text" ok
 
+echo "test_root_with_space"
+spaced="$tmp/plugin root"
+mkdir -p "$spaced"
+cp -R "$root/hooks" "$root/bin" "$root/skills" "$root/lib" "$root/.claude-plugin" "$spaced/"
+out="$(env -u CLAUDE_PLUGIN_ROOT HOME="$tmp/home" BUILDER_HOME="$tmp/bh" "$spaced/hooks/session-start" --harness claude)"
+text="$(jq -er '.hookSpecificOutput.additionalContext' <<<"$out")" && check "valid JSON" ok || check "valid JSON" bad
+grep -q 'builder onboarding' <<<"$text" && check "onboarding text" ok || check "onboarding text" bad
+grep -qF "builder root: $spaced." <<<"$text" && check "root line names the spaced path" ok || check "root line names the spaced path" bad
 echo "test_root_line"
 text="$(run "$hook" --harness claude | ctx)"
 grep -qF "builder root: $root. Where a builder skill says \${CLAUDE_PLUGIN_ROOT}, use this path." <<<"$text" && check "root line" ok || check "root line" bad
@@ -127,10 +150,10 @@ done
 
 echo "test_speed_each_harness"
 for h in claude codex cursor opencode unknown; do
-  s=$(python3 -c 'import time;print(time.time())')
+  s=$(now_ms)
   run "$hook" --harness $h >/dev/null
-  e=$(python3 -c 'import time;print(time.time())')
-  python3 -c "import sys;sys.exit(0 if $e-$s < 1.0 else 1)" && check "$h under 1 s" ok || check "$h under 1 s" bad
+  e=$(now_ms)
+  [ $(( e - s )) -lt 1000 ] && check "$h under 1 s" ok || check "$h under 1 s" bad
 done
 
 echo "test_hook_manifests"

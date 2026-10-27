@@ -42,9 +42,8 @@ test("injects_once_per_session", async () => {
   const first = await transform(plugin, messages(id));
   const second = await transform(plugin, messages(id));
   assert.equal(calls.length, 1);
-  assert.equal(calls[0].cmd, "python3");
-  assert.deepEqual(calls[0].args.slice(1), ["--harness", "opencode", "--format", "text"]);
-  assert.ok(calls[0].args[0].endsWith(path.join("hooks", "session_start.py")));
+  assert.ok(calls[0].cmd.endsWith(path.join("hooks", "session-start")));
+  assert.deepEqual(calls[0].args, ["--harness", "opencode", "--format", "text"]);
   assert.equal(calls[0].opts.timeout, 1000);
   assert.equal(first[0].parts.length, 2);
   assert.match(first[0].parts[0].text, /hello soul/);
@@ -70,7 +69,7 @@ test("skips_when_marker_already_present", async () => {
   assert.equal(calls.length, 0);
 });
 
-test("falls_back_to_soul_without_python", async () => {
+test("falls_back_to_soul_without_binary", async () => {
   setSpawn(() => ({ error: new Error("ENOENT"), status: null, stdout: "" }));
   const plugin = await mod.BuilderPlugin({ client: fakeClient(), directory: root });
   const out = await transform(plugin, messages(sid()));

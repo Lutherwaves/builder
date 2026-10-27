@@ -1,5 +1,21 @@
 # Changelog
 
+## [Unreleased]
+
+### ⚠ Breaking
+
+- builder needs its `builder` binary. The session offers to install it when it is missing.
+
+### Features
+
+- One `builder` binary does what the Python did, and gives the same answers.
+- builder runs without Python: the hook, the opencode plugin, every skill, the eval runner and the scripts run the binary through `bin/builder`.
+- `bin/builder` runs the binary of the plugin's version, and saves your answer to the install offer.
+- `scripts/install.sh` installs that binary, and checks its checksum and its provenance.
+- The session offers the install once, and stays quiet after "not now" for a week and after "never".
+- A skill stops at a missing binary and offers the install.
+- A merge to `main` that `validate` passed releases the four binaries and sets the plugin version, with no release pull request to merge.
+
 ## [2.1.0](https://github.com/Lutherwaves/builder/compare/builder-v2.0.0...builder-v2.1.0) (2026-10-26)
 
 
@@ -83,3 +99,5 @@
 
 * add release automation, validation, metrics badges, and contributor guardrails ([2f4a570](https://github.com/Lutherwaves/builder/commit/2f4a570720a5be2a1a7137834f3e451668f30e5f))
 * bootstrap release + validation workflows ([be8e3ee](https://github.com/Lutherwaves/builder/commit/be8e3eec88bda415a041db75ef4836e7e1e31ca5))
+
+[Unreleased]: https://github.com/Lutherwaves/builder/compare/v2.1.0...HEAD

@@ -12,7 +12,7 @@ Each finding is mapped to the standards and gets a CVSS 3.1 score that code comp
 ## The rules
 
 - Prove the harm. Name the person, the situation and what they lose. Report only a concrete path to harm. A finding with no harm is a nit. Drop it.
-- Never invent what code can compute. The score, the rating, the Top 25 mark and the baseline diff come from `security.py`.
+- Never invent what code can compute. The score, the rating, the Top 25 mark and the baseline diff come from `builder security`.
 - Probe only where nothing real can break. Use a throwaway worktree: `git worktree add <temp dir>/sec HEAD`, or `.security-wt` inside the folder when your tools reach only it (add it to `.git/info/exclude`).
   Prefer an in-process probe: a test file that calls the handler with the hostile input. A local server on `localhost` is allowed.
   A remote, shared or live system needs the person's explicit go each time. Remove the worktree at the end.
@@ -55,16 +55,18 @@ Mark each finding "measured" (a probe ran: quote the input and the output) or "f
 
 ## 4. Score
 
+If a `bin/builder` command exits 3 and says the binary is not installed or is off, stop. Show its error line, and offer once to run the install command in it. Do not work around the missing binary.
+
 1. Write the findings file: JSON with `mode`, `repo` (the absolute path of the person's checkout, never the probe worktree), `sha`, `dimensions` (the ones you covered) and `findings`.
    Each finding has `id` (`<dimension>/<CWE>/<file>/<symbol>`), `dimension`, `cwe`, `location`, `vector` (`CVSS:3.1/...`) and `title`.
    Put it outside the repository, for example in a temp dir.
-2. Run `python3 "${CLAUDE_PLUGIN_ROOT}/lib/security.py" score <findings.json>`. It adds `score`, `rating` and `top25`, or names the bad field.
+2. Run `"${CLAUDE_PLUGIN_ROOT}/bin/builder" security score <findings.json>`. It adds `score`, `rating` and `top25`, or names the bad field.
    Fix the field and run it again. Never write a score yourself.
 3. Escalate when the base score understates the blast radius, for example a Medium DoS on the only payment path. Say why. Keep the computed score next to it.
 
 ## 5. Remember
 
-- Audit mode: run `python3 "${CLAUDE_PLUGIN_ROOT}/lib/security.py" baseline save <findings.json>`. It prints new, still open, closed and not re-checked, and the path it saved.
+- Audit mode: run `"${CLAUDE_PLUGIN_ROOT}/bin/builder" security baseline save <findings.json>`. It prints new, still open, closed and not re-checked, and the path it saved.
 - Change mode: run `baseline diff` instead. It saves nothing and closes nothing. Use it to mark a finding "already known since <date>".
 - The baseline lives in builder's local state, never in the repository. Commit it only on the person's request, and only in a private repository.
 - A corrupt baseline is an error. Report it with its path. Never treat it as empty.
@@ -81,7 +83,7 @@ If you found nothing important, say so plainly. Do not pad the report.
 |---|---|
 | "DoS and rate limiting are out of scope" | They are in scope. Check availability and denial of wallet on every public or expensive surface. |
 | Reviewing only the diff for a missing control | A missing limiter lives in no diff. Check the surface system-wide, or run the audit. |
-| A CVSS score written by hand | Run `security.py score`. Copy its output. |
+| A CVSS score written by hand | Run `builder security score`. Copy its output. |
 | A CWE or CAPEC id from memory | Take it from `standards.md`. If no row fits, check the source and say so. |
 | A matrix full of `inspected` | Mark only what you looked at. The rest is `not inspected`, with its reason. |
 | A forced finding at L1 or L2 | Name the provider. Write `provider`. |
