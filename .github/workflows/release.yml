@@ -103,6 +103,7 @@ jobs:
 
       # The bump pull request of the previous release sets the plugin to its
       # version. Until it merges, a new release would skip it: wait for it.
+      # A release that never published does not count, so its fix can ship.
       - name: The previous release's bump merged
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -140,6 +141,8 @@ jobs:
             echo "RELEASE_TOKEN is not set: RELEASING.md says how to add it" >&2
             exit 1
           fi
+          # Before the draft: publish.yml adopts any draft of the tag's name.
+          .github/scripts/push-tag.sh --check "$VERSION" "$SHA"
           if gh release view "v${VERSION}" >/dev/null 2>&1; then
             echo "v${VERSION} exists"
           else

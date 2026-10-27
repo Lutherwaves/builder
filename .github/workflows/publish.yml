@@ -61,12 +61,12 @@ jobs:
           persist-credentials: false
 
       # Anyone who can push a v* tag could otherwise publish any commit.
+      # fetch-depth 0 fetched every branch, so origin/main is here.
       - name: The tagged commit is on main
         env:
           TAG: ${{ steps.tag.outputs.tag }}
         run: |
           set -euo pipefail
-          git fetch -q origin main
           if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
             echo "refusing to publish $TAG: its commit $GITHUB_SHA is not on main" >&2
             exit 1

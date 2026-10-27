@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 # Pushes the tag v<version> on the verified commit. A tag that exists passes
-# only when it names that commit, lightweight or annotated.
+# only when it names that commit, lightweight or annotated. --check refuses a
+# tag elsewhere and pushes nothing.
 #
-# Usage: GH_REPO=<owner/repo> push-tag.sh <version> <sha>
+# Usage: GH_REPO=<owner/repo> push-tag.sh [--check] <version> <sha>
 set -euo pipefail
 
+check_only=""
+if [ "${1:-}" = --check ]; then check_only=1; shift; fi
 if [ $# -ne 2 ] || [ -z "${GH_REPO:-}" ]; then
-  echo "usage: GH_REPO=<owner/repo> $0 <version> <sha>" >&2
+  echo "usage: GH_REPO=<owner/repo> $0 [--check] <version> <sha>" >&2
   exit 1
 fi
 version="$1"
@@ -25,6 +28,7 @@ if ref="$(gh api "repos/$GH_REPO/git/ref/tags/v$version" -q '.object.type + " " 
   echo "tag v$version exists"
   exit 0
 fi
+[ -z "$check_only" ] || exit 0
 gh api "repos/$GH_REPO/git/refs" -f ref="refs/tags/v$version" -f sha="$sha" >/dev/null ||
   { echo "pushing tag v$version failed: RELEASE_TOKEN may have expired (RELEASING.md)" >&2; exit 1; }
 echo "pushed tag v$version at $sha"

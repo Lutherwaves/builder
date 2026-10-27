@@ -105,16 +105,37 @@ for args in "3.0 2.1.0" "3.0.0 v2.1.0" "3.0.0" "3.0.0 2.1.0 x"; do
 done
 
 echo "bump_merged_guard"
+# A stub gh for check-bump-merged.sh: PUBLISHED lists the tags whose release is published and
+# verified, PENDING the tags whose release is a draft or a pre-release. Any other tag has no release.
+relstubs="$tmp/relstubs"; mkdir -p "$relstubs"
+cat > "$relstubs/gh" <<'GH'
+#!/bin/bash
+[ "$1 $2 $4 $5 $6" = 'release view --json isDraft,isPrerelease -q' ] || exit 9
+for t in ${PUBLISHED:-}; do [ "$t" = "$3" ] && { echo "false false"; exit 0; }; done
+for t in ${PENDING:-}; do [ "$t" = "$3" ] && { echo "true true"; exit 0; }; done
+echo "release not found" >&2; exit 1
+GH
+chmod +x "$relstubs/gh"
+bump_merged() { out="$(printf '%s\n' "$tags" | env PATH="$relstubs:$PATH" bash "$scripts/check-bump-merged.sh" "$@" 2>&1)"; rc=$?; }
 tags=$'builder-v2.1.0\nv2.1.0\nv3.0.0-rc.1\nv2.10.0\nv2.9.0'
-out="$(printf '%s\n' "$tags" | bash "$scripts/check-bump-merged.sh" 2.10.0 2>&1)"; rc=$?
-[ "$rc" -eq 0 ] && check "plugin 2.10.0 with newest tag v2.10.0 exits 0" ok || check "plugin 2.10.0 with newest tag v2.10.0 exits 0 (rc=$rc out=$out)" bad
-out="$(printf '%s\n' "$tags" | bash "$scripts/check-bump-merged.sh" 2.9.0 2>&1)"; rc=$?
+PUBLISHED="v2.9.0 v2.10.0" bump_merged 2.10.0
+[ "$rc" -eq 0 ] && check "plugin 2.10.0 with the published v2.10.0 exits 0" ok || check "plugin 2.10.0 with the published v2.10.0 exits 0 (rc=$rc out=$out)" bad
+PUBLISHED="v2.9.0 v2.10.0" bump_merged 2.9.0
 want='the plugin is at 2.9.0, but the newest release is v2.10.0: the bump PR for v2.10.0 has not merged. Merge it, then this release runs (RELEASING.md)'
-[ "$rc" -eq 1 ] && [ "$out" = "$want" ] && check "plugin 2.9.0 with newest tag v2.10.0 exits 1 with the bump line" ok \
-  || check "plugin 2.9.0 with newest tag v2.10.0 exits 1 with the bump line (rc=$rc out=$out)" bad
-out="$(printf 'v2.1.0\n' | bash "$scripts/check-bump-merged.sh" 2.1.0 2>&1)"; rc=$?
-[ "$rc" -eq 0 ] && check "the first release: plugin 2.1.0 and the seed tag v2.1.0 exit 0" ok || check "the first release exits 0 (rc=$rc out=$out)" bad
-out="$(printf 'builder-v2.1.0\n' | bash "$scripts/check-bump-merged.sh" 2.1.0 2>&1)"; rc=$?
+[ "$rc" -eq 1 ] && [ "$out" = "$want" ] && check "a published v2.10.0 with its bump not merged exits 1 with the bump line" ok \
+  || check "a published v2.10.0 with its bump not merged exits 1 with the bump line (rc=$rc out=$out)" bad
+PUBLISHED="v2.9.0" PENDING="v2.10.0" bump_merged 2.9.0
+[ "$rc" -eq 0 ] && check "an unpublished v2.10.0 is skipped: plugin 2.9.0, the newest published, exits 0" ok \
+  || check "an unpublished v2.10.0 is skipped (rc=$rc out=$out)" bad
+PUBLISHED="v2.9.0" bump_merged 2.9.0
+[ "$rc" -eq 0 ] && check "a v2.10.0 tag with no release is skipped" ok || check "a v2.10.0 tag with no release is skipped (rc=$rc out=$out)" bad
+PUBLISHED="v2.9.0" bump_merged 2.1.0
+[ "$rc" -eq 1 ] && grep -qF 'the newest release is v2.9.0' <<<"$out" && check "plugin 2.1.0 behind the published v2.9.0 exits 1" ok || check "plugin 2.1.0 behind the published v2.9.0 exits 1 (rc=$rc out=$out)" bad
+tags='v2.1.0'; bump_merged 2.1.0
+[ "$rc" -eq 0 ] && check "the first release: the seed tag v2.1.0 has no release, plugin 2.1.0 exits 0" ok || check "the first release exits 0 (rc=$rc out=$out)" bad
+tags=$'v2.1.0\nv3.0.0'; PENDING="v3.0.0" bump_merged 2.1.0
+[ "$rc" -eq 0 ] && check "the first release that never published: plugin 2.1.0 exits 0" ok || check "the first release that never published (rc=$rc out=$out)" bad
+tags='builder-v2.1.0'; bump_merged 2.1.0
 [ "$rc" -eq 1 ] && grep -qF 'seed tag' <<<"$out" && check "no vX.Y.Z tag exits 1 and names the seed tag" ok || check "no vX.Y.Z tag exits 1 and names the seed tag (rc=$rc out=$out)" bad
 bash "$scripts/check-bump-merged.sh" </dev/null >/dev/null 2>&1; rc=$?
 [ "$rc" -eq 1 ] && check "no plugin version exits 1" ok || check "no plugin version exits 1 (rc=$rc)" bad
@@ -133,7 +154,7 @@ case "$*" in
 esac
 GH
 chmod +x "$stubs/gh"
-push_tag() { : > "$tmp/gh.log"; out="$(env PATH="$stubs:$PATH" GH_LOG="$tmp/gh.log" GH_REPO=o/r bash "$scripts/push-tag.sh" 3.0.0 abc123 2>&1)"; rc=$?; }
+push_tag() { : > "$tmp/gh.log"; out="$(env PATH="$stubs:$PATH" GH_LOG="$tmp/gh.log" GH_REPO=o/r bash "$scripts/push-tag.sh" "$@" 3.0.0 abc123 2>&1)"; rc=$?; }
 
 echo "push_tag_creates"
 push_tag
@@ -156,6 +177,15 @@ TAG_REF="commit def456" push_tag
 [ "$rc" -eq 1 ] && [ "$out" = "$want" ] && check "a lightweight tag elsewhere exits 1 with the line" ok || check "a lightweight tag elsewhere exits 1 with the line (rc=$rc out=$out)" bad
 TAG_REF="tag t999" TAG_TARGET=def456 push_tag
 [ "$rc" -eq 1 ] && [ "$out" = "$want" ] && check "an annotated tag of another commit exits 1 with the line" ok || check "an annotated tag of another commit exits 1 with the line (rc=$rc out=$out)" bad
+
+echo "push_tag_check_only"
+TAG_REF="commit def456" push_tag --check
+[ "$rc" -eq 1 ] && [ "$out" = "$want" ] && ! grep -qF 'git/refs -f' "$tmp/gh.log" \
+  && check "--check refuses a tag elsewhere" ok || check "--check refuses a tag elsewhere (rc=$rc out=$out)" bad
+push_tag --check
+[ "$rc" -eq 0 ] && ! grep -qF 'git/refs -f' "$tmp/gh.log" && check "--check with no tag pushes nothing" ok || check "--check with no tag pushes nothing (rc=$rc out=$out $(cat "$tmp/gh.log"))" bad
+TAG_REF="commit abc123" push_tag --check
+[ "$rc" -eq 0 ] && check "--check passes a tag at the verified commit" ok || check "--check passes a tag at the verified commit (rc=$rc out=$out)" bad
 
 echo "promote_first_release_links"
 changelog "$tmp/first.md" "- a new thing"
@@ -210,6 +240,10 @@ grep -A1 -F 'has not merged in 40 min' <<<"$uptodate" | grep -qx '[[:space:]]*ex
   && check "a pull request still open after 40 min fails the job" ok || check "a pull request still open after 40 min fails the job" bad
 grep -qF '.github/scripts/check-bump-merged.sh' "$wf" && check "the release job checks that the previous bump merged" ok || check "the release job checks that the previous bump merged" bad
 grep -qF '.github/scripts/push-tag.sh "$VERSION" "$SHA"' "$wf" && check "the release job pushes the tag through push-tag.sh" ok || check "the release job pushes the tag through push-tag.sh" bad
+check_at="$(grep -nF '.github/scripts/push-tag.sh --check "$VERSION" "$SHA"' "$wf" | head -1 | cut -d: -f1)"
+create_at="$(grep -nF 'gh release create "v${VERSION}"' "$wf" | head -1 | cut -d: -f1)"
+[ -n "$check_at" ] && [ -n "$create_at" ] && [ "$check_at" -lt "$create_at" ] \
+  && check "a tag elsewhere stops the job before a draft release exists" ok || check "a tag elsewhere stops the job before a draft release exists (check=$check_at create=$create_at)" bad
 
 echo "publish_needs_main"
 pub="$root/.github/workflows/publish.yml"
@@ -221,5 +255,6 @@ grep -A3 -F 'actions/checkout@' <<<"$build" | grep -qF 'fetch-depth: 0' && check
 check_at="$(grep -nF 'merge-base --is-ancestor' <<<"$build" | cut -d: -f1)"
 build_at="$(grep -nF 'go build -trimpath' <<<"$build" | cut -d: -f1)"
 [ -n "$check_at" ] && [ -n "$build_at" ] && [ "$check_at" -lt "$build_at" ] && check "the main check runs before the build" ok || check "the main check runs before the build" bad
+! grep -qF 'git fetch' <<<"$build" && check "the main check uses the origin/main of the full checkout, with no second fetch" ok || check "the main check uses the origin/main of the full checkout, with no second fetch" bad
 
 exit "$fails"
