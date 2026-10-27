@@ -35,6 +35,11 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
+      # Pinned through the Go checksum database, so validate.sh lints the workflows.
+      - name: Install actionlint
+        run: |
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
       - name: Validate plugin manifests, skills, and scripts
         env:
           DENYLIST_SECRET: ${{ secrets.BUILDER_DENYLIST }}
@@ -66,6 +71,7 @@ jobs:
     # The shim, the hook's install offer and the installer run under macOS /bin/bash 3.2, with no Go.
     if: github.event.action != 'edited'
     runs-on: macos-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
