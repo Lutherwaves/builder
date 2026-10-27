@@ -73,13 +73,19 @@ done
 
 echo "bump_refuses_bad"
 repo_copy "$tmp/bad"
-for v in 3.0 v3.0.0 3.0.0-rc.1 "" "3.0.0 x"; do
+for v in 3.0 v3.0.0 3.0.0- "" "3.0.0 x"; do
   out="$(bash "$tmp/bad/.github/scripts/bump-version.sh" "$v" 2>&1)"; rc=$?
   [ "$rc" -eq 1 ] && check "'$v' exits 1" ok || check "'$v' exits 1 (rc=$rc)" bad
 done
 same=ok
 for f in "${manifests[@]}"; do cmp -s "$root/$f" "$tmp/bad/$f" || same=bad; done
 check "a refused version changes no file" "$same"
+
+echo "bump_takes_prerelease"
+repo_copy "$tmp/rc"
+out="$(bash "$tmp/rc/.github/scripts/bump-version.sh" 3.0.0-rc.1 2>&1)"; rc=$?
+[ "$rc" -eq 0 ] && [ "$(jq -r .version "$tmp/rc/.claude-plugin/plugin.json")" = 3.0.0-rc.1 ] \
+  && check "3.0.0-rc.1 is a version, as in release.yml" ok || check "3.0.0-rc.1 is a version, as in release.yml (rc=$rc out=$out)" bad
 
 echo "next_version_guard"
 bash "$scripts/check-next-version.sh" 3.0.0 2.1.0 >/dev/null 2>&1; rc=$?
@@ -91,6 +97,82 @@ bash "$scripts/check-next-version.sh" 2.10.0 2.9.0 >/dev/null 2>&1; rc=$?
 [ "$rc" -eq 0 ] && check "2.10.0 after 2.9.0 exits 0" ok || check "2.10.0 after 2.9.0 exits 0 (rc=$rc)" bad
 bash "$scripts/check-next-version.sh" 2.1.0 2.1.0 >/dev/null 2>&1; rc=$?
 [ "$rc" -eq 1 ] && check "2.1.0 after 2.1.0 exits 1" ok || check "2.1.0 after 2.1.0 exits 1 (rc=$rc)" bad
+bash "$scripts/check-next-version.sh" 10.0.0 9.0.0 >/dev/null 2>&1; rc=$?
+[ "$rc" -eq 0 ] && check "10.0.0 after 9.0.0 exits 0" ok || check "10.0.0 after 9.0.0 exits 0 (rc=$rc)" bad
+for args in "3.0 2.1.0" "3.0.0 v2.1.0" "3.0.0" "3.0.0 2.1.0 x"; do
+  bash "$scripts/check-next-version.sh" $args >/dev/null 2>&1; rc=$?
+  [ "$rc" -eq 1 ] && check "'$args' exits 1" ok || check "'$args' exits 1 (rc=$rc)" bad
+done
+
+echo "bump_merged_guard"
+tags=$'builder-v2.1.0\nv2.1.0\nv3.0.0-rc.1\nv2.10.0\nv2.9.0'
+out="$(printf '%s\n' "$tags" | bash "$scripts/check-bump-merged.sh" 2.10.0 2>&1)"; rc=$?
+[ "$rc" -eq 0 ] && check "plugin 2.10.0 with newest tag v2.10.0 exits 0" ok || check "plugin 2.10.0 with newest tag v2.10.0 exits 0 (rc=$rc out=$out)" bad
+out="$(printf '%s\n' "$tags" | bash "$scripts/check-bump-merged.sh" 2.9.0 2>&1)"; rc=$?
+want='the plugin is at 2.9.0, but the newest release is v2.10.0: the bump PR for v2.10.0 has not merged. Merge it, then this release runs (RELEASING.md)'
+[ "$rc" -eq 1 ] && [ "$out" = "$want" ] && check "plugin 2.9.0 with newest tag v2.10.0 exits 1 with the bump line" ok \
+  || check "plugin 2.9.0 with newest tag v2.10.0 exits 1 with the bump line (rc=$rc out=$out)" bad
+out="$(printf 'v2.1.0\n' | bash "$scripts/check-bump-merged.sh" 2.1.0 2>&1)"; rc=$?
+[ "$rc" -eq 0 ] && check "the first release: plugin 2.1.0 and the seed tag v2.1.0 exit 0" ok || check "the first release exits 0 (rc=$rc out=$out)" bad
+out="$(printf 'builder-v2.1.0\n' | bash "$scripts/check-bump-merged.sh" 2.1.0 2>&1)"; rc=$?
+[ "$rc" -eq 1 ] && grep -qF 'seed tag' <<<"$out" && check "no vX.Y.Z tag exits 1 and names the seed tag" ok || check "no vX.Y.Z tag exits 1 and names the seed tag (rc=$rc out=$out)" bad
+bash "$scripts/check-bump-merged.sh" </dev/null >/dev/null 2>&1; rc=$?
+[ "$rc" -eq 1 ] && check "no plugin version exits 1" ok || check "no plugin version exits 1 (rc=$rc)" bad
+
+# A stub gh for push-tag.sh: the tag ref is TAG_REF ("<type> <sha>", or unset for none).
+stubs="$tmp/stubs"; mkdir -p "$stubs"
+cat > "$stubs/gh" <<'GH'
+#!/bin/bash
+echo "gh $*" >> "$GH_LOG"
+case "$*" in
+  "api repos/o/r/git/ref/tags/v3.0.0 -q .object.type + \" \" + .object.sha")
+    [ -n "${TAG_REF:-}" ] || exit 1; echo "$TAG_REF" ;;
+  "api repos/o/r/git/tags/"*" -q .object.sha") echo "${TAG_TARGET:-}" ;;
+  "api repos/o/r/git/refs -f ref=refs/tags/v3.0.0 -f sha="*) exit "${CREATE_RC:-0}" ;;
+  *) exit 9 ;;
+esac
+GH
+chmod +x "$stubs/gh"
+push_tag() { : > "$tmp/gh.log"; out="$(env PATH="$stubs:$PATH" GH_LOG="$tmp/gh.log" GH_REPO=o/r bash "$scripts/push-tag.sh" 3.0.0 abc123 2>&1)"; rc=$?; }
+
+echo "push_tag_creates"
+push_tag
+[ "$rc" -eq 0 ] && grep -qF 'gh api repos/o/r/git/refs -f ref=refs/tags/v3.0.0 -f sha=abc123' "$tmp/gh.log" \
+  && check "no tag: pushes v3.0.0 at the verified commit" ok || check "no tag: pushes v3.0.0 at the verified commit (rc=$rc out=$out $(cat "$tmp/gh.log"))" bad
+CREATE_RC=1 push_tag
+[ "$rc" -eq 1 ] && grep -qF 'pushing tag v3.0.0 failed: RELEASE_TOKEN may have expired (RELEASING.md)' <<<"$out" \
+  && check "a failed push exits 1 and names the token" ok || check "a failed push exits 1 and names the token (rc=$rc out=$out)" bad
+
+echo "push_tag_same_commit"
+TAG_REF="commit abc123" push_tag
+[ "$rc" -eq 0 ] && ! grep -qF 'git/refs -f' "$tmp/gh.log" && check "a lightweight tag at the verified commit passes, no push" ok || check "a lightweight tag at the verified commit passes (rc=$rc out=$out)" bad
+TAG_REF="tag t999" TAG_TARGET=abc123 push_tag
+[ "$rc" -eq 0 ] && grep -qF 'gh api repos/o/r/git/tags/t999 -q .object.sha' "$tmp/gh.log" && ! grep -qF 'git/refs -f' "$tmp/gh.log" \
+  && check "an annotated tag of the verified commit passes" ok || check "an annotated tag of the verified commit passes (rc=$rc out=$out)" bad
+
+echo "push_tag_other_commit"
+want='tag v3.0.0 exists at def456, not at the verified abc123: delete it or release the next version (RELEASING.md)'
+TAG_REF="commit def456" push_tag
+[ "$rc" -eq 1 ] && [ "$out" = "$want" ] && check "a lightweight tag elsewhere exits 1 with the line" ok || check "a lightweight tag elsewhere exits 1 with the line (rc=$rc out=$out)" bad
+TAG_REF="tag t999" TAG_TARGET=def456 push_tag
+[ "$rc" -eq 1 ] && [ "$out" = "$want" ] && check "an annotated tag of another commit exits 1 with the line" ok || check "an annotated tag of another commit exits 1 with the line (rc=$rc out=$out)" bad
+
+echo "promote_first_release_links"
+changelog "$tmp/first.md" "- a new thing"
+grep -v '^\[Unreleased\]: ' "$tmp/first.md" > "$tmp/first.tmp" && mv "$tmp/first.tmp" "$tmp/first.md"
+out="$(bash "$scripts/promote-changelog.sh" 3.0.0 2026-11-01 "$tmp/first.md" 2>&1)"; rc=$?
+[ "$rc" -eq 0 ] && [ "$(tail -n 2 "$tmp/first.md")" = "$(printf '%s\n' "[Unreleased]: $url/compare/v3.0.0...HEAD" "[3.0.0]: $url/releases/tag/v3.0.0")" ] \
+  && check "no [Unreleased] link: both links, the release one a /releases/tag/ link" ok || check "no [Unreleased] link: both links (rc=$rc out=$out $(tail -n 2 "$tmp/first.md"))" bad
+
+echo "promote_refuses_bad"
+changelog "$tmp/keep.md" "- a new thing"; cp "$tmp/keep.md" "$tmp/keep.orig"
+for args in "3.0 2026-11-01" "3.0.0 2026-1-01" "3.0.0 yesterday"; do
+  bash "$scripts/promote-changelog.sh" $args "$tmp/keep.md" >/dev/null 2>&1; rc=$?
+  [ "$rc" -eq 1 ] && cmp -s "$tmp/keep.md" "$tmp/keep.orig" && check "'$args' exits 1 and changes nothing" ok || check "'$args' exits 1 and changes nothing (rc=$rc)" bad
+done
+grep -vxF '## [Unreleased]' "$tmp/keep.orig" > "$tmp/nounrel.md"; cp "$tmp/nounrel.md" "$tmp/nounrel.orig"
+bash "$scripts/promote-changelog.sh" 3.0.0 2026-11-01 "$tmp/nounrel.md" >/dev/null 2>&1; rc=$?
+[ "$rc" -eq 1 ] && cmp -s "$tmp/nounrel.md" "$tmp/nounrel.orig" && check "no '## [Unreleased]' exits 1 and changes nothing" ok || check "no '## [Unreleased]' exits 1 and changes nothing (rc=$rc)" bad
 
 echo "bot_subject_passes"
 title="$(grep -o 'title="docs: v${VERSION} is released"' "$root/.github/workflows/release.yml")"
@@ -111,5 +193,33 @@ merge_line="$(grep -nF 'gh pr merge "$branch" --squash --auto' "$wf" | head -1 |
 grep -qF '[ "$state" = "false false" ]' "$wf" \
   && check "the wait needs isDraft and isPrerelease both false" ok \
   || check "the wait needs isDraft and isPrerelease both false" bad
+
+echo "release_fails_loudly"
+promote="$(sed -n '/- name: Promote the changelog/,/- name: Keep the pull request/p' "$wf")"
+uptodate="$(sed -n '/- name: Keep the pull request up to date/,$p' "$wf")"
+grep -A1 -F 'is not published and verified after 60 min' <<<"$promote" | grep -qx '[[:space:]]*exit 1' \
+  && check "a release still unpublished after 60 min fails the job" ok || check "a release still unpublished after 60 min fails the job" bad
+merge_at="$(grep -nF 'gh pr merge "$branch" --squash --auto' <<<"$promote" | cut -d: -f1)"
+out_at="$(grep -nF 'echo "merging=true" >> "$GITHUB_OUTPUT"' <<<"$promote" | cut -d: -f1)"
+[ -n "$merge_at" ] && [ -n "$out_at" ] && [ "$merge_at" -lt "$out_at" ] \
+  && check "merging=true is set only after auto-merge is on" ok || check "merging=true is set only after auto-merge is on (merge=$merge_at out=$out_at)" bad
+grep -A1 -F 'gh pr merge "$branch" --squash --auto' <<<"$promote" | grep -q 'exit 1' \
+  && check "a failed auto-merge fails the job" ok || check "a failed auto-merge fails the job" bad
+grep -F 'CLOSED*)' <<<"$uptodate" | grep -q 'exit 1' && check "a closed pull request fails the job" ok || check "a closed pull request fails the job" bad
+grep -A1 -F 'has not merged in 40 min' <<<"$uptodate" | grep -qx '[[:space:]]*exit 1' \
+  && check "a pull request still open after 40 min fails the job" ok || check "a pull request still open after 40 min fails the job" bad
+grep -qF '.github/scripts/check-bump-merged.sh' "$wf" && check "the release job checks that the previous bump merged" ok || check "the release job checks that the previous bump merged" bad
+grep -qF '.github/scripts/push-tag.sh "$VERSION" "$SHA"' "$wf" && check "the release job pushes the tag through push-tag.sh" ok || check "the release job pushes the tag through push-tag.sh" bad
+
+echo "publish_needs_main"
+pub="$root/.github/workflows/publish.yml"
+build="$(sed -n '/^  build:/,/^  attest:/p' "$pub")"
+grep -qF 'git merge-base --is-ancestor "$GITHUB_SHA" origin/main' <<<"$build" \
+  && grep -qF 'refusing to publish $TAG: its commit $GITHUB_SHA is not on main' <<<"$build" \
+  && check "publish refuses a tag whose commit is not on main" ok || check "publish refuses a tag whose commit is not on main" bad
+grep -A3 -F 'actions/checkout@' <<<"$build" | grep -qF 'fetch-depth: 0' && check "the build checkout has the history" ok || check "the build checkout has the history" bad
+check_at="$(grep -nF 'merge-base --is-ancestor' <<<"$build" | cut -d: -f1)"
+build_at="$(grep -nF 'go build -trimpath' <<<"$build" | cut -d: -f1)"
+[ -n "$check_at" ] && [ -n "$build_at" ] && [ "$check_at" -lt "$build_at" ] && check "the main check runs before the build" ok || check "the main check runs before the build" bad
 
 exit "$fails"

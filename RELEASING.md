@@ -4,11 +4,12 @@ A merge to `main` that `validate` passed makes a release. Nobody tags by hand.
 
 1. **Release** (`release.yml`) picks the next version from the conventional
    commits (`feat` → minor, `fix` → patch, a breaking change → major), checks
-   that it is above the plugin's version, makes the draft release `vX.Y.Z` and
-   pushes its tag on the commit `validate` verified. Its notes are the
+   that it is above the plugin's version and that the previous release's pull
+   request merged, makes the draft release `vX.Y.Z` and pushes its tag on the
+   commit `validate` verified. A tag that exists on another commit stops it. Its notes are the
    `## [Unreleased]` section of `CHANGELOG.md`, so write that section in the
    pull request.
-2. **Publish** (`publish.yml`) builds `builder-{linux,darwin}-{amd64,arm64}`
+2. **Publish** (`publish.yml`) refuses a tag whose commit is not on `main`. It builds `builder-{linux,darwin}-{amd64,arm64}`
    with a `.sha256`, a CycloneDX SBOM and provenance and SBOM attestations,
    attaches all twelve files to the draft and publishes it as a pre-release.
    The repository's releases are immutable: once published, a release takes
@@ -21,7 +22,8 @@ A merge to `main` that `validate` passed makes a release. Nobody tags by hand.
    version and sets `version` in the four manifests. The release job waits up
    to 60 minutes until Publish verified the release and took it out of
    pre-release. Then the pull request merges itself once its checks pass, and
-   the release job keeps it up to date with `main` for 40 minutes. Until it
+   the release job keeps it up to date with `main` for 40 minutes. If either
+   wait runs out, the job fails. Until it
    merges, `main` names the previous version, so the plugin installs the
    previous binary. For the first release, `main` names 2.1.0, and no release
    has a 2.1.0 binary. Until the pull request merges, every session offers an
@@ -53,7 +55,7 @@ expired, the Create Release job fails and says so. To replace it:
 go-semantic-release counts from the newest `v*` tag. The releases before
 builder 3 have `builder-v*` tags, so with no seed tag it would pick a first
 version below 2.1.0, and the Create Release job stops. The owner does these
-four steps once:
+five steps once:
 
 1. Allow auto-merge, so the changelog pull request merges itself:
    `gh api -X PATCH repos/Lutherwaves/builder -F allow_auto_merge=true`.
@@ -61,10 +63,15 @@ four steps once:
 3. Push the seed tag `v2.1.0` on the 2.1.0 release commit:
    `git tag -s v2.1.0 "$(git rev-list -n1 builder-v2.1.0)" -m v2.1.0 && git push origin v2.1.0`.
    The 2.1.0 commit has no `publish.yml`, so the tag starts no workflow.
-4. Set `RELEASE_ENABLED=true` as "Turn releases on or off" says.
+4. Limit who can create `v*` tags. Settings → Rules → Rulesets → New tag
+   ruleset: target `v*`, enforcement Active, rules "Restrict creations",
+   "Restrict updates" and "Restrict deletions", bypass list "Repository
+   admin". `RELEASE_TOKEN` acts as the owner, so the Release job still pushes
+   tags.
+5. Set `RELEASE_ENABLED=true` as "Turn releases on or off" says.
 
 Then: squash-merge `feat/go` with a `feat!:` title, so the release is 3.0.0.
-Do the four steps first, and merge when you can watch the run. Watch the
+Do the five steps first, and merge when you can watch the run. Watch the
 Release run and the Publish run to the end. Until the 3.0.0 pull request
 merges, sessions offer an install that fails. If the release stalls, choose
 one:
@@ -85,8 +92,12 @@ one:
 | Publish, from a runner or network hiccup | Publish the tag again: `gh workflow run publish.yml --ref vX.Y.Z` |
 | Publish says the release is published without a file | It went out before its binaries and cannot take them now. Merge a fix: the next release carries them |
 | Publish, from a bug in the code or the workflow | Merge the fix: the next release is published and becomes the latest. The broken one stays a pre-release |
-| Release says "release vX.Y.Z is not published and verified after 60 min" | The pull request stays open without auto-merge. Fix Publish (rows above). Once `gh release view vX.Y.Z --json isDraft,isPrerelease` shows both `false`, merge the pull request as the next row says |
-| The changelog pull request did not merge itself | Update it with `main` (`gh pr update-branch --rebase <branch>`: a merge commit fails the subject check), then merge it once its checks pass |
+| Create Release says "the bump PR for vX.Y.Z has not merged" | Merge the `docs: vX.Y.Z is released` pull request (rows below). Its merge starts the next release |
+| Create Release says "tag vX.Y.Z exists at <sha>, not at the verified <sha>" | Someone pushed the tag on another commit. If no published release uses it, delete it (`gh api -X DELETE repos/Lutherwaves/builder/git/refs/tags/vX.Y.Z`) and re-run the Release run. Otherwise merge a change, so the next release takes the next version |
+| Publish says "refusing to publish vX.Y.Z: its commit … is not on main" | The tag names a commit outside `main`. Delete the tag and its draft release, and check the tag ruleset (step 4 above). Releases come only from `main` |
+| Promote changelog fails: "release vX.Y.Z is not published and verified after 60 min" | The pull request stays open without auto-merge. Fix Publish (rows above). Once `gh release view vX.Y.Z --json isDraft,isPrerelease` shows both `false`, merge the pull request as the next row says |
+| Promote changelog fails: "Auto-merge is off", "has not merged in 40 min", or the pull request did not merge itself | Allow auto-merge (step 1 above). Update the pull request with `main` (`gh pr update-branch --rebase <branch>`: a merge commit fails the subject check), then merge it once its checks pass |
+| Promote changelog fails: "the vX.Y.Z pull request was closed" | Reopen it and merge it as the row above says. If it is gone, open one as the next row says |
 | No changelog pull request after a release | Run `.github/scripts/promote-changelog.sh X.Y.Z <date>` and `.github/scripts/bump-version.sh X.Y.Z`, and open the pull request yourself |
 
 Tags are immutable: a bad release is followed by a fixed one, never moved.

@@ -2,10 +2,10 @@
 # Sets the plugin version in the four manifests. The key order and the
 # 2-space indent stay, so only the version line changes.
 #
-# Usage: bump-version.sh <X.Y.Z>
+# Usage: bump-version.sh <X.Y.Z[-pre]>
 set -euo pipefail
 
-if [ $# -ne 1 ] || [[ ! "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+if [ $# -ne 1 ] || [[ ! "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
   echo "usage: $0 <X.Y.Z> (like 3.0.0)" >&2
   exit 1
 fi

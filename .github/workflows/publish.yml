@@ -57,7 +57,20 @@ jobs:
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
+
+      # Anyone who can push a v* tag could otherwise publish any commit.
+      - name: The tagged commit is on main
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git fetch -q origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "refusing to publish $TAG: its commit $GITHUB_SHA is not on main" >&2
+            exit 1
+          fi
 
       # No cache: a release binary does not depend on what earlier runs left.
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
