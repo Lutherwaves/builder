@@ -50,7 +50,7 @@ If a `bin/builder` command exits 3 and says the binary is not installed or is of
    The surface has no `/`. The dimension is a name from `standards.md`. `files` maps each file of the unit to its hash from `git hash-object <path>`.
 5. Write the findings file of step 6 with these units, each `not_inspected` with the reason "not yet hunted", and `findings: []`.
    Run `"${CLAUDE_PLUGIN_ROOT}/bin/builder" security baseline diff <findings.json>`. Read its `units` object.
-   `carried` lists units that the last audit deferred or did not inspect. `changed` lists covered units whose files changed since. Both are work for this run.
+   `carried` lists each unit that the last audit deferred or did not inspect and that this run has not yet covered. `changed` lists covered units whose files changed since. Both are work for this run.
 
 ## 3. Hunt, by dimension
 
@@ -96,7 +96,7 @@ Only code can do some controls, such as a signature check on a webhook body or a
    Each finding has `id` (`<dimension>/<CWE>/<file>/<symbol>`), `dimension`, `cwe`, `location`, `title` and `state`.
    A `confirmed` finding adds `vector` (`CVSS:3.1/...`). A `needs_validation` finding adds `missing`. A `rejected` finding adds `reason`.
    Each unit has `id`, `status`, `files`, and a `reason` unless the status is `covered`. Put the file outside the repository, for example in a temp dir.
-2. Run `"${CLAUDE_PLUGIN_ROOT}/bin/builder" security score <findings.json>`. It adds `score`, `rating` and `top25` to each confirmed finding, or names the bad field.
+2. Run `"${CLAUDE_PLUGIN_ROOT}/bin/builder" security score <findings.json>`. It adds `score` and `rating` to each confirmed finding and `top25` to every finding, or names the bad field.
    Fix the field and run it again. Never write a score yourself.
 3. Escalate when the base score understates the blast radius, for example a Medium DoS on the only payment path. Say why. Keep the computed score next to it.
 

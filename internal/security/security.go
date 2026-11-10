@@ -493,10 +493,10 @@ func DiffUnits(prior, current map[string]any) map[string][]map[string]any {
 			before[fmt.Sprint(u["id"])] = u
 		}
 	}
-	now := map[string]bool{}
+	done := map[string]bool{}
 	for _, u := range unitList(current["units"]) {
 		id := fmt.Sprint(u["id"])
-		now[id] = true
+		done[id] = u["status"] == "covered" || u["status"] == "out_of_scope"
 		old, ok := before[id]
 		switch {
 		case !ok:
@@ -505,8 +505,9 @@ func DiffUnits(prior, current map[string]any) map[string][]map[string]any {
 			out["changed"] = append(out["changed"], u)
 		}
 	}
+	// A re-seeded unit stays open until this run covers it or puts it out of scope.
 	for _, u := range unitList(prior["units"]) {
-		if status := u["status"]; (status == "deferred" || status == "not_inspected") && !now[fmt.Sprint(u["id"])] {
+		if status := u["status"]; (status == "deferred" || status == "not_inspected") && !done[fmt.Sprint(u["id"])] {
 			out["carried"] = append(out["carried"], u)
 		}
 	}

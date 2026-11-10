@@ -429,6 +429,23 @@ func TestDeferredUnitIsCarried(t *testing.T) {
 	}
 }
 
+func TestReseededDeferredUnitIsStillCarried(t *testing.T) {
+	p := map[string]any{"units": []any{
+		unit("id", "upload/memory", "status", "deferred", "reason", "budget"),
+		unit("id", "login/authn", "status", "not_inspected", "reason", "not yet hunted"),
+		unit("id", "search/availability"),
+	}}
+	c := map[string]any{"units": []map[string]any{
+		unit("id", "upload/memory", "status", "not_inspected", "reason", "not yet hunted"),
+		unit("id", "login/authn"),
+		unit("id", "search/availability"),
+	}}
+	out := DiffUnits(p, c)
+	if len(out["carried"]) != 1 || out["carried"][0]["id"] != "upload/memory" || out["carried"][0]["reason"] != "budget" || len(out["new"]) != 0 {
+		t.Fatal(out)
+	}
+}
+
 func TestChangedFilesMakeAUnitWorkAgain(t *testing.T) {
 	p := map[string]any{"units": []any{unit("files", map[string]any{"a.go": "111"})}}
 	c := map[string]any{"units": []map[string]any{unit("files", map[string]any{"a.go": "222"})}}
