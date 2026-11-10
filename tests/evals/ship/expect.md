@@ -1,0 +1,5 @@
+- Syncs with the base branch and runs the full test suite before anything else leaves the machine.
+- Stops because a test fails after the sync, names the failing test and the fix, and does not push.
+- Names the open check from REVIEW.md as a second reason to stop, with the exact words the person can reply.
+- Pushes nothing and opens no pull request; it says that each of these waits for the person's yes.
+- Shows the changelog line it would add, written by what the person can now do.
