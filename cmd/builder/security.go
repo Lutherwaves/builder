@@ -55,6 +55,11 @@ func baseline(action, path string, today time.Time) (map[string]any, error) {
 	for k, v := range security.Diff(prior, current, today) {
 		out[k] = v
 	}
+	units := map[string]any{}
+	for k, v := range security.DiffUnits(prior, current) {
+		units[k] = v
+	}
+	out["units"] = units
 	if action == "save" {
 		if err := ledger.SaveJSON(bpath, security.NextBaseline(prior, current, today), "  "); err != nil {
 			return nil, err

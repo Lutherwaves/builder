@@ -40,7 +40,7 @@ func doc(findings []any, mode string, dims ...any) map[string]any {
 	if dims == nil {
 		dims = []any{"memory", "osi-l7"}
 	}
-	return map[string]any{"mode": mode, "repo": "/tmp/repo", "sha": strings.Repeat("a", 40), "dimensions": dims, "findings": findings}
+	return map[string]any{"mode": mode, "repo": "/tmp/repo", "sha": strings.Repeat("a", 40), "dimensions": dims, "findings": findings, "units": []any{}}
 }
 
 func day(s string) time.Time {
@@ -363,5 +363,97 @@ func TestRejectedNeedsAReason(t *testing.T) {
 	}
 	if _, has := out["findings"].([]map[string]any)[0]["score"]; has {
 		t.Fatal("rejected finding has a score")
+	}
+}
+
+func unit(over ...any) map[string]any {
+	u := map[string]any{"id": "upload/memory", "status": "covered", "files": map[string]any{"a.go": "111"}}
+	for n := 0; n+1 < len(over); n += 2 {
+		if over[n+1] == del {
+			delete(u, over[n].(string))
+		} else {
+			u[over[n].(string)] = over[n+1]
+		}
+	}
+	return u
+}
+
+func TestAuditNeedsUnits(t *testing.T) {
+	d := doc(nil, "audit")
+	delete(d, "units")
+	if _, err := Enrich(d); err == nil || !strings.Contains(err.Error(), "units must be a list") {
+		t.Fatal(err)
+	}
+	delete(d, "units")
+	d["mode"] = "change"
+	if _, err := Enrich(d); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRejectsBadUnit(t *testing.T) {
+	cases := map[string]map[string]any{
+		"nodimension": unit("id", "nodimension"),
+		"x/unknown":   unit("id", "x/unknown"),
+		"u/memory":    unit("id", "u/memory", "status", "done"),
+		"d/memory":    unit("id", "d/memory", "status", "deferred"),
+		"f/memory":    unit("id", "f/memory", "files", "a.go"),
+	}
+	for id, u := range cases {
+		d := doc(nil, "audit")
+		d["units"] = []any{u}
+		if _, err := Enrich(d); err == nil || !strings.Contains(err.Error(), "unit "+id) {
+			t.Fatal(id, err)
+		}
+	}
+}
+
+func TestOldBaselineReadsAsConfirmed(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "old.json")
+	os.WriteFile(p, []byte(`{"repo":"/r","sha":"a","date":"2026-10-01","dimensions":[],"open":[{"id":"x","dimension":"authz","first_seen":"2026-10-01","first_sha":"a"}]}`), 0o644)
+	data, err := LoadBaseline(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f := data["open"].([]any)[0].(map[string]any)
+	if f["state"] != "confirmed" || f["note"] != "saved before states existed" || !reflect.DeepEqual(data["units"], []any{}) {
+		t.Fatal(data)
+	}
+}
+
+func TestDeferredUnitIsCarried(t *testing.T) {
+	p := map[string]any{"units": []any{unit("id", "upload/memory", "status", "deferred", "reason", "too big")}}
+	out := DiffUnits(p, map[string]any{"units": []map[string]any{}})
+	if len(out["carried"]) != 1 || out["carried"][0]["id"] != "upload/memory" {
+		t.Fatal(out)
+	}
+}
+
+func TestChangedFilesMakeAUnitWorkAgain(t *testing.T) {
+	p := map[string]any{"units": []any{unit("files", map[string]any{"a.go": "111"})}}
+	c := map[string]any{"units": []map[string]any{unit("files", map[string]any{"a.go": "222"})}}
+	out := DiffUnits(p, c)
+	if len(out["changed"]) != 1 || len(out["new"]) != 0 || len(out["carried"]) != 0 {
+		t.Fatal(out)
+	}
+}
+
+func TestRejectedClosesAPriorFinding(t *testing.T) {
+	cur := enriched(t, doc([]any{finding("state", "rejected", "reason", "unreachable", "vector", del)}, "audit"))
+	out := Diff(prior("2026-10-01"), cur, day("2026-10-24"))
+	if len(out["still_open"]) != 0 || len(out["new"]) != 0 || len(out["closed"]) != 1 || out["closed"][0]["closed_as"] != "rejected" {
+		t.Fatal(out)
+	}
+}
+
+func TestNextBaselineKeepsCarriedUnits(t *testing.T) {
+	p := prior("2026-10-01")
+	p["units"] = []any{unit("id", "upload/memory", "status", "deferred", "reason", "too big")}
+	d := doc([]any{}, "audit", "memory")
+	d["units"] = []any{unit("id", "auth/authz")}
+	nxt := NextBaseline(p, enriched(t, d), day("2026-10-24"))
+	units := nxt["units"].([]map[string]any)
+	if len(units) != 2 || units[0]["id"] != "auth/authz" || units[1]["id"] != "upload/memory" {
+		t.Fatal(nxt["units"])
 	}
 }

@@ -11,6 +11,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"slices"
 	"strings"
@@ -53,6 +54,9 @@ var Dimensions = []string{
 	"osi-l1-l2", "osi-l3-l4", "osi-l5-l6", "osi-l7", "memory", "availability", "authn", "authz",
 	"injection", "ssrf", "secrets", "supply-chain", "agent-boundary", "data-integrity",
 }
+
+// UnitStatuses are the outcomes of an audit for one unit of coverage.
+var UnitStatuses = []string{"covered", "deferred", "out_of_scope", "not_inspected"}
 
 var Modes = []string{"change", "audit"}
 
@@ -214,7 +218,67 @@ func Enrich(d any) (map[string]any, error) {
 		}
 		out = append(out, enriched)
 	}
-	return copyMap(doc, "findings", out), nil
+	units, err := checkUnits(doc)
+	if err != nil {
+		return nil, err
+	}
+	if units == nil {
+		return copyMap(doc, "findings", out), nil
+	}
+	return copyMap(doc, "findings", out, "units", units), nil
+}
+
+// checkUnits returns nil when a change review carries no units.
+func checkUnits(doc map[string]any) ([]map[string]any, error) {
+	raw, present := doc["units"]
+	if !present && doc["mode"] != "audit" {
+		return nil, nil
+	}
+	list, ok := raw.([]any)
+	if !ok {
+		return nil, fmt.Errorf("units must be a list (an empty list means none), got %s", cli.Repr(raw))
+	}
+	seen := map[string]bool{}
+	out := []map[string]any{}
+	for _, item := range list {
+		u, ok := item.(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("each unit must be a JSON object, got %s", cli.Repr(item))
+		}
+		id, err := text(u, "id")
+		if err != nil {
+			return nil, err
+		}
+		if err := checkUnit(u, id, seen); err != nil {
+			return nil, fmt.Errorf("unit %s: %w", id, err)
+		}
+		out = append(out, u)
+	}
+	return out, nil
+}
+
+func checkUnit(u map[string]any, id string, seen map[string]bool) error {
+	if seen[id] {
+		return errors.New("duplicate id")
+	}
+	seen[id] = true
+	surface, dim, _ := strings.Cut(id, "/")
+	if surface == "" || !slices.Contains(Dimensions, dim) {
+		return errors.New("id must be <surface>/<dimension> with a known dimension")
+	}
+	status, _ := u["status"].(string)
+	if !slices.Contains(UnitStatuses, status) {
+		return fmt.Errorf("status must be one of %s, got %s", strings.Join(UnitStatuses, ", "), cli.Repr(u["status"]))
+	}
+	if _, ok := u["files"].(map[string]any); !ok {
+		return fmt.Errorf("files must be an object of path to blob hash, got %s", cli.Repr(u["files"]))
+	}
+	if status != "covered" {
+		if _, err := text(u, "reason"); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func enrichOne(f map[string]any, fid string, seen map[string]bool) (map[string]any, error) {
@@ -309,6 +373,12 @@ func LoadBaseline(path string) (map[string]any, error) {
 		if _, hasID := f["id"]; !ok || !hasID || !isDate(f["first_seen"]) {
 			return nil, corrupt
 		}
+		if _, has := f["state"]; !has {
+			f["state"], f["note"] = "confirmed", "saved before states existed"
+		}
+	}
+	if _, has := data["units"]; !has {
+		data["units"] = []any{}
 	}
 	return data, nil
 }
@@ -343,7 +413,14 @@ func Diff(prior, current map[string]any, today time.Time) map[string][]map[strin
 	for _, f := range current["findings"].([]map[string]any) {
 		id := fmt.Sprint(f["id"])
 		found[id] = true
-		if old, ok := known[id]; ok {
+		old, wasOpen := known[id]
+		if f["state"] == "rejected" {
+			if wasOpen {
+				out["closed"] = append(out["closed"], copyMap(old, "closed_as", "rejected"))
+			}
+			continue
+		}
+		if wasOpen {
 			first := old["first_seen"].(string)
 			out["still_open"] = append(out["still_open"], copyMap(f, "first_seen", first, "first_sha", old["first_sha"], "days_open", days(first, today)))
 		} else {
@@ -373,5 +450,53 @@ func NextBaseline(prior, current map[string]any, today time.Time) map[string]any
 		keep = append(keep, c)
 	}
 	dims, _ := current["dimensions"].([]any)
-	return map[string]any{"repo": current["repo"], "sha": current["sha"], "date": today.Format("2006-01-02"), "dimensions": slices.Clone(dims), "open": keep}
+	units := slices.Concat(unitList(current["units"]), DiffUnits(prior, current)["carried"])
+	return map[string]any{"repo": current["repo"], "sha": current["sha"], "date": today.Format("2006-01-02"), "dimensions": slices.Clone(dims), "open": keep, "units": units}
+}
+
+// unitList reads units from a baseline file ([]any) or from an enriched run ([]map).
+func unitList(v any) []map[string]any {
+	switch list := v.(type) {
+	case []map[string]any:
+		return list
+	case []any:
+		out := make([]map[string]any, 0, len(list))
+		for _, raw := range list {
+			if u, ok := raw.(map[string]any); ok {
+				out = append(out, u)
+			}
+		}
+		return out
+	}
+	return []map[string]any{}
+}
+
+// DiffUnits says which units the next audit has to work on: the ones an earlier audit left
+// deferred or uninspected, the covered ones whose files changed, and the ones it never saw.
+func DiffUnits(prior, current map[string]any) map[string][]map[string]any {
+	out := map[string][]map[string]any{"carried": {}, "changed": {}, "new": {}}
+	before := map[string]map[string]any{}
+	if prior != nil {
+		for _, u := range unitList(prior["units"]) {
+			before[fmt.Sprint(u["id"])] = u
+		}
+	}
+	now := map[string]bool{}
+	for _, u := range unitList(current["units"]) {
+		id := fmt.Sprint(u["id"])
+		now[id] = true
+		old, ok := before[id]
+		switch {
+		case !ok:
+			out["new"] = append(out["new"], u)
+		case old["status"] == "covered" && !reflect.DeepEqual(old["files"], u["files"]):
+			out["changed"] = append(out["changed"], u)
+		}
+	}
+	for _, u := range unitList(prior["units"]) {
+		if status := u["status"]; (status == "deferred" || status == "not_inspected") && !now[fmt.Sprint(u["id"])] {
+			out["carried"] = append(out["carried"], u)
+		}
+	}
+	return out
 }

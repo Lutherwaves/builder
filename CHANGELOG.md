@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 - A finding has a state (`confirmed`, `needs_validation` or `rejected`), and `builder security score` scores only a confirmed one.
+- An audit records which units it covered, deferred or left out, and the next audit picks up the deferred ones and the covered ones whose files changed. A baseline from the released version still loads.
 
 ## [3.0.0] - 2026-10-27
 
