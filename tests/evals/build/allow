@@ -1,0 +1,3 @@
+# The agent runs the fixture's tests and commits each finished task.
+Bash(python3 -m pytest:*)
+Bash(git:*)

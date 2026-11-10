@@ -1,0 +1,5 @@
+- For each task it writes the test first, runs it and shows it failing, then writes the code and shows it passing.
+- Makes one commit per finished task, as a Conventional Commit.
+- Stops at the step that names `orders.load_page`, says the plan is wrong there, proposes the change and updates the plan, and does not invent the function silently.
+- Writes the hostile-input test of the task tagged with a surface before that task's other code.
+- Ends with the full test run quoted, run after the last change, and says whether a fresh agent or the same session built each task.
