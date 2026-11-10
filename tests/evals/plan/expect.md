@@ -1,0 +1,6 @@
+- Opens with a file map: each file to create or change and its one job.
+- Each task lists its files, a failing test to write first, the exact command with its expected result, and a done-when line.
+- The task that touches customer data carries a Surface tag and a hostile-input test for the spec's anti-goal.
+- Shows an engineering review of the plan (what already exists, failure modes, a map of tests for new paths) and a design review (what the person sees at each step and each error), and each one changes the plan or says "no change" with a reason.
+- Maps every done-when line of the spec to a task, by name.
+- The last task is the review; no step is a placeholder such as "add error handling".

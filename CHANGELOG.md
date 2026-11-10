@@ -6,6 +6,7 @@
 - An audit records which units it covered, deferred or left out, and the next audit picks up the deferred ones and the covered ones whose files changed. A baseline from the released version still loads.
 - A `security` audit says which records are confirmed, which need a check and by whom, which a second agent verified, and which units it did not cover. It loads domain checklists for AI, cloud, client, desktop and mobile, and protocol code.
 - `shape` reads the repository, asks one question at a time with a recommendation, shows two or three ways to build the work, and stops until you approve the spec. Each spec has a Surfaces line that names the sensitive surfaces it touches.
+- `plan` turns an approved spec into a file map and tasks that each start with a failing test and end in one commit, reviews the plan as an engineer and as a designer, and maps every done-when line of the spec to a task.
 
 ## [3.0.0] - 2026-10-27
 
