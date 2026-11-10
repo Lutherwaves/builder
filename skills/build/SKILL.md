@@ -82,6 +82,11 @@ A small change has no plan. Small means: the request says everything that matter
 2. Make the change. Run the test, then the full suite. Quote the result.
 3. Commit with a Conventional Commit.
 
+Sometimes no test can see the change, for example in prose or a comment. Then name the check that you use instead.
+A check is a search that finds the wrong text before the change and not after it, or a link check.
+Run the check before and after the change, and quote both results. Still run the full suite.
+In the report, say under ⚠ Not proven that no test covers the change.
+
 If the work grows past one task, stop. Say so, and step up to the builder skills `shape` and `plan`.
 
 ## 7. Done
@@ -100,6 +105,7 @@ List each plan change under Calls.
 | Mistake | Fix |
 |---|---|
 | The code first, the test after it | Write the test, run it, quote the failure. Then the code. |
+| A test invented for a prose fix | Name the check instead: a search before and after. Say under ⚠ that no test covers it. |
 | A test that fails for the wrong reason | Check the failure against the plan's "before" result. |
 | "Tests pass" with no output | Quote the command and its summary line. |
 | One commit for the whole plan | One commit per task, with the plan's subject. |
@@ -115,7 +121,7 @@ List each plan change under Calls.
 Before you say the build is done:
 
 - [ ] I read the plan and its spec. The tree was clean. I built on a branch that is not the default one.
-- [ ] For each task, I quoted a failing run before the code and a passing run after it.
+- [ ] For each task, I quoted a failing run before the code and a passing run after it. A change that no test can see has its named check, run before and after.
 - [ ] Each `Surface:` task got its hostile-input test before its other code.
 - [ ] Each finished task has one Conventional Commit.
 - [ ] Each wrong step is named, its change is proposed, and the plan file holds the change.

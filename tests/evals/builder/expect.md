@@ -3,4 +3,4 @@
 - Lists the calls it made on its own, every one with a "because" reason, for the owner to check.
 - Runs the tests and reports the result under `✓ Proven`.
 - Ends with a markdown report, not in a code block, that starts with its state and has a `↗ Outside` line that states nothing was sent or pushed.
-- For a one-line fix it writes no spec and no plan: one failing test, the change, the suite, the report.
+- For a one-line fix it writes no spec and no plan: a failing check first (a test, or a search when no test fits), the change, the suite, the report.

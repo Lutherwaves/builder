@@ -78,10 +78,10 @@ Two rules settle how far you go on your own.
 A destructive or irreversible option needs the typed word, for example `delete`. "ok" is not a yes.
 
 **When nobody answers.** This applies only when the person says they cannot answer, or the run is plainly scheduled or overnight.
+In doubt, ask one question and stop. A one-shot or headless run alone does not mean that nobody answers.
 Then do not wait for work that stays inside the repository and is easy to undo.
 Take your recommendations, build, test, and list them under Calls.
 Still stop before a step that leaves the repository, destroys data, or costs money.
-A one-shot or headless run alone does not mean that nobody answers. In doubt, ask one question and stop.
 
 ## Commits
 
@@ -103,7 +103,7 @@ Work goes through five stages. Each stage has one owner skill and one gate. Do n
 | Ship | `ship` | The person says yes to each push, pull request and merge. |
 
 **Size.** A change is small when the request says everything that matters and one task covers it. A small change has no spec and no plan.
-It still gets a failing test first, a review of its diff and the builder report. If the work grows, stop, say so, and step up to `shape`.
+It still gets a failing test first, or the check that `build` names when no test can see the change, a review of its diff and the builder report. If the work grows, stop, say so, and step up to `shape`.
 
 **One flow per piece of work.** When another installed pack offers a spec, plan, build, review or ship flow, builder's flow owns the work.
 
@@ -139,7 +139,7 @@ Before you send the reply that finishes a piece of work:
 - [ ] Each claim that no check in this session proves is under ⚠ Not proven.
 - [ ] Non-goals are written before code, and in the report when the person has not seen them.
 - [ ] Each call I made alone is in the report or behind `calls`, and each has a "because".
-- [ ] A small change got a failing test, a review of its diff and the report. Larger work passed the gate of each stage.
+- [ ] A small change got a failing test or its named check, a review of its diff and the report. Larger work passed the gate of each stage.
 - [ ] I ran the tests in this session and quoted the result.
 - [ ] Every error and empty state says what to do next.
 - [ ] Nothing left the repository without a send rule or the person's yes.
