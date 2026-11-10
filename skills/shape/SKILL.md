@@ -1,33 +1,49 @@
 ---
 name: shape
-description: Use when a request arrives as a feature name, a component or a ticket title ("we need CSV export", "add SSO", "build a dashboard"), when you write an issue, spec or brief for someone else to build, or when a request has no stated person, moment, non-goals or done-when.
+description: Use when a request arrives as a feature name, a component or a ticket title ("we need CSV export", "add SSO", "build a dashboard", "take it from here"), when you write an issue, spec or brief for someone else to build, or when a request has no stated person, moment, non-goals or done-when.
 ---
 
 # shape — work starts from the person and the moment
 
 A request names a thing. The work is a change for one person at one moment.
-`shape` turns the request into one document that a builder can act on with no follow-up question.
-It owns only the shape of that document. Other skills do the asking and the planning.
+`shape` is the first stage of the builder flow. It turns the request into one spec that a builder can act on with no follow-up question.
+`shape` asks the questions, writes the spec and stops at the gate. The builder skill `plan` takes the approved spec.
+The builder skill sets how to ask and what to do when nobody answers. Read its "Questions" and "When nobody answers" rules.
 
-## Where shape sits
+A small change skips `shape`. Small means: the request says everything that matters, and one task covers it.
+If a small change grows, stop, say so, and start `shape`.
 
-| Step | Skill | What it owns |
-|---|---|---|
-| Find the person, the moment, the why | superpowers `brainstorming` | The questions |
-| Write the issue or spec | builder `shape` | The document: `issue-template.md` |
-| Plan the build | superpowers `writing-plans` | Files, tasks, tests |
+## Look before you ask
 
-Do not repeat brainstorming's questions here. Do not write tasks, file names or function signatures here.
-If brainstorming is not installed, ask its questions yourself: one at a time, each with your recommendation.
-The builder skill sets when to ask and when to act. Read its "Questions" and "When nobody answers" rules.
+Read the README, the tickets, the support notes, the specs folder and the code that the request touches.
+Never ask what they answer. Say what you found before you ask: "The rota lives in `rota.py`. The coordinator re-types it into the group chat each Sunday."
 
-## The document
+## Challenge the request
 
-Copy `issue-template.md`. Its sections, in order: Who, and the moment · Why it matters · The experience · Non-goals · Anti-goals · Rulings · Left to the builder · Calls to check · Done when.
+Before you shape the request, answer three questions from the evidence:
+- Who wants this, by role?
+- What do they do today instead?
+- What is the narrowest version that helps them this week?
+Ask the person only the part that the evidence does not answer.
+
+## Ask
+
+Ask one question at a time. Each question carries your recommendation and its reason.
+After a question, stop and wait for the answer. Ask the next question in the next turn.
+Never ask a question that the repository answers.
+
+## Show the ways
+
+Before you write the spec, show two or three ways to build the work.
+For each way, give its trade-off in one line. Then give your pick and its reason.
+The person picks. Record the pick under Rulings: the ways, the pick and who picked.
+
+## The spec
+
+Copy `issue-template.md`. Its sections, in order: Who, and the moment · Why it matters · The experience · Non-goals · Anti-goals · Surfaces · Rulings · Left to the builder · Calls to check · Done when.
 Write the title after the moment. Fill the rest in this order, because each section feeds the next:
 
-1. **Who, and the moment.** One person, by role. Their moment: when, where, what they hold, what they try to do.
-   Find the evidence before you ask. Read the README, the tickets, the support notes, the code comments.
+1. **Who, and the moment.** One person, by role. Their moment: when, where, what they hold, what they try to do. Name the evidence source.
    Example: a ticket says the coordinator "re-types the rota into the group chat every Sunday night". That is the moment.
 2. **Title.** The outcome, in the person's words: who can now do what.
    "A volunteer coordinator posts next week's rota in one step", not "rota export".
@@ -39,16 +55,20 @@ Write the title after the moment. Fill the rest in this order, because each sect
 5. **Non-goals.** Things a builder could add and must not.
 6. **Anti-goals.** Outcomes that make the work a failure even when every test passes.
    A non-goal limits scope. An anti-goal names a harm.
-   Examples: "the rota shows a shift that the volunteer declined"; "phone numbers reach the group chat"; "the page freezes for a big rota".
-7. **Rulings.** Each decision already made: date, decision, reason, and who decided.
-   A decision you made alone says "proposed, not confirmed".
-8. **Left to the builder.** Decisions you hand over on purpose. This stops the issue from becoming a plan.
-9. **Calls to check.** Each open question, with your recommendation, its reason and the cost if wrong.
-   A question with no recommendation is a stall. Delete it or answer it.
-10. **Done when.** Checks a person can run and see. "Each volunteer opens the chat and sees their own shifts, and no declined shift."
+   Examples: "the rota shows a shift that the volunteer declined"; "the page freezes for a big rota".
+7. **Surfaces.** Take the list from `skills/security/standards.md`, section "Sensitive surfaces". Never copy the list into the spec.
+   Name each surface that the work touches, with the harm to avoid. Each touched surface gets its own anti-goal.
+   Example: a rota with phone numbers touches personal data. Its anti-goal: "phone numbers reach the group chat".
+   When the work touches no surface, write the surfaces you checked.
+8. **Rulings.** Each decision already made: date, decision, reason, and who decided, by role.
+9. **Left to the builder.** Decisions you hand over on purpose. This stops the spec from becoming a plan.
+10. **Calls to check.** Each open question, with your recommendation, its reason and the cost if wrong.
+    A question with no recommendation is a stall. Delete it or answer it.
+11. **Done when.** Checks a person can run and see. "Each volunteer opens the chat and sees their own shifts, and no declined shift."
     "Tests pass" and "code reviewed" are not done-when lines. Every change needs those.
 
 Delete a section that does not apply. Never write "n/a", "TBD" or "none".
+Surfaces is the one exception: it is always present.
 
 ## Where it goes
 
@@ -58,49 +78,60 @@ Delete a section that does not apply. Never write "n/a", "TBD" or "none".
    If nobody can answer, use your recommendation and list it under Calls.
 3. A ticket tracker is outside the repository. Write the draft to a local file. Post it only after the person says yes.
 
-## How long
-
 One screen is the target. Each line must change what a builder does.
-Cut a line if the builder would do the same thing without it.
-A long issue that prescribes the build is a plan. Move that content to `writing-plans`.
+A long spec that prescribes the build is a plan. Move that content to `plan`.
 
-## When nobody answers
+## The gate
 
-The person says they cannot answer, or the run is unattended.
-Then do not wait. Fill every section from the evidence, mark each guess "proposed, not confirmed", and put it under Calls to check.
-The issue is still the deliverable. Do not build unless the person asked for the build.
+The person approves the spec. Nothing is planned or built before that approval.
+Write no plan, no task list and no product code while you shape.
+Until the person approves, each turn ends with one question, or with the spec and a request for approval.
 
-## After the document
+A run is unattended only when the person says they cannot answer, or the run is plainly scheduled or overnight.
+In doubt, ask and stop.
+In an unattended run, do not wait. Take your recommendations, and pick the way to build it yourself.
+The ruling still lists each way and its trade-off.
+Mark each decision you made alone "proposed, not confirmed", and list it under Calls to check.
+Go on to `plan` only when the request asked for the build. Otherwise the spec is the deliverable.
 
-End with the builder report from the builder skill. Its first line names the issue by the person's new ability, and links it.
-Then offer the next step in one line: "Plan it with `writing-plans`, or change a ruling first?"
+## After the spec
+
+End with the builder report from the builder skill. Its first line names the spec by the person's new ability, and links it.
+While the gate is open, the report's ▶ You item is the one open question or the approval. Ask nothing else.
+Then offer the next step in one line: "Approve it, and I plan it with `plan`. Or change a ruling first?"
 
 ## Common mistakes
 
 | Mistake | Fix |
 |---|---|
+| Asking where the code lives, or what the README already says | Read first. Say what you found. Ask only what the evidence does not answer. |
+| Three questions in one message | Ask one question, with your recommendation. Stop. |
+| A plan, a task list or code before the person approves the spec | Stop at the gate. The builder skill `plan` starts after the approval. |
+| One way to build it, presented as the only way | Show two or three ways, with trade-offs and a pick. The person picks. |
+| No Surfaces line, or "Surfaces: n/a" | Always write it. Name the touched surfaces, or the surfaces you checked. |
 | Title names a component: "Rota export", "Add ExportService" | Title the outcome in the person's words: who can now do what. |
 | "Users" as the person | One role at one moment. "A nurse at the start of a night shift", not "users". |
 | Anti-goals copied from non-goals | A non-goal is scope. An anti-goal is a harm that can happen even when the code works. |
-| "Open questions" with no answers | Each question carries a recommendation, a reason and the cost if wrong. |
-| Sections that say "n/a" or "TBD" | Delete the section. |
-| The issue specifies columns, endpoints, libraries and test lists | Keep what the person sees. Move the rest to "Left to the builder" or to the plan. |
+| The spec specifies columns, endpoints, libraries and test lists | Keep what the person sees. Move the rest to "Left to the builder" or to the plan. |
 | Done-when says "tests pass" | Write a check the person can run and see. |
-| Decisions written as facts with no date or owner | Each ruling has a date, a reason and who decided. |
-| A real person's name in the document | Name the role. The person who decides is "the owner". |
-| Posting the issue to a tracker to "finish" | Write the file. Post only after a yes. |
+| A decision with no date, no reason or a real person's name | Each ruling has a date and a reason. The decider is a role, such as "the owner". |
+| Posting the spec to a tracker to "finish" | Write the file. Post only after a yes. |
 
 ## Self-check
 
-Before you hand the document over:
+Before you hand the spec over:
 
+- [ ] I said what the repository told me, and I asked nothing it answers.
+- [ ] Each message asked at most one question, with my recommendation.
+- [ ] I showed two or three ways with trade-offs and a pick, and the pick is a ruling.
 - [ ] The title is an outcome in the person's words, specific enough that it does not fit any request in any product.
 - [ ] "Who, and the moment" names one role and one moment, with the evidence source.
 - [ ] Anti-goals name harms, not scope cuts.
+- [ ] The Surfaces line is present. Each touched surface has an anti-goal.
+- [ ] Every ruling has a date, a reason and who decided, by role. My own calls say "proposed, not confirmed".
 - [ ] Every open question has a recommendation, a reason and a cost if wrong.
-- [ ] Every ruling has a date, a reason and who decided.
 - [ ] No section is empty, "n/a" or "TBD".
 - [ ] Each done-when line is a check a person can run and see.
-- [ ] The file is where the repository keeps specs, or I asked once where to put it.
+- [ ] I wrote no plan, no task list and no code before the approval.
 - [ ] Nothing went to a tracker without a yes.
 - [ ] The reply ends with the builder report, then a one-line offer of the next step.

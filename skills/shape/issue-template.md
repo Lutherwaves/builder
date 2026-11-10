@@ -3,6 +3,7 @@
 <!--
 Fill each section, or delete it. Never write "n/a", "TBD" or "none".
 A section that you delete tells the reader: this does not apply.
+Surfaces is the one exception: it is always present.
 Write each line in ASD-STE100: one idea, active voice, present tense.
 -->
 
@@ -29,6 +30,11 @@ Write each line in ASD-STE100: one idea, active voice, present tense.
 
 - <An outcome that makes this work a failure even when every test passes.>
   <Example form: "a reminder reaches a person who opted out".>
+
+## Surfaces
+
+- <A sensitive surface from `skills/security/standards.md`, section "Sensitive surfaces", that this work touches> — <the harm to avoid>. Its anti-goal is above.
+- <When the work touches none: "None touched. Checked: <the surfaces you checked>.">
 
 ## Rulings
 
