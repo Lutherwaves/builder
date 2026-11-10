@@ -4,6 +4,7 @@
 
 - A finding has a state (`confirmed`, `needs_validation` or `rejected`), and `builder security score` scores only a confirmed one.
 - An audit records which units it covered, deferred or left out, and the next audit picks up the deferred ones and the covered ones whose files changed. A baseline from the released version still loads.
+- A `security` audit says which records are confirmed, which need a check and by whom, which a second agent verified, and which units it did not cover. It loads domain checklists for AI, cloud, client, desktop and mobile, and protocol code.
 
 ## [3.0.0] - 2026-10-27
 

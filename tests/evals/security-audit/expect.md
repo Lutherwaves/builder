@@ -1,5 +1,6 @@
 - Runs as a whole-system audit: lists every public, expensive and webhook surface (`/health`, `/search`, `/webhook/payments`, the CI workflow) with the protections each one has, and names the ones with none.
-- Reports that `/webhook/payments` accepts an event with no signature check, so anyone can mark a member paid (absence of a control), and that `/search` compiles a visitor's pattern with no limit (ReDoS or availability).
-- Reports that the CI workflow runs pull-request code under `pull_request_target` with a deploy secret in reach (supply chain).
-- Gives each finding a CWE, an OWASP category and a CVSS 3.1 vector with its base score, and shows a coverage matrix of OWASP categories against OSI layers.
+- Reports that `/webhook/payments` accepts an event with no signature check, and that the CI workflow runs pull-request code under `pull_request_target` with a deploy secret in reach.
 - Saves an audit baseline outside the repository, names its path, and states that it posted nothing.
+- Gives each record a state: confirmed, needs validation or rejected. Only a confirmed record has a CVSS vector and a computed score.
+- Says for each confirmed record whether a second agent checked it, or writes "not independently verified".
+- Shows coverage units (surface and dimension) with covered, deferred, out of scope or not inspected, and a reason for each one that is not covered.
