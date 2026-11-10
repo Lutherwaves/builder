@@ -1,13 +1,13 @@
 ---
 name: review
-description: Use when you are asked to review a pull request, a branch, a commit range, a patch or a diff ("review this PR", "is this ready to merge?", "look over my branch"), at any size, your own change or a teammate's.
+description: Use when you are asked to review a pull request, a branch, a commit range, a patch or a diff ("review this PR", "is this ready to merge?", "look over my branch", "security review this PR"), at any size, your own change or a teammate's, or when `build` hands over a finished change.
 ---
 
 # review — prove how a change hurts a person
 
 A review that guesses is an opinion. A review that runs is evidence.
 `review` is the method: find each way the change hurts a real person, prove it, and hand over the fix and the test that pins it.
-superpowers `requesting-code-review` and gstack `/review` start a review flow. This skill is how the reviewer works inside it.
+It is the fourth stage. `build` hands the change over. `ship` takes it only after the gate in step 3 passes.
 
 ## The rules
 
@@ -28,6 +28,8 @@ superpowers `requesting-code-review` and gstack `/review` start a review flow. T
 3. In the throwaway location, run what the project runs: build, lint or vet, the full test suite.
    Run the race detector (or the language's equivalent) several times on the changed packages.
 4. Record each command and its result. They open the review.
+5. Check the trigger of the security pass in `security-pass.md`, next to this file. When it fires, load that file and run the pass in the same worktree. Nobody has to ask for it.
+   If a `bin/builder` command exits 3 and says the binary is not installed or is off, stop. Show its error line, and offer once to run the install command in it. Do not work around the missing binary.
 
 ## 2. Hunt
 
@@ -45,6 +47,8 @@ Go through the diff by area. For each changed behaviour, ask these questions. Ra
 8. **Hot paths.** Work per request, frame, keystroke or poll, at a realistic size.
 9. **Timeouts and waits.** Add up budgets, grace periods and queued work against each caller's timeout.
 10. **Silent skips.** Anything skipped or dropped must show where the person sees it.
+11. **Use the running product.** Use it as the person does: the page through the "use a browser" action of your harness mapping, the command, or the API call. Quote what you saw.
+    When you cannot run it, write "not used as a running product" under Not proven, with the reason.
 
 When you suspect a bug, confirm it. Write a tiny probe or test in the throwaway location. Capture the input and the output.
 Use the project's own examples as inputs: the README, the docs, the description. A bug that the README's own example triggers is a bug every reader hits.
@@ -52,12 +56,14 @@ Mark each finding with the exact words "confirmed by running" or "from reading".
 
 ## 3. Write the review
 
-Use these headings word for word, in this order: What I ran · Most important first · the findings · Claims checked · Declined to judge · Verdict.
+Use these headings word for word, in this order: What I ran · Coverage · Most important first · the findings · Open checks that block ship · Claims checked · Not proven · Declined to judge · Verdict.
+Leave out Coverage and Open checks that block ship only when the security pass did not run. Then write "no security pass" and the reason in What I ran.
 The person and other agents scan for them. The verdict comes last, after the evidence, never at the top.
 
 Open with two parts:
 
 - **What I ran.** One short paragraph: each command and its result.
+- **Coverage.** The security pass's table, then the coverage line: each surface that you checked, and each one that you did not, with the reason.
 - **Most important first.** A numbered list, one line per finding, worst first.
 
 Then one entry per finding:
@@ -74,13 +80,18 @@ The location is a real line number in the changed code (`app.py:58`), not a func
 
 Severity: **Critical** is data loss, a security hole, a leaked credential or a broken core path.
 **Important** is wrong behaviour a person will hit, or code that breaks under normal conditions. **Minor** is an edge case, polish or cost.
-Do not inflate a severity.
+Do not inflate a severity. A security record takes its severity from the map in `security-pass.md`.
 
-Close with three parts:
+Close with these parts:
 
+- **Open checks that block ship.** Each security record that still needs a person, as `security-pass.md` says.
 - **Claims checked.** Each claim from step 1: true, or false with the finding number.
+- **Not proven.** Each thing that no command in this review proves. "not used as a running product" goes here when it applies.
 - **Declined to judge.** Each thing you considered and set aside, one line each, with the reason.
 - **Verdict.** Ready to merge, ready with fixes, or not yet. Add a one-line reason.
+
+The gate: the change is ready to merge only with no open Critical or Important finding and no open check on a surface that the change touches.
+An open check blocks `ship` until the person answers it. An unattended run stops before `ship` and lists each open check with the words to reply.
 
 Then say what stayed local: "Posted nothing. The checkout is unchanged." Offer the next step in one line: "Post these as review comments, or turn the fixes into a patch?"
 If you found nothing important, say so plainly. Do not pad the review.
@@ -99,6 +110,9 @@ If you found nothing important, say so plainly. Do not pad the review.
 | A fix with no test | Name the test that fails today and passes after the fix. |
 | Every finding marked Critical | Use the scale. Inflation hides the real Critical. |
 | Posting the review or approving to "finish" | Write the review here. Post only after a yes. |
+| No security pass because nobody asked | A touched sensitive surface starts the pass. Load `security-pass.md`. |
+| "Ready to merge" with an open check on a touched surface | The check blocks `ship`. List it under Open checks that block ship. |
+| "It works" from the diff alone | Use the running product and quote it, or write "not used as a running product". |
 
 ## Self-check
 
@@ -108,6 +122,10 @@ Before you hand the review over:
 - [ ] Each finding has a bold harm headline, `file:line` with a line number, a severity, evidence, a fix and a test.
 - [ ] Each "confirmed by running" quotes a command, an input and an output.
 - [ ] Each claim in the description is marked true or false.
+- [ ] The security pass ran when the change touches a sensitive surface, and the coverage line names each surface checked and each one not.
+- [ ] Each security record has a state. Each score comes from `builder security score`. Each Critical or Important one names its verifier, or says "not independently verified".
+- [ ] Each open check on a touched surface is under Open checks that block ship. While one is open, the verdict is not "ready to merge".
+- [ ] I used the running product and quoted it, or Not proven says "not used as a running product".
 - [ ] I ran nothing in the checkout. The throwaway worktree or temp dir is removed.
 - [ ] No finding repeats what an existing test already covers.
 - [ ] It ends with "Declined to judge", then the verdict with its reason. The verdict is not at the top.

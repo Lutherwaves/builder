@@ -8,6 +8,7 @@
 - `shape` reads the repository, asks one question at a time with a recommendation, shows two or three ways to build the work, and stops until you approve the spec. Each spec has a Surfaces line that names the sensitive surfaces it touches.
 - `plan` turns an approved spec into a file map and tasks that each start with a failing test and end in one commit, reviews the plan as an engineer and as a designer, and maps every done-when line of the spec to a task.
 - `build` runs a plan one task at a time: a failing test first, then the code, then one commit per task. It stops at a wrong step, proposes the change and updates the plan, and ends with the full test run quoted and the change handed to `review`.
+- `review` runs a security pass by itself when a change touches a sensitive surface, uses the running product and quotes what it saw, and lists each check that still needs you under "Open checks that block ship". `security` now does the whole-repository audit only.
 
 ## [3.0.0] - 2026-10-27
 

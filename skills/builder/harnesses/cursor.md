@@ -16,6 +16,7 @@ The full action map for this harness is in skills/builder/harnesses/cursor.md.
 | clear the context | not verified: write the durable record, then ask the person to start a fresh chat |
 | make a shareable page | not verified: write a local file and give its path |
 | fetch a web page | not verified: use `curl` in the shell |
+| use a browser | not verified: say 'not used as a running product' |
 | track a todo list | not verified: keep the list in your reply or in a file |
 | edit a file | not verified: use the edit tool this harness gives you |
 

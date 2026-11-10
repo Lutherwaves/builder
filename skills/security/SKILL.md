@@ -1,6 +1,6 @@
 ---
 name: security
-description: Use when the person asks for a security review, a security audit, a threat model or the posture of a repository ("is this secure?", "security review this PR", "audit before launch", "are we safe from DoS?"), or when a change touches authentication, money, uploads, webhooks, secrets, CI or an agent's tools.
+description: Use when the person asks for a security audit, a threat model or the security posture of a whole repository ("is this secure?", "audit before launch", "are we safe from DoS?", "threat model this service"), or before a launch. A diff, a branch or a pull request goes to `review`, which runs its own security pass.
 ---
 
 # security — the full stance in one run
@@ -21,15 +21,12 @@ An audit remembers what it found and what it covered, so the next audit says wha
 - Post nothing. A comment, an issue or an advisory leaves the machine only after the person's yes.
 - Never assume a control that the source does not show. A proxy, a provider setting or an identity policy can hold a control outside the repository. Do not call it present or absent.
 
-## 1. Choose the mode and the profile
+## 1. Choose the scope and the profile
 
-- **Change mode**: there is a diff, a branch, a commit range or a PR. Review what the change adds or alters.
-  When the change adds or widens a public, expensive or webhook surface, also check that surface's protection across the whole system.
-  Example: "the new endpoint has no limit, and nothing in the system provides one".
-- **Audit mode**: there is no diff, or the person asks for an audit. Review the whole repository and its infra config.
-- When you are not sure, use change mode and offer the audit in the verdict.
+This skill audits the whole repository and its infra config. A scoped audit names the surfaces or dimensions it covers.
+A diff, a branch, a commit range or a PR goes to `review`. Its security pass checks the change.
 
-Then choose the profile. Use `standard` when the person names none.
+Choose the profile. Use `standard` when the person names none.
 
 - `quick`: this session hunts. One verifier checks all proposed confirmed records together.
 - `standard`: this session hunts. One verifier checks each proposed confirmed record.
@@ -45,7 +42,7 @@ If a `bin/builder` command exits 3 and says the binary is not installed or is of
 1. Read the README, the deploy and infra files (Dockerfile, compose, Terraform, proxy config, CI workflows) and the route table.
 2. List each public, expensive or webhook surface, and each CI workflow. Expensive means CPU, memory, disk, a paid API or someone's time.
 3. For each surface, write its protections: auth, signature, rate or quota limit, size cap, timeout, concurrency budget. Write `none` where one is missing.
-   In audit mode, this map goes in the report. A `none` on a public or expensive surface is a finding by itself. Step 5 sets its state.
+   This map goes in the report. A `none` on a public or expensive surface is a finding by itself. Step 5 sets its state.
 4. Seed the units. A unit is one surface and one dimension, with the id `<surface>/<dimension>`, for example `webhook-payments/data-integrity`.
    The surface has no `/`. The dimension is a name from `standards.md`. `files` maps each file of the unit to its hash from `git hash-object <path>`.
 5. Write the findings file of step 6 with these units, each `not_inspected` with the reason "not yet hunted", and `findings: []`.
@@ -92,7 +89,7 @@ Only code can do some controls, such as a signature check on a webhook body or a
 
 ## 6. Score
 
-1. Write the findings file: JSON with `mode`, `repo` (the absolute path of the person's checkout, never the probe worktree), `sha`, `dimensions` (the ones you covered), `units` and `findings`.
+1. Write the findings file: JSON with `mode` (`audit`), `repo` (the absolute path of the person's checkout, never the probe worktree), `sha`, `dimensions` (the ones you covered), `units` and `findings`.
    Each finding has `id` (`<dimension>/<CWE>/<file>/<symbol>`), `dimension`, `cwe`, `location`, `title` and `state`.
    A `confirmed` finding adds `vector` (`CVSS:3.1/...`). A `needs_validation` finding adds `missing`. A `rejected` finding adds `reason`.
    Each unit has `id`, `status`, `files`, and a `reason` unless the status is `covered`. Put the file outside the repository, for example in a temp dir.
@@ -102,9 +99,8 @@ Only code can do some controls, such as a signature check on a webhook body or a
 
 ## 7. Remember
 
-- Audit mode: run `"${CLAUDE_PLUGIN_ROOT}/bin/builder" security baseline save <findings.json>`. It prints new, still open, closed and not re-checked, the `units` object and the path it saved.
+- Run `"${CLAUDE_PLUGIN_ROOT}/bin/builder" security baseline save <findings.json>`. It prints new, still open, closed and not re-checked, the `units` object and the path it saved.
 - A scoped audit keeps the units that it does not name. Their status stays as the last audit left it.
-- Change mode: run `baseline diff` instead. It saves nothing and closes nothing. Use it to mark a finding "already known since <date>".
 - The baseline lives in builder's local state, never in the repository. Commit it only on the person's request, and only in a private repository.
 - A corrupt baseline is an error. Report it with its path. Never treat it as empty.
 
@@ -119,7 +115,7 @@ If you found nothing important, say so plainly. Do not pad the report.
 | Mistake | Fix |
 |---|---|
 | "DoS and rate limiting are out of scope" | They are in scope. Check availability and denial of wallet on every public or expensive surface. |
-| Reviewing only the diff for a missing control | A missing limiter lives in no diff. Check the surface system-wide, or run the audit. |
+| A diff reviewed with this skill | Send it to `review`. Its security pass checks the change. |
 | A CVSS score written by hand | Run `builder security score`. Copy its output. |
 | A vector on a record that is not confirmed | Only `confirmed` carries `vector`. Give `missing` or `reason` instead. |
 | "The proxy surely limits this" | The source does not show it. Write `needs_validation` and name who can check the proxy. |
@@ -129,13 +125,12 @@ If you found nothing important, say so plainly. Do not pad the report.
 | A matrix full of `inspected` | Mark only what you looked at. The rest is `not inspected`, with its reason. |
 | A forced finding at L1 or L2 | Name the provider. Write `provider`. |
 | A probe against a live or shared host | Probe in process, or on `localhost`. A remote target needs a go each time. |
-| Saving the baseline from a change review | Only an audit saves. A change review runs `baseline diff`. |
 | The baseline committed to a public repository | It is a list of open holes. Keep it in local state. |
 | Posting an issue or advisory to "finish" | Write the report here. Post only after a yes. |
 
 ## Self-check
 
-- [ ] The report names its mode and its profile, and opens with what I ran.
+- [ ] The report names its scope and its profile, and opens with what I ran.
 - [ ] Every OSI layer and every dimension of step 3 has a line in the matrix or under Limits.
 - [ ] Each public, expensive or webhook surface the run touched has its protections listed.
 - [ ] Each record has a state. Only a confirmed record has a CVSS vector with a computed score.
@@ -144,5 +139,5 @@ If you found nothing important, say so plainly. Do not pad the report.
 - [ ] Each confirmed record names its verifier, or says "not independently verified".
 - [ ] Each `needs_validation` record names the missing fact and who can observe it.
 - [ ] Each unit has a status, and each unit that is not covered has a reason.
-- [ ] Audit: the baseline is saved and its path is named. Change: nothing was saved.
+- [ ] The baseline is saved and its path is named.
 - [ ] I ran nothing in the checkout. The throwaway worktree is removed. Nothing reached the forge without the person's yes.

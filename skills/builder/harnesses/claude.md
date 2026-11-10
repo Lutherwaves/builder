@@ -16,6 +16,7 @@ The full action map for this harness is in skills/builder/harnesses/claude.md.
 | clear the context | `/clear` |
 | make a shareable page | `Artifact` tool |
 | fetch a web page | `WebFetch` |
+| use a browser | not verified: say 'not used as a running product' |
 | track a todo list | `TodoWrite` |
 | edit a file | `Edit`; `Write` for a new file |
 
