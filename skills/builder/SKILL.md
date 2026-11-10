@@ -69,18 +69,19 @@ Each tenet has a rule and a test. Fail the test, fix the work.
 
 ## Settlements
 
-superpowers and gstack disagree in two places. builder settles them.
+Two rules settle how far you go on your own.
 
-- **Autonomy.** Decide together in the brainstorm. Then act inside the repository without stalls and record each call. Outside the repository, show first, always.
+- **Autonomy.** Decide together while you shape the work. Then act inside the repository without stalls and record each call. Outside the repository, show first, always.
 - **Scope.** Finish the agreed scope: the first version and its obvious next step land together, fully tested. Add nothing beyond the scope.
 
 **Questions.** In an interactive session, ask one decision at a time with the "ask the person to choose" action of your harness (text only when it has none). A question with no recommendation is a stall. Each question gives: **What is at stake** (two or three plain sentences; what breaks on a wrong pick), **Recommendation** (the option and one reason; that option comes first, its label ends with `(recommended)`), each option's concrete pro and con, and a **Net** line with the real trade-off.
 A destructive or irreversible option needs the typed word, for example `delete`. "ok" is not a yes.
 
-**When nobody answers.** This applies only when the person says they cannot answer, or the run is unattended (headless, overnight, scheduled).
+**When nobody answers.** This applies only when the person says they cannot answer, or the run is plainly scheduled or overnight.
 Then do not wait for work that stays inside the repository and is easy to undo.
 Take your recommendations, build, test, and list them under Calls.
 Still stop before a step that leaves the repository, destroys data, or costs money.
+A one-shot or headless run alone does not mean that nobody answers. In doubt, ask one question and stop.
 
 ## Commits
 
@@ -89,32 +90,30 @@ Still stop before a step that leaves the repository, destroys data, or costs mon
 - In a public repository, keep private names out of files, commits and pull requests: employers, clients, products, private repositories, people.
   Before each commit, grep the staged diff for those names.
 
-## Routing
+## The framework
 
-Use the named skill for the job. If its provider is not installed, use the fallback.
+Work goes through five stages. Each stage has one owner skill and one gate. Do not start a stage before the gate of the stage before it passes.
 
-| Job | Use | If not installed |
+| Stage | Skill | Gate before the next stage |
 |---|---|---|
-| Find the person, the moment, the non-goals | superpowers `brainstorming`, then builder `shape` | Write the report's first three lines yourself |
-| Plan work with several steps | superpowers `writing-plans` | Number the steps; give each a done-when |
-| Run a plan with independent tasks | superpowers `subagent-driven-development` | One task at a time; test after each |
-| Write or change code | superpowers `test-driven-development` | Write a failing test first, then the code |
-| Find a bug's cause | superpowers `systematic-debugging` or gstack `/investigate` | Reproduce, find the root cause, then fix |
-| Say it is done | superpowers `verification-before-completion` | Run the tests; quote the output |
-| Review a diff, a branch or a PR | builder `review`, inside superpowers `requesting-code-review` or gstack `/review` | Run the tests; prove each harm; post nothing without a yes |
-| Show a mockup, a diagram or a visual | A shareable page (the "make a shareable page" row of your harness mapping) | A file in the repository; give its path. Never only a local browser tab |
-| Test a web app in a browser | gstack `/qa` or `/browse` | Say "not tested in a browser" under ⚠ Not proven |
-| Check security, a threat model or posture | builder `security` (gstack `/cso` for a second opinion) | Say "no security pass" under ⚠ Not proven |
-| Ship a branch | gstack `/ship` or superpowers `finishing-a-development-branch` | Show the diff; push only on a yes |
-| Look back on a week | gstack `/retro` | List what shipped, what broke, what to change |
-| Grow a repository's rules | builder `canon` | Add the rule, its incident and its test |
-| Talk to peers | builder `reach` | Draft the message; the person sends it |
-| Run many sessions | builder `fleet` | One role per session; write a record before a compact or a clear |
-| Reconcile a task tracker | builder `intake` | List the tasks; mark each tracked or raw |
-| Watch usage limits | builder `budget` | Check usage before a long run |
-| Set up an agent harness | builder `harness` | Baseline, provision, route, keep fresh, verify |
+| Shape | `shape` | The person approves the spec. |
+| Plan | `plan` | Every done-when line of the spec maps to a task. The last task is the review. |
+| Build | `build` | The full suite passes after the last change. The report quotes its output. |
+| Review | `review` | No open Critical or Important finding, and no open check on a surface that the change touches. |
+| Ship | `ship` | The person says yes to each push, pull request and merge. |
 
-superpowers and gstack are separate plugins. If a row names one you lack, say so once and use the fallback.
+**Size.** A change is small when the request says everything that matters and one task covers it. A small change has no spec and no plan.
+It still gets a failing test first, a review of its diff and the builder report. If the work grows, stop, say so, and step up to `shape`.
+
+**One flow per piece of work.** When another installed pack offers a spec, plan, build, review or ship flow, builder's flow owns the work.
+
+Three rules have no skill of their own:
+
+- Find a bug's cause before you fix it. Reproduce the bug, find the root cause, then fix it.
+- Done means that the tests ran in this session and the report quotes their output.
+- Show a mockup, a diagram or a visual as a shareable page (the "make a shareable page" action). With no such action, write a file in the repository and give its path. Never only a local browser tab.
+
+Use `security` for an audit of a whole repository. Use `canon` after a ship, to turn what broke into a rule.
 
 Skills name actions, not tools. The tool for each action on your harness is in `skills/builder/harnesses/<harness>.md` (`claude`, `codex`, `cursor` or `opencode`).
 
@@ -140,6 +139,7 @@ Before you send the reply that finishes a piece of work:
 - [ ] Each claim that no check in this session proves is under ⚠ Not proven.
 - [ ] Non-goals are written before code, and in the report when the person has not seen them.
 - [ ] Each call I made alone is in the report or behind `calls`, and each has a "because".
+- [ ] A small change got a failing test, a review of its diff and the report. Larger work passed the gate of each stage.
 - [ ] I ran the tests in this session and quoted the result.
 - [ ] Every error and empty state says what to do next.
 - [ ] Nothing left the repository without a send rule or the person's yes.
