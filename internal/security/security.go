@@ -450,7 +450,19 @@ func NextBaseline(prior, current map[string]any, today time.Time) map[string]any
 		keep = append(keep, c)
 	}
 	dims, _ := current["dimensions"].([]any)
-	units := slices.Concat(unitList(current["units"]), DiffUnits(prior, current)["carried"])
+	// A scoped run never implies that the rest is fine, so it keeps the units it did not visit.
+	units := slices.Clone(unitList(current["units"]))
+	visited := map[string]bool{}
+	for _, u := range units {
+		visited[fmt.Sprint(u["id"])] = true
+	}
+	if prior != nil {
+		for _, u := range unitList(prior["units"]) {
+			if !visited[fmt.Sprint(u["id"])] {
+				units = append(units, u)
+			}
+		}
+	}
 	return map[string]any{"repo": current["repo"], "sha": current["sha"], "date": today.Format("2006-01-02"), "dimensions": slices.Clone(dims), "open": keep, "units": units}
 }
 

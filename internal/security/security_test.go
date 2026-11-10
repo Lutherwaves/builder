@@ -457,3 +457,43 @@ func TestNextBaselineKeepsCarriedUnits(t *testing.T) {
 		t.Fatal(nxt["units"])
 	}
 }
+
+func TestNextBaselineKeepsPriorUnitsTheRunDoesNotMention(t *testing.T) {
+	p := prior("2026-10-01")
+	p["units"] = []any{
+		unit("id", "upload/memory", "files", map[string]any{"a.go": "111"}),
+		unit("id", "search/availability", "files", map[string]any{"s.go": "9"}),
+		unit("id", "login/authn", "status", "deferred", "reason", "too big"),
+	}
+	d := doc([]any{}, "audit", "memory")
+	d["units"] = []any{unit("id", "upload/memory", "files", map[string]any{"a.go": "222"})}
+	units := NextBaseline(p, enriched(t, d), day("2026-10-24"))["units"].([]map[string]any)
+	byID := map[string]map[string]any{}
+	for _, u := range units {
+		byID[u["id"].(string)] = u
+	}
+	if len(units) != 3 || !reflect.DeepEqual(byID["upload/memory"]["files"], map[string]any{"a.go": "222"}) ||
+		byID["search/availability"]["status"] != "covered" || !reflect.DeepEqual(byID["search/availability"]["files"], map[string]any{"s.go": "9"}) {
+		t.Fatal(units)
+	}
+}
+
+func TestRejectsDuplicateAndEmptySurfaceUnits(t *testing.T) {
+	for name, units := range map[string][]any{
+		"duplicate":     {unit(), unit()},
+		"empty surface": {unit("id", "/memory")},
+	} {
+		d := doc(nil, "audit")
+		d["units"] = units
+		if _, err := Enrich(d); err == nil || !strings.Contains(err.Error(), "unit ") {
+			t.Fatal(name, err)
+		}
+	}
+}
+
+func TestDiffUnitsPutsUnseenUnitInNew(t *testing.T) {
+	out := DiffUnits(map[string]any{"units": []any{}}, map[string]any{"units": []map[string]any{unit()}})
+	if len(out["new"]) != 1 || out["new"][0]["id"] != "upload/memory" {
+		t.Fatal(out)
+	}
+}
