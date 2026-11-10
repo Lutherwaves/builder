@@ -12,7 +12,7 @@ const vec = "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
 
 func findingsFile(t *testing.T, dir, repo, mode string) string {
 	d := map[string]any{"mode": mode, "repo": repo, "sha": strings.Repeat("a", 40), "dimensions": []any{"memory", "osi-l7"},
-		"findings": []any{map[string]any{"id": "memory/CWE-409/x", "dimension": "memory", "cwe": "CWE-409", "location": "x:1", "vector": vec, "title": "t"}}}
+		"findings": []any{map[string]any{"id": "memory/CWE-409/x", "dimension": "memory", "cwe": "CWE-409", "location": "x:1", "state": "confirmed", "vector": vec, "title": "t"}}}
 	b, _ := json.Marshal(d)
 	p := filepath.Join(dir, "findings.json")
 	os.WriteFile(p, b, 0o644)

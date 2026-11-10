@@ -46,6 +46,9 @@ var Top25_2025 = []string{
 	"CWE-770",
 }
 
+// States are the three outcomes of an audit for one finding.
+var States = []string{"confirmed", "needs_validation", "rejected"}
+
 var Dimensions = []string{
 	"osi-l1-l2", "osi-l3-l4", "osi-l5-l6", "osi-l7", "memory", "availability", "authn", "authz",
 	"injection", "ssrf", "secrets", "supply-chain", "agent-boundary", "data-integrity",
@@ -226,6 +229,24 @@ func enrichOne(f map[string]any, fid string, seen map[string]bool) (map[string]a
 	seen[fid] = true
 	if dim, _ := f["dimension"].(string); !slices.Contains(Dimensions, dim) {
 		return nil, fmt.Errorf("unknown dimension %s", cli.Repr(f["dimension"]))
+	}
+	state, _ := f["state"].(string)
+	if !slices.Contains(States, state) {
+		return nil, fmt.Errorf("state must be one of %s, got %s", strings.Join(States, ", "), cli.Repr(f["state"]))
+	}
+	if state != "confirmed" {
+		if _, has := f["vector"]; has {
+			return nil, fmt.Errorf("only a confirmed finding has a vector (state '%s')", state)
+		}
+		why := map[string]string{"needs_validation": "missing", "rejected": "reason"}[state]
+		if _, err := text(f, why); err != nil {
+			return nil, err
+		}
+		top25, err := InTop25(f["cwe"])
+		if err != nil {
+			return nil, err
+		}
+		return copyMap(f, "top25", top25), nil
 	}
 	vector, has := f["vector"]
 	if !has {

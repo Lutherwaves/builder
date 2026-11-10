@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- A finding has a state (`confirmed`, `needs_validation` or `rejected`), and `builder security score` scores only a confirmed one.
+
 ## [3.0.0] - 2026-10-27
 
 ### ⚠ Breaking

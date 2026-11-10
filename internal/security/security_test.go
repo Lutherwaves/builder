@@ -16,7 +16,7 @@ const P = "CVSS:3.1/"
 func finding(over ...any) map[string]any {
 	f := map[string]any{
 		"id": "memory/CWE-409/app/upload.py/extract", "dimension": "memory", "cwe": "CWE-409",
-		"location": "app/upload.py:41", "vector": P + "AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+		"location": "app/upload.py:41", "state": "confirmed", "vector": P + "AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
 		"title": "One uploaded zip fills the disk and stops the service",
 	}
 	for n := 0; n+1 < len(over); n += 2 {
@@ -315,5 +315,53 @@ func TestBaselinePathMatchesPython(t *testing.T) {
 	// pythonBaselinePath is what the Python security.baseline_path("/tmp/no-such-repo", {"BUILDER_HOME": "/b"}, "/h") returned.
 	if got := BaselinePath("/tmp/no-such-repo", map[string]string{"BUILDER_HOME": "/b"}, "/h"); got != pythonBaselinePath {
 		t.Fatal(got)
+	}
+}
+
+const unobserved = "the proxy's rate limit; the platform owner can read it"
+
+func TestStateIsRequired(t *testing.T) {
+	_, err := Enrich(doc([]any{finding("state", del)}, "audit"))
+	if err == nil || !strings.Contains(err.Error(), "state must be one of confirmed, needs_validation, rejected") {
+		t.Fatal(err)
+	}
+}
+
+func TestOnlyConfirmedHasAVector(t *testing.T) {
+	_, err := Enrich(doc([]any{finding("state", "needs_validation", "missing", unobserved)}, "audit"))
+	if err == nil || !strings.Contains(err.Error(), "only a confirmed finding has a vector") {
+		t.Fatal(err)
+	}
+}
+
+func TestNeedsValidationHasNoScore(t *testing.T) {
+	out, err := Enrich(doc([]any{finding("state", "needs_validation", "missing", unobserved, "vector", del)}, "audit"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := out["findings"].([]map[string]any)[0]
+	if _, has := got["score"]; has || got["rating"] != nil || got["top25"] == nil {
+		t.Fatal(got)
+	}
+}
+
+func TestNeedsValidationNamesTheMissingFact(t *testing.T) {
+	_, err := Enrich(doc([]any{finding("state", "needs_validation", "vector", del)}, "audit"))
+	if err == nil || !strings.Contains(err.Error(), "missing must be a non-empty string") {
+		t.Fatal(err)
+	}
+}
+
+func TestRejectedNeedsAReason(t *testing.T) {
+	_, err := Enrich(doc([]any{finding("state", "rejected", "vector", del)}, "audit"))
+	if err == nil || !strings.Contains(err.Error(), "reason must be a non-empty string") {
+		t.Fatal(err)
+	}
+	out, err := Enrich(doc([]any{finding("state", "rejected", "reason", "the sink is unreachable", "vector", del)}, "audit"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, has := out["findings"].([]map[string]any)[0]["score"]; has {
+		t.Fatal("rejected finding has a score")
 	}
 }
