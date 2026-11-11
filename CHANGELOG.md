@@ -9,6 +9,7 @@
 - builder no longer recommends the superpowers or gstack packs at session start, because it does their jobs itself.
 - The session-start hook prints the soul, the builder root and the action map of your harness, and nothing else. It recommends nothing and asks no setup question: onboarding is gone. The one exception stays: when the helper binary is missing, the hook offers to install it. The `builder ledger` command and the parity eval are removed. A `ledger.json` from 3.0.0 stays on your machine, and nothing reads it.
 - Removed: the `reach` and `budget` skills and the `builder reach` and `builder budget` commands. Send rules are gone, so each push, post or message needs your yes in the session. A `reach.json` or `reach-log.jsonl` from 3.0.0 stays on your machine, and nothing reads it.
+- Removed: the `fleet`, `canon`, `intake` and `harness` skills and the `builder mcp-merge` command. builder now has seven skills: `builder`, `shape`, `plan`, `build`, `review`, `ship` and `security`. A file that these skills wrote on your machine stays there, and nothing reads it.
 
 ### Features
 

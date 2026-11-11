@@ -1,6 +1,6 @@
 # Contributing to builder
 
-Thanks for your interest. builder is a plugin for coding agents: eleven skills, one session-start hook,
+Thanks for your interest. builder is a plugin for coding agents: seven skills, one session-start hook,
 and one Go binary, `builder`. It runs on Claude Code, Codex CLI, Cursor CLI and opencode. [AGENTS.md](AGENTS.md) tells you which file to change for each job.
 
 ## Quick start
@@ -26,12 +26,12 @@ A new harness needs six things. Do them in this order.
 
 1. **Manifest.** Add the harness's plugin manifest, with the same description and keywords as the other manifests. Keep `version` equal.
 2. **Mapping file.** Add `skills/builder/harnesses/<harness>.md`. It holds the `<!-- hook -->` block and one row per action. A tool you did not verify starts with `not verified:` and names a safe fallback.
-3. **Detection marker.** Add the harness to `internal/harness/harness.go`: its state directory, its plugin-root variable and its process match. Add an environment marker only after you saw a real session set it. Extend `internal/harness/harness_test.go`.
+3. **Detection marker.** Add the harness to `Names` in `internal/harness/harness.go`. Add an environment marker only after you saw a real session set it. Extend `internal/harness/harness_test.go`.
 4. **Eval runner.** Add `eval_base_<harness>`, `eval_notes_<harness>` and `eval_prepare_<harness>` to `tests/evals/lib.sh`, so that `bash tests/evals/run.sh --harness <harness> <skill>` runs every fixture. The runner writes nothing outside its temp dirs.
 5. **Results.** Run the fixtures and commit the result files that `tests/evals/README.md` describes. Never commit a transcript.
 6. **Support table.** Run `go run ./cmd/support-table render` and paste the block it prints into the README. Never write a support claim by hand. A harness shows as supported only after every fixture passes on it.
 
-Then add its install block to the README, and its state directory to the scope in `SECURITY.md`.
+Then add its install block to the README.
 
 ## Before you open a pull request
 
@@ -48,7 +48,7 @@ It checks that:
 - every skill has the skill shape (see below);
 - the Go code builds, passes `go vet` and its tests, and `builder security score` keeps its rating;
 - no Python is left outside the sample projects of the eval fixtures;
-- the shim tests, the hook tests, the installer tests, the drift tests and the eval runner tests pass;
+- the shim tests, the hook tests, the installer tests and the eval runner tests pass;
 - every eval fixture is valid;
 - no tracked file holds a deny-listed name, when `BUILDER_DENYLIST` is set (see "Scrub guard").
 

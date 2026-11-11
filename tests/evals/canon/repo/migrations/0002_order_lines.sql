@@ -1,1 +1,0 @@
-CREATE TABLE order_lines (id BIGSERIAL PRIMARY KEY, order_id BIGINT NOT NULL REFERENCES orders(id), sku TEXT NOT NULL, qty INT NOT NULL, unit_cents INT NOT NULL);

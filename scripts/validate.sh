@@ -163,14 +163,6 @@ else
     for s in gofmt "go vet" "go test" shim "builder security smoke"; do note "$s: skipped (no binary)"; done
   fi
 fi
-echo "→ harness drift tests"
-if [ -n "${BUILDER_BIN:-}" ]; then
-  if dr_out="$(bash tests/test_drift.sh 2>&1)"; then note "✓ drift"; else printf '%s\n' "$dr_out"; err "drift tests failed"; fi
-  if sp_out="$(bash tests/test_state_paths.sh 2>&1)"; then note "✓ state paths"; else printf '%s\n' "$sp_out"; err "state path tests failed"; fi
-else
-  note "drift: skipped (no binary)"; note "state paths: skipped (no binary)"
-fi
-
 echo "→ hook tests"
 if of_out="$(bash tests/test_offer.sh 2>&1)"; then note "✓ install offer"; else printf '%s\n' "$of_out"; err "install offer tests failed"; fi
 if in_out="$(bash tests/test_install.sh 2>&1)"; then note "✓ installer"; else printf '%s\n' "$in_out"; err "installer tests failed"; fi

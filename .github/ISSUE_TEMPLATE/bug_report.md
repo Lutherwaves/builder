@@ -19,5 +19,4 @@ labels: bug
 
 - OS:
 - Claude Code version:
-- `matchblox` present? (`command -v matchblox`)
 - `bash scripts/validate.sh` result:

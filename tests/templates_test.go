@@ -1,7 +1,7 @@
-// The shape and canon templates keep the section order their SKILL.md lists.
+// The shape template keeps the section order its SKILL.md lists.
 //
-// Eval agents cannot read the templates (they sit outside the eval's working
-// directory), so the order written in each SKILL.md must match the template.
+// Eval agents cannot read the template (it sits outside the eval's working
+// directory), so the order written in SKILL.md must match the template.
 package tests
 
 import (
@@ -78,14 +78,6 @@ func TestIssueTemplateMatchesShapeSkill(t *testing.T) {
 	}
 }
 
-func TestRuleTemplateMatchesCanonSkill(t *testing.T) {
-	lines := submatches(`(?m)^\*\*(\w+)\.\*\*`, read(t, "canon", "rule-template.md"))
-	want := listedOrder(t, read(t, "canon", "SKILL.md"), "Its lines, in order:")
-	if !reflect.DeepEqual(lines, want) {
-		t.Fatalf("rule-template lines %q, SKILL.md lists %q", lines, want)
-	}
-}
-
 var (
 	reportOrder  = []string{"state", "▶ You", "⚠ Not proven", "✓ Proven", "↗ Outside", "Calls", "↻ Next"}
 	reportStates = []string{"✓ Done", "▶ Needs you", "✗ Blocked"}
@@ -152,6 +144,19 @@ func TestSoulListsTheLinesInOrder(t *testing.T) {
 		t.Fatalf("soul lists %q, want %q", got, want)
 	}
 	mustContain(t, soul, "not in a code block")
+}
+
+// removedSkills are gone from builder; the soul and the builder skill name none of them.
+var removedSkills = []string{"fleet", "canon", "intake", "harness", "reach", "budget"}
+
+func TestSoulNamesNoRemovedSkill(t *testing.T) {
+	for _, name := range []string{"soul-compact.md", "SKILL.md"} {
+		text := read(t, "builder", name)
+		for _, skill := range removedSkills {
+			mustNotContain(t, text, "`"+skill+"`")
+			mustNotContain(t, text, skill+" skill")
+		}
+	}
 }
 
 func TestReadmeExampleFollowsTheOrder(t *testing.T) {

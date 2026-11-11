@@ -57,8 +57,6 @@ test first. The review runs a security pass by itself, and `ship` stops on an op
 | Each solo call recorded with its reason | every report, under Calls | if you wrote it |
 | Unproven work marked as unproven | every report | if you wrote it |
 | Security in each stage, not on request | spec, plan, build, review and ship | if you wrote it |
-| A rule carries its incident and a check that fails | `canon` | no |
-| Many sessions, one lane each, hand-offs as briefs | `fleet` | no |
 
 ## Install
 
@@ -93,7 +91,7 @@ A harness counts as supported once every eval fixture passes on it.
 <!-- support:start -->
 | Harness | Version | Eval date | Status |
 | --- | --- | --- | --- |
-| Claude Code | 2.1.308 (Claude Code) | 2026-10-22 | experimental: canon 5/6; fleet 3/4; harness 4/6; shape 2/6; 8 not graded |
+| Claude Code | 2.1.308 (Claude Code) | 2026-10-22 | experimental: shape 2/6; 8 not graded |
 <!-- support:end -->
 
 ## Skills
@@ -107,10 +105,6 @@ A harness counts as supported once every eval fixture passes on it.
 | `review` | A review that proves each harm with evidence, a fix and a test, with a security pass and the running product. Posts nothing without your yes. |
 | `ship` | Reviewed work becomes a checked release. It stops on an open finding and waits for your yes before each push, pull request and merge. |
 | `security` | A whole-repository audit: every layer, standards-mapped findings with CVSS scores, and what changed since last time. |
-| `canon` | A repo rule with its incident and a check that fails when someone breaks it. |
-| `fleet` | Many sessions side by side, one lane each; work outside a lane goes to its owner. |
-| `intake` | Today's captured tasks reconciled against work in motion; nothing filed without your yes. |
-| `harness` | A local code graph that answers "what calls this?" in one query. |
 
 Ask for a skill by name, or just describe the job. The agent loads the right one.
 
@@ -118,9 +112,7 @@ Ask for a skill by name, or just describe the job. The agent loads the right one
 
 builder runs on its own and says once when a partner is missing.
 
-- [gh](https://cli.github.com): `intake` reads open PRs and issues through it.
-- [matchblox](https://matchblox.sh): `fleet` reads your live sessions from it ([docs](https://docs.matchblox.com)).
-- [codebase-memory-mcp](https://github.com/DeusData/codebase-memory-mcp): `harness` sets it up; it runs locally with no API key.
+- [gh](https://cli.github.com): `ship` opens and merges the pull request through it.
 
 ## Contributing
 
@@ -133,9 +125,6 @@ builder takes ideas, and no text, from three MIT-licensed projects:
 [obra/superpowers](https://github.com/obra/superpowers) (the spec, plan and build loop),
 [garrytan/gstack](https://github.com/garrytan/gstack) (the reviews of a plan, the use of the running product, shipping)
 and [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) (the audit method).
-The `harness` skill takes its framing from Ryan Lopopolo's
-[Harness Engineering](https://github.com/lopopolo/harness-engineering) (CC BY 4.0);
-builder adapts the ideas and copies no prose.
 
 ## License
 

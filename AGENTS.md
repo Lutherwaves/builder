@@ -1,6 +1,6 @@
 # builder — agent guide
 
-builder is a plugin for coding agents: eleven skills, one session-start hook, and one Go binary, `builder`. The skills and the hook run it through `bin/builder`. builder has adapters for Claude Code, Codex CLI, Cursor CLI and opencode.
+builder is a plugin for coding agents: seven skills, one session-start hook, and one Go binary, `builder`. The skills and the hook run it through `bin/builder`. builder has adapters for Claude Code, Codex CLI, Cursor CLI and opencode.
 This guide routes an agent that works on builder itself.
 
 ## Where each change goes
@@ -17,10 +17,9 @@ This guide routes an agent that works on builder itself.
 | The soul the hook injects | `skills/builder/soul-compact.md` (keep it in step with `skills/builder/SKILL.md`) | `bash tests/test_hook.sh` |
 | The SessionStart hook | `hooks/session-start`, `internal/hook` | `bash tests/test_hook.sh`, `go test ./internal/hook/` |
 | The security score, CWE checks and audit baseline | `internal/security`, `skills/security/standards.md` | `go test ./internal/security/` |
-| The graph drift check | `skills/harness/drift.sh` | `bash tests/test_drift.sh` |
-| An issue or rule template | `skills/shape/issue-template.md`, `skills/canon/rule-template.md` | `go test ./tests/` |
+| The issue template | `skills/shape/issue-template.md` | `go test ./tests/` |
 | Which harness runs builder, and where builder keeps its files | `internal/harness` | `go test ./internal/harness/` |
-| What an action means on one harness (ask, schedule, usage, compact) | `skills/builder/harnesses/<harness>.md` | `bash scripts/validate.sh` |
+| What an action means on one harness (ask, subagent, browser, compact) | `skills/builder/harnesses/<harness>.md` | `bash scripts/validate.sh` |
 | The manifests | `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, `.cursor-plugin/plugin.json`, `package.json` (description and keywords only; `version` stays equal in all four) | `bash scripts/validate.sh` |
 | The opencode adapter | `.opencode/plugins/builder.js` | `node --test tests/test_opencode.mjs` |
 | The support table in the README | `cmd/support-table` (never edit the block by hand) | `go test ./cmd/support-table/` |
@@ -44,10 +43,6 @@ Before every commit, run `bash scripts/validate.sh`. It runs all of the checks a
 - Write your change under `## [Unreleased]` in `CHANGELOG.md`. Never edit a released section or a manifest `version`: the release bot owns both.
 
 ## Attribution
-
-The `harness` skill derives its framing from Ryan Lopopolo's **Harness Engineering** corpus
-(<https://github.com/lopopolo/harness-engineering>), licensed CC BY 4.0.
-builder adapts its vocabulary and applies its improve-harness loop. It copies no prose.
 
 builder takes ideas, and no text, from three MIT-licensed projects:
 

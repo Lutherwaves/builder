@@ -52,7 +52,7 @@ func TestUnknownCommandExits2(t *testing.T) {
 
 func TestRemovedCommandsAreGone(t *testing.T) {
 	cliEnv(t)
-	for _, name := range []string{"ledger", "reach", "budget"} {
+	for _, name := range []string{"ledger", "reach", "budget", "mcp-merge"} {
 		code, _, errs := call(t, name, "x")
 		first, usageLine, _ := strings.Cut(errs, "\n")
 		if code != 2 || first != "builder: unknown command \""+name+"\"" || strings.Contains(usageLine, name) {

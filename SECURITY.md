@@ -24,7 +24,7 @@ mitigation plan within 14 days for confirmed issues.
 ## Scope
 
 This plugin runs inside Claude Code, Codex CLI, Cursor CLI and opencode. As part
-of its normal flow, it runs shell commands and schedules recurring agent prompts on the user's machine.
+of its normal flow, it runs shell commands on the user's machine.
 Security-relevant surfaces:
 
 - `hooks/` — the SessionStart hook. It runs at the start of every session and
@@ -32,33 +32,16 @@ Security-relevant surfaces:
 - The `builder` binary (`cmd/builder`, `internal/*`) and its shim `bin/builder`.
   The hook and the skills run it through the shim. It runs locally.
 - `skills/*/SKILL.md` — instructions the harness treats as trusted content.
-- `skills/*/*.sh` and `scripts/*.sh` — run locally.
-- Files under `$BUILDER_HOME/code-graph/` (the graph registry) and
-  `$BUILDER_HOME/intake/` (config and seen messages). `$BUILDER_HOME` is
-  `~/.config/builder` by default. Builder still reads the old
-  `~/.claude/code-graph/` and `~/.claude/intake/` files when the new ones are
-  missing. It never writes or deletes them.
+- `scripts/*.sh` — run locally.
+- Files under `$BUILDER_HOME` (`~/.config/builder` by default): the helper
+  binary, the install answer and the audit baselines.
 - The adapters: the per-harness manifests, the hook files and the opencode plugin.
-- The state directories of each harness that builder reads: the Claude Code
-  directory (`~/.claude` or `CLAUDE_CONFIG_DIR`), the Codex directory
-  (`~/.codex` or `CODEX_HOME`), the Cursor directory (`~/.cursor` or
-  `CURSOR_CONFIG_DIR`), the opencode directory (`~/.config/opencode` or
-  `OPENCODE_CONFIG_DIR`), and `$BUILDER_HOME`. From these it reads the MCP
-  server and hook lists, and the project's `.mcp.json` and `.cursor/mcp.json`.
-- Scheduled watcher prompts that read `matchblox sessions --json` and the
-  graph registry.
 
 Network:
 
 - The hook makes no network call itself.
 - A message leaves the machine only with the person's yes in the session.
-- `intake` reads the person's trackers through `gh` and their MCP connectors.
-  It writes to a tracker only under the person's own config rule
-  (`annotate_in_tracker`), on a mark, or on the person's yes.
-- The `codebase-memory-mcp` binary that `harness` sets up makes one version
-  check against GitHub.
 
 builder stores no secrets.
 
-Out of scope: the four harnesses themselves, `matchblox` upstream, and
-user-authored content.
+Out of scope: the four harnesses themselves and user-authored content.
