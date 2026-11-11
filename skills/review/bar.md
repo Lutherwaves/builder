@@ -38,9 +38,12 @@ Never drop a real finding to make the review look tidy.
 
 ## When unsure
 
-Drop the candidate.
+"Unsure" means one thing here: you cannot tell whether the drop list covers the candidate.
+Then drop the candidate.
 Write it under "Declined to judge", one line, with the reason. Example: "`user_id` has no empty check: the only caller reads it from the signed session."
 Never drop a candidate in silence. The person sees each one you set aside.
+A candidate that passes the keep test and that you could not confirm by running is not unsure.
+It stays a finding, marked "from reading".
 
 ## The sweep
 
@@ -53,5 +56,5 @@ Make one more pass after the hunt. Look only where no finding points:
 
 Apply the keep test and the drop list to what the sweep finds.
 Report only what is new. Do not repeat a finding from the hunt.
-When the sweep finds nothing, say so in one line. Example: "Sweep: error paths, unhandled inputs and callers checked; nothing new."
+Say what the sweep found in one line, the last sentence of "What I ran". Example: "Sweep: error paths, unhandled inputs and callers checked; nothing new."
 An empty sweep is a good result. Do not pad it.

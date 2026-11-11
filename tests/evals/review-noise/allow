@@ -5,6 +5,5 @@ Bash(git worktree:*)
 Bash(git diff:*)
 Bash(git status:*)
 Bash(mktemp:*)
-# The security pass scores its findings, and the review runs the product as the person does.
+# The security pass scores its findings.
 Bash(*bin/builder* security *)
-Bash(python3 mailer.py:*)

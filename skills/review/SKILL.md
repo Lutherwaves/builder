@@ -52,7 +52,7 @@ Load `bar.md`, next to this file. It decides which candidates stay as findings.
 11. **Use the running product.** Use it as the person does: the page through the "use a browser" action of your harness mapping, the command, or the API call. Quote what you saw.
     When you cannot run it, write "not used as a running product" under Not proven, with the reason.
 12. **The sweep.** The hunt is done when each changed file is flagged or cleared against questions 1 to 11.
-    Then make one sweep where no finding points, as `bar.md` says. When it finds nothing, say so in one line.
+    Then make one sweep where no finding points, as `bar.md` says. Say what it found in one line: the last sentence of What I ran.
 
 When you suspect a bug, confirm it. Write a tiny probe or test in the throwaway location. Capture the input and the output.
 Use the project's own examples as inputs: the README, the docs, the description. A bug that the README's own example triggers is a bug every reader hits.
@@ -66,7 +66,7 @@ The person and other agents scan for them. The verdict comes last, after the evi
 
 Open with three parts:
 
-- **What I ran.** One short paragraph: each command and its result.
+- **What I ran.** One short paragraph: each command and its result. Its last sentence says what the sweep found.
 - **Coverage.** The security pass's table, then the coverage line: each surface that you checked, and each one that you did not, with the reason.
 - **Most important first.** A numbered list, one line per finding, worst first.
 
@@ -135,7 +135,7 @@ Before you hand the review over:
 - [ ] I used the running product and quoted it, or Not proven says "not used as a running product".
 - [ ] I ran nothing in the checkout. The throwaway worktree or temp dir is removed.
 - [ ] No finding repeats what an existing test already covers.
-- [ ] The sweep ran, and the review says what it found. Each dropped item is under "Declined to judge" with its reason.
+- [ ] The sweep ran, and the last sentence of What I ran says what it found. Each dropped item is under "Declined to judge" with its reason.
 - [ ] It ends with "Declined to judge", then the verdict with its reason. The verdict is not at the top.
 - [ ] The review is saved to one file outside the checkout. The reply's last line names its absolute path.
 - [ ] Nothing reached the forge without the person's yes.
