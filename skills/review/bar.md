@@ -2,6 +2,8 @@
 
 The hunt finds candidates. This file decides which candidates stay as findings.
 Apply it to each candidate before you write the review.
+A security record is not a candidate. It keeps the state that `security-pass.md` gives it.
+The drop list and "When unsure" never drop a security record.
 
 ## The keep test
 
