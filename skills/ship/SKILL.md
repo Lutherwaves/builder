@@ -12,21 +12,28 @@ The builder skill sets how to ask and what to do when nobody answers. Read its "
 
 ## The rules
 
-- Nothing leaves the machine without the person's yes, or a standing rule that the person gave for that exact write. A push, a pull request, a merge, a tag and a release are each one write.
+- Nothing leaves the machine without the person's yes in this session. A push, a pull request, a merge, a tag and a release are each one write.
 - "Ship it" is not a yes for each write. It starts the stage. Each write still waits for its own yes.
 - Never force a push. Never retry a merge or a push by yourself. A refusal stops the stage.
 - Run before you claim. Every "passes", "merged" or "live" has a command and its output behind it.
-- Collect every reason to stop, then stop once. After the first stop, still run each local check of steps 1 to 3 that can run. The person then fixes everything in one round.
+- Collect every reason to stop, then stop once. After the first reason, still run each local check of steps 1 to 3 that can run. The person then fixes everything in one round.
 - A dirty tree or a merge conflict stops the stage at once. No later check can run on it.
 
 ## 1. Check the tools
 
-Run these three as shell commands. The first that fails stops the stage before anything leaves the machine.
-Name that check and its one fix. The local checks that do not need the failed tool still run.
+Run these checks as shell commands before anything leaves the machine.
+A check that fails is a reason to stop. Name it with its fix. The local checks that do not need the failed tool still run.
 
-1. `gh --version`. Fix: install `gh`.
-2. `gh auth status`. Fix: run `gh auth login`.
-3. `git config --get commit.gpgsign`. It must print `true`. Fix: set up signing as the `CONTRIBUTING.md` of the repository says.
+1. Commit signing. Run `git config --type=bool --get commit.gpgsign`. It must print `true`.
+   This check does not need `gh`. Always run it. When it fails, report it as its own reason.
+   Fix: run `git config commit.gpgsign true`, and set a signing key with `git config user.signingkey <key>`.
+   When the repository has a `CONTRIBUTING` file that describes signing, follow it.
+2. The forge tool. Run `git remote get-url origin`. When it names github.com, run the two `gh` checks in this order, and report the first that fails:
+   - `gh --version`. Fix: install `gh`.
+   - `gh auth status`. Fix: run `gh auth login`.
+   On another forge, or with no remote, skip both `gh` checks. Write under ⚠ Not proven that the forge tool was not checked.
+
+One run reports at most two tool reasons. The person fixes them in one round.
 
 ## 2. Check the gate
 
@@ -66,9 +73,8 @@ Name that check and its one fix. The local checks that do not need the failed to
 
 1. Show the diff against the base branch, the changelog line and the pull request text.
 2. Ask for each write on its own: the push, then the pull request, then the merge. Give the exact words to reply for each.
-3. A standing rule counts only for the write that it names. A rule for a push is not a rule for a merge.
-4. Before each write, check again that the branch, the remote and the target are the ones that the person approved.
-5. After each write, quote its result: the pushed commit, the link to the pull request, the merge commit.
+3. Before each write, check again that the branch, the remote and the target are the ones that the person approved.
+4. After each write, quote its result: the pushed commit, the link to the pull request, the merge commit.
 
 ## 6. After the merge
 
@@ -105,7 +111,7 @@ Each failure stops the stage and names the fix. Never retry by yourself.
 | A refused push is forced, or a failed merge is retried | Quote the refusal. Name the fix. Stop. |
 | "Merged, done" | Check the released thing where the person meets it, and quote it. |
 | No look back | List what broke and what the person corrected, in the report. |
-| The tools are not checked, so a push fails late | Run the three tool checks first. Name the first that fails, with its one fix. |
+| The tools are not checked, so a push fails late | Run the tool checks first: signing always, the two `gh` checks when the remote is on GitHub. Name each reason with its fix. |
 | The review looked for in the chat history, or a forge approval taken as the review | Read the review file at its path. With none, stop and say to run `review`. |
 
 ## Self-check
@@ -118,8 +124,8 @@ Before you report:
 - [ ] I merged the base branch and ran the full suite after it. I quoted the result.
 - [ ] Each failing test is named, with its cause and its fix. I did not write the fix here.
 - [ ] I showed the changelog line, written by what the person can now do, and the pull request text.
-- [ ] Each push, pull request and merge had its own yes or a standing rule for that exact write. With none, it is a ▶ You item.
+- [ ] Each push, pull request and merge had its own yes in this session. With none, it is a ▶ You item.
 - [ ] Nothing was forced. Nothing was retried by itself.
 - [ ] After the merge, I checked the released thing where the person meets it and quoted it, or it is under ⚠ Not proven.
 - [ ] The look back lists what broke and what the person corrected, in the report.
-- [ ] I ran `gh --version`, `gh auth status` and `git config --get commit.gpgsign` first. A failing one is named with its one fix.
+- [ ] I ran the signing check first, and the two `gh` checks when the remote is on GitHub. Each failing check is named with its fix. Skipped `gh` checks are under ⚠ Not proven.

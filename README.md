@@ -79,9 +79,10 @@ codex plugin add builder@builder
 **Cursor CLI** and **opencode:** see [docs/install.md](docs/install.md).
 
 The first session asks to install the helper binary. It runs the session-start hook and
-the security score. Answer yes, not now (quiet for 7 days) or never. The installer downloads the binary of your plugin's
-version from builder's GitHub release, checks the checksum and, with a signed-in `gh`,
-the build provenance. It installs to `~/.config/builder/bin`. To install it yourself, run
+the security score. Answer yes, not now (quiet for 7 days) or never. The installer
+downloads the binary of your plugin's version from builder's GitHub release, checks the
+checksum and, with a signed-in `gh`, the build provenance. It installs to
+`~/.config/builder/bin`. To install it yourself, run
 `bash <plugin root>/scripts/install.sh`.
 
 ### Harness support
@@ -110,7 +111,9 @@ Ask for a skill by name, or just describe the job. The agent loads the right one
 
 ## Works with
 
-builder runs on its own and says once when a partner is missing.
+builder runs on its own. When the remote is on GitHub, `ship` checks that `gh` is present
+and signed in. It also checks that commit signing is on. When a check fails, `ship` stops
+and names the fix.
 
 - [gh](https://cli.github.com): `ship` opens and merges the pull request through it.
 

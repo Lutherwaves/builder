@@ -10,7 +10,8 @@ import (
 	"testing"
 )
 
-var removedThing = regexp.MustCompile(`(\bbuilder (ledger|reach|budget|mcp-merge)|\bskills/(budget|canon|fleet|harness|intake|reach)\b|` + "`(budget|canon|fleet|intake|reach)` skill" + `|\bsend rule|recommendations\.json)`)
+// A "standing rule" was a pre-approved send. The soul's heading "Standing rules:" is not one, so the pattern lets it pass.
+var removedThing = regexp.MustCompile(`(\bbuilder (ledger|reach|budget|mcp-merge)|\bskills/(budget|canon|fleet|harness|intake|reach)\b|` + "`(budget|canon|fleet|harness|intake|reach)` skill" + `|\bsend rule|(?i:\bstanding rules?($|[^s:]))|recommendations\.json)`)
 
 // These files name a removed thing on purpose, to prove its removal.
 var mayNameRemovedThings = map[string]bool{
@@ -31,7 +32,7 @@ func TestNoFileTellsAnyoneToUseARemovedThing(t *testing.T) {
 		t.Fatalf("git ls-files: %v", err)
 	}
 	for _, rel := range strings.Split(strings.TrimRight(string(out), "\x00"), "\x00") {
-		if strings.HasPrefix(rel, "docs/") || mayNameRemovedThings[rel] {
+		if strings.HasPrefix(rel, "docs/specs/") || strings.HasPrefix(rel, "docs/plans/") || mayNameRemovedThings[rel] {
 			continue
 		}
 		b, err := os.ReadFile(filepath.Join(root, rel))
@@ -42,6 +43,32 @@ func TestNoFileTellsAnyoneToUseARemovedThing(t *testing.T) {
 			if m := removedThing.FindString(line); m != "" {
 				t.Errorf("%s:%d names a removed thing (%q): %s", rel, i+1, m, strings.TrimSpace(line))
 			}
+		}
+	}
+}
+
+func TestRemovedThingPattern(t *testing.T) {
+	for _, line := range []string{
+		"run `builder reach send`",
+		"see skills/harness/drift.sh",
+		"the `harness` skill indexes the repository",
+		"use a send rule",
+		"Nothing leaves without the person's yes, or a standing rule that the person gave.",
+		"A standing rule counts only for the write that it names.",
+		"Each write had its own yes or a standing rule for that exact write.",
+	} {
+		if !removedThing.MatchString(line) {
+			t.Errorf("must match: %s", line)
+		}
+	}
+	for _, line := range []string{
+		"internal/harness",
+		"the harness you run on",
+		"Standing rules:",
+		"skills/builder/harnesses/claude.md",
+	} {
+		if m := removedThing.FindString(line); m != "" {
+			t.Errorf("must not match (%q): %s", m, line)
 		}
 	}
 }
