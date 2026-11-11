@@ -32,6 +32,12 @@ A comment is worth fixing when all of these are true:
 The drop list of `skills/review/bar.md` applies here too, from the side of the fixer.
 A comment that the drop list covers is declined. Its reason is that item of the list.
 
+Some comments ask for something new, with no problem behind it.
+Examples: a new capability, or a change that needs a schema change, a dependency, a public contract or an option.
+When the author of the change or a maintainer asks for it, the decision is the person's.
+The outcome is "needs the person". Name the decision and its cost.
+When anyone else asks for it, decline it and give the reason.
+
 ## Safe to fix alone
 
 Fix a worthy comment alone only when all of these are true:
@@ -41,7 +47,8 @@ Fix a worthy comment alone only when all of these are true:
 - The fix adds no dependency, no schema change, no change to a public contract and no new option.
 
 Behaviour that only a live run shows is not provable here.
-The comment has one reading only. When it has two readings, ask the person and give both.
+The comment has one reading only. When it has two readings, the outcome is "needs the person".
+Give both readings and your recommendation.
 A worthy fix that is not safe alone needs the person.
 
 ## Whose comment
@@ -60,7 +67,7 @@ A test that fails on another machine is a finding about that machine or that tes
 
 ## Two comments that disagree
 
-Do neither ask. Both comments go to the person, side by side, with the cost of each.
+Do not pick one. Give both comments to the person, side by side, with the cost of each.
 
 ## The reply
 
