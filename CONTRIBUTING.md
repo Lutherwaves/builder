@@ -1,13 +1,13 @@
 # Contributing to builder
 
-Thanks for your interest. builder is a plugin for coding agents: thirteen skills, one session-start hook,
+Thanks for your interest. builder is a plugin for coding agents: eleven skills, one session-start hook,
 and one Go binary, `builder`. It runs on Claude Code, Codex CLI, Cursor CLI and opencode. [AGENTS.md](AGENTS.md) tells you which file to change for each job.
 
 ## Quick start
 
 1. Fork and clone the repository.
 2. Load your checkout in a session (see below).
-3. A skill lives in `skills/<name>/SKILL.md`. Its tool is a command of the `builder` binary, for example the budget forecast in `internal/budget`.
+3. A skill lives in `skills/<name>/SKILL.md`. Its tool is a command of the `builder` binary, for example the security score in `internal/security`.
 
 ## Load your checkout
 
@@ -46,7 +46,7 @@ It checks that:
 - the manifests parse, the release scripts pass their tests, and the workflows pass `actionlint` when it is installed;
 - every commit subject since `origin/main` follows Conventional Commits;
 - every skill has the skill shape (see below);
-- the Go code builds, passes `go vet` and its tests, and `builder budget` keeps its output shape;
+- the Go code builds, passes `go vet` and its tests, and `builder security score` keeps its rating;
 - no Python is left outside the sample projects of the eval fixtures;
 - the shim tests, the hook tests, the installer tests, the drift tests and the eval runner tests pass;
 - every eval fixture is valid;

@@ -21,7 +21,7 @@ Correct is not enough. The work must fit one person at one moment.
 
 **✓ Proven:** <command> → <result>, measured or estimated.
 
-**↗ Outside:** <nothing sent. | sent by rule: <n>, logged. | each external write, and the yes behind it.>
+**↗ Outside:** <nothing sent. | each external write, and the yes behind it.>
 
 **Calls:** <call>, because <reason>. Say `calls` for the other <n>.
 
@@ -59,7 +59,7 @@ Each tenet has a rule and a test. Fail the test, fix the work.
 9. **Rules are guards.** A rule that matters has a test or check that enforces it. Name the incident that made it.
    Test: break the rule on purpose. Something fails.
 10. **The human decides; the agent proposes behind a gate.** Make no external write unseen. Confirm a destructive action by typing, and check again just before it runs.
-    Test: no push, pull request, post, message, deploy, tracker or ticket write happened without a send rule or the person's yes in this session.
+    Test: no push, pull request, post, message, deploy, tracker or ticket write happened without the person's yes in this session.
 11. **Fix what you touch, and say so.** Do not call a failure "pre-existing". Do not refactor the world.
     Test: the suite you ran is green, or the report names each red test and what you did about it.
 12. **Agents are first-class readers.** Write descriptions as scripts. Write every explanation in ASD-STE100: one idea per sentence, active voice, present tense, short sentences, one word for one thing.
@@ -142,7 +142,7 @@ Before you send the reply that finishes a piece of work:
 - [ ] A small change got a failing test or its named check, a review of its diff and the report. Larger work passed the gate of each stage.
 - [ ] I ran the tests in this session and quoted the result.
 - [ ] Every error and empty state says what to do next.
-- [ ] Nothing left the repository without a send rule or the person's yes.
+- [ ] Nothing left the repository without the person's yes.
 - [ ] The copy fails the squint test for any other product.
 - [ ] Each explanation is plain ASD-STE100.
 - [ ] Each mockup or visual is a shareable page, not only a local browser tab.

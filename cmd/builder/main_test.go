@@ -50,9 +50,13 @@ func TestUnknownCommandExits2(t *testing.T) {
 	}
 }
 
-func TestLedgerCommandIsGone(t *testing.T) {
+func TestRemovedCommandsAreGone(t *testing.T) {
 	cliEnv(t)
-	if code, _, errs := call(t, "ledger", "next"); code != 2 || !strings.HasPrefix(errs, "builder: unknown command \"ledger\"\n") {
-		t.Fatalf("code %d err %q", code, errs)
+	for _, name := range []string{"ledger", "reach", "budget"} {
+		code, _, errs := call(t, name, "x")
+		first, usageLine, _ := strings.Cut(errs, "\n")
+		if code != 2 || first != "builder: unknown command \""+name+"\"" || strings.Contains(usageLine, name) {
+			t.Errorf("%s: code %d err %q", name, code, errs)
+		}
 	}
 }

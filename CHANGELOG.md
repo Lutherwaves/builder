@@ -8,6 +8,7 @@
 - builder is a framework of its own: every session knows the five stages `shape`, `plan`, `build`, `review` and `ship` and the gate of each, a small change skips the spec and the plan, and no work goes to another pack. A one-shot run asks its question and stops unless you say you cannot answer.
 - builder no longer recommends the superpowers or gstack packs at session start, because it does their jobs itself.
 - The session-start hook prints the soul, the builder root and the action map of your harness, and nothing else. It recommends nothing and asks no setup question: onboarding is gone. The one exception stays: when the helper binary is missing, the hook offers to install it. The `builder ledger` command and the parity eval are removed. A `ledger.json` from 3.0.0 stays on your machine, and nothing reads it.
+- Removed: the `reach` and `budget` skills and the `builder reach` and `builder budget` commands. Send rules are gone, so each push, post or message needs your yes in the session. A `reach.json` or `reach-log.jsonl` from 3.0.0 stays on your machine, and nothing reads it.
 
 ### Features
 

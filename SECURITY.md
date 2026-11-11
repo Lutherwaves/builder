@@ -33,10 +33,6 @@ Security-relevant surfaces:
   The hook and the skills run it through the shim. It runs locally.
 - `skills/*/SKILL.md` — instructions the harness treats as trusted content.
 - `skills/*/*.sh` and `scripts/*.sh` — run locally.
-- Files under `~/.config/builder/` (or `$BUILDER_HOME`): `reach.json` (send
-  rules and the team channel) and `reach-log.jsonl`.
-  **`reach-log.jsonl` holds the full text of each message** that `reach` sent or
-  skipped, with its recipient. It is written with mode 0600.
 - Files under `$BUILDER_HOME/code-graph/` (the graph registry) and
   `$BUILDER_HOME/intake/` (config and seen messages). `$BUILDER_HOME` is
   `~/.config/builder` by default. Builder still reads the old
@@ -49,15 +45,13 @@ Security-relevant surfaces:
   `CURSOR_CONFIG_DIR`), the opencode directory (`~/.config/opencode` or
   `OPENCODE_CONFIG_DIR`), and `$BUILDER_HOME`. From these it reads the MCP
   server and hook lists, and the project's `.mcp.json` and `.cursor/mcp.json`.
-- Scheduled watcher prompts that read `matchblox usage --json`,
-  `matchblox sessions --json`, and the graph registry.
+- Scheduled watcher prompts that read `matchblox sessions --json` and the
+  graph registry.
 
 Network:
 
 - The hook makes no network call itself.
-- A message leaves the machine only through `reach`, under its send rules or
-  the person's yes, through the person's own chat connector, matchblox, or an
-  OS notification.
+- A message leaves the machine only with the person's yes in the session.
 - `intake` reads the person's trackers through `gh` and their MCP connectors.
   It writes to a tracker only under the person's own config rule
   (`annotate_in_tracker`), on a mark, or on the person's yes.

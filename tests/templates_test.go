@@ -244,29 +244,22 @@ func TestReportAsksWithAnActionEveryHarnessMaps(t *testing.T) {
 	}
 }
 
-// builder reach lets a send rule allow a message. Every text that names the gate says so.
+// Each send needs the person's yes in the session. No text names a rule that allows a send.
 
-func TestReachTeammateRowNamesTheSendRule(t *testing.T) {
-	var row string
-	for _, l := range strings.Split(read(t, "reach", "SKILL.md"), "\n") {
-		if strings.HasPrefix(l, "| **teammate**") {
-			row = l
-			break
-		}
-	}
-	if row == "" {
-		t.Fatal("reach SKILL.md has no teammate row")
-	}
-	mustContain(t, row, "unless a send rule allows the kind")
-	mustContain(t, row, "the person's yes")
+func TestBuilderGateTextsNameThePersonsYes(t *testing.T) {
+	skill := read(t, "builder", "SKILL.md")
+	mustContain(t, skill, "without the person's yes in this session")
+	mustContain(t, skill, "- [ ] Nothing left the repository without the person's yes.")
+	mustNotContain(t, skill, "sent by rule")
+	mustNotContain(t, skill, "Nothing left the repository without a yes.")
 }
 
-func TestBuilderGateTextsNameTheSendRule(t *testing.T) {
-	skill := read(t, "builder", "SKILL.md")
-	mustContain(t, skill, "without a send rule or the person's yes in this session")
-	mustContain(t, skill, "- [ ] Nothing left the repository without a send rule or the person's yes.")
-	mustContain(t, skill, "sent by rule: <n>, logged.")
-	mustNotContain(t, skill, "Nothing left the repository without a yes.")
+func TestNoSendRuleInTheBuilderSkill(t *testing.T) {
+	for _, name := range []string{"SKILL.md", "soul-compact.md"} {
+		if strings.Contains(read(t, "builder", name), "send rule") {
+			t.Errorf("builder %s names a send rule", name)
+		}
+	}
 }
 
 func TestQuestionsFollowTheDecisionBrief(t *testing.T) {
@@ -335,8 +328,4 @@ func TestWhyBuilderClaimsHold(t *testing.T) {
 	mustNotContain(t, section, "every reply")
 	// A hand-written CLAUDE.md can ask for a reason and for proof too.
 	mustNotContain(t, section, "| no |\n| Unproven")
-}
-
-func TestBudgetFindsTheOldWatcher(t *testing.T) {
-	mustContain(t, read(t, "budget", "SKILL.md"), "`builder budget` or the old `burn-proj.py`")
 }

@@ -8,7 +8,7 @@
 builder makes your coding agent answer to you. Every piece of work ends with a short
 report: is it done, what you have to do, what isn't proven yet, what left your machine,
 and every call the agent made on its own, with the reason. Nothing leaves the machine
-(no push, no PR, no message) without a send rule or your yes.
+(no push, no PR, no message) without your yes.
 
 It's a plugin for Claude Code, Codex CLI, Cursor CLI and opencode. It takes a request
 through shape, plan, build, review and ship, with security in every stage. Skills and one
@@ -57,10 +57,8 @@ test first. The review runs a security pass by itself, and `ship` stops on an op
 | Each solo call recorded with its reason | every report, under Calls | if you wrote it |
 | Unproven work marked as unproven | every report | if you wrote it |
 | Security in each stage, not on request | spec, plan, build, review and ship | if you wrote it |
-| Messages to people: send rules, duplicate check, 6 an hour | `reach` | no |
 | A rule carries its incident and a check that fails | `canon` | no |
 | Many sessions, one lane each, hand-offs as briefs | `fleet` | no |
-| Weekly usage-limit forecast | `budget` | no |
 
 ## Install
 
@@ -95,7 +93,7 @@ A harness counts as supported once every eval fixture passes on it.
 <!-- support:start -->
 | Harness | Version | Eval date | Status |
 | --- | --- | --- | --- |
-| Claude Code | 2.1.308 (Claude Code) | 2026-10-22 | experimental: canon 5/6; fleet 3/4; harness 4/6; reach 3/4; shape 2/6; 9 not graded |
+| Claude Code | 2.1.308 (Claude Code) | 2026-10-22 | experimental: canon 5/6; fleet 3/4; harness 4/6; shape 2/6; 8 not graded |
 <!-- support:end -->
 
 ## Skills
@@ -110,10 +108,8 @@ A harness counts as supported once every eval fixture passes on it.
 | `ship` | Reviewed work becomes a checked release. It stops on an open finding and waits for your yes before each push, pull request and merge. |
 | `security` | A whole-repository audit: every layer, standards-mapped findings with CVSS scores, and what changed since last time. |
 | `canon` | A repo rule with its incident and a check that fails when someone breaks it. |
-| `reach` | Messages to teammates wait for your yes, with a duplicate check and 6 sends an hour. |
 | `fleet` | Many sessions side by side, one lane each; work outside a lane goes to its owner. |
 | `intake` | Today's captured tasks reconciled against work in motion; nothing filed without your yes. |
-| `budget` | A forecast of your weekly usage limit, and which idle session to compact. |
 | `harness` | A local code graph that answers "what calls this?" in one query. |
 
 Ask for a skill by name, or just describe the job. The agent loads the right one.
@@ -123,8 +119,7 @@ Ask for a skill by name, or just describe the job. The agent loads the right one
 builder runs on its own and says once when a partner is missing.
 
 - [gh](https://cli.github.com): `intake` reads open PRs and issues through it.
-- [matchblox](https://matchblox.sh): `budget` reads your plan windows and `fleet` your live sessions from it ([docs](https://docs.matchblox.com)).
-- Your team channel's MCP server: `reach` sends through it. For Slack, the claude.ai Slack connector or Slack's own MCP server.
+- [matchblox](https://matchblox.sh): `fleet` reads your live sessions from it ([docs](https://docs.matchblox.com)).
 - [codebase-memory-mcp](https://github.com/DeusData/codebase-memory-mcp): `harness` sets it up; it runs locally with no API key.
 
 ## Contributing

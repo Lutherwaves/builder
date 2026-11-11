@@ -9,9 +9,6 @@ The full action map for this harness is in skills/builder/harnesses/claude.md.
 | ask the person to choose | `AskUserQuestion` |
 | start a subagent | `Agent` tool |
 | message a peer session | `SendMessage` |
-| send the person a notification | `PushNotification` |
-| schedule a recurring check | `/loop <interval> <prompt>`; cron tools `CronCreate`, `CronDelete`; `ScheduleWakeup` for one wake-up |
-| see usage limits | `/usage`; or `matchblox usage --json` |
 | compact the context | `/compact` |
 | clear the context | `/clear` |
 | make a shareable page | `Artifact` tool |
