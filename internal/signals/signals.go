@@ -25,9 +25,8 @@ var (
 const autocompactVar = "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE"
 
 var (
-	tomlMCP         = regexp.MustCompile(`(?m)^\[mcp_servers\.("?)([^\]."]+)("?)\]`)
-	tomlSuperpowers = regexp.MustCompile(`(?m)^\[plugins\."superpowers@`)
-	parseTOML       = true // tests turn it off to exercise the regex fallback
+	tomlMCP   = regexp.MustCompile(`(?m)^\[mcp_servers\.("?)([^\]."]+)("?)\]`)
+	parseTOML = true // tests turn it off to exercise the regex fallback
 )
 
 func jsonOf(r *Result) any {
@@ -218,43 +217,6 @@ func mcpServers(spec harness.Paths, name string, dirs []string) map[string]bool 
 	return names
 }
 
-func superpowers(name string, spec harness.Paths) any {
-	if spec.PluginsRecord == "" {
-		return nil
-	}
-	switch name {
-	case "codex":
-		data, text := readTOML(spec.PluginsRecord)
-		if data == nil {
-			return tomlSuperpowers.MatchString(text)
-		}
-		for k := range dict(data["plugins"]) {
-			if strings.HasPrefix(k, "superpowers@") {
-				return true
-			}
-		}
-		return false
-	case "opencode":
-		for _, e := range list(readJSON(spec.PluginsRecord)["plugin"]) {
-			if s, ok := e.(string); ok && strings.Contains(s, "superpowers") {
-				return true
-			}
-		}
-		return false
-	}
-	b, err := os.ReadFile(spec.PluginsRecord)
-	return err == nil && strings.Contains(string(b), "superpowers@")
-}
-
-func gstack(name string, spec harness.Paths) bool {
-	skills := filepath.Join(spec.ConfigDir, "skills")
-	if name == "claude" {
-		return exists(filepath.Join(skills, "gstack"))
-	}
-	m, _ := filepath.Glob(filepath.Join(skills, "gstack-*"))
-	return len(m) > 0
-}
-
 func matchbloxHooks(name string, spec harness.Paths) any {
 	switch name {
 	case "claude":
@@ -332,7 +294,7 @@ func split3(line string) []string {
 	return out
 }
 
-// Collect reads the twelve signals the catalog's `when` conditions test.
+// Collect reads the ten signals the catalog's `when` conditions test.
 func Collect(cwd string, timeout time.Duration, name string, env map[string]string, home string) map[string]any {
 	if name == "" {
 		name = harness.Detect(env, "")
@@ -379,8 +341,6 @@ func Collect(cwd string, timeout time.Duration, name string, env map[string]stri
 		hooks = matchbloxHooks(name, spec)
 	}
 	return map[string]any{
-		"superpowers":     superpowers(name, spec),
-		"gstack":          gstack(name, spec),
 		"gh":              res["gh"] != nil && res["gh"].Code == 0,
 		"signing":         stdout(res["gpgsign"]) == "true" && stdout(res["signkey"]) != "",
 		"matchblox":       has["matchblox"],

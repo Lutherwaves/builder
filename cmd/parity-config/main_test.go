@@ -63,86 +63,34 @@ func (tr *tree) json(rel string) map[string]any {
 	return v
 }
 
-func exists(p string) bool { _, err := os.Lstat(p); return err == nil }
-
-func (tr *tree) plugins(extraPath string) {
+func TestNoOtherPackIsEnabledOrCopied(t *testing.T) {
+	tr := newTree(t)
 	tr.write(".claude/plugins/cache/m/superpowers/1/SKILL.md", "sp")
-	tr.write(".claude/plugins/cache/m/other/1/SKILL.md", "other")
-	tr.write(".claude/plugins/marketplaces/m/x", "mk")
-	tr.write(".claude/plugins/marketplaces/x/y", "x")
-	sp := filepath.Join(tr.src, "plugins/cache/m/superpowers/1")
-	if extraPath != "" {
-		sp = extraPath
-	}
-	b, _ := json.Marshal(map[string]any{"version": 2, "plugins": map[string]any{
-		"superpowers@m": []any{map[string]any{"installPath": sp}},
-		"other@x":       []any{map[string]any{"installPath": filepath.Join(tr.src, "plugins/cache/m/other/1")}},
-	}})
-	tr.write(".claude/plugins/installed_plugins.json", string(b))
-	b, _ = json.Marshal(map[string]any{
-		"m": map[string]any{"installLocation": filepath.Join(tr.src, "plugins/marketplaces/m")},
-		"x": map[string]any{"installLocation": filepath.Join(tr.src, "plugins/marketplaces/x")},
-	})
-	tr.write(".claude/plugins/known_marketplaces.json", string(b))
-	tr.write(".claude/settings.json", `{"enabledPlugins": {"superpowers@m": true, "other@x": true}}`)
-}
-
-func TestKeepsOnlySuperpowers(t *testing.T) {
-	tr := newTree(t)
-	tr.plugins("")
+	tr.write(".claude/plugins/installed_plugins.json", `{"plugins": {"superpowers@m": []}}`)
+	tr.write(".claude/skills/gstack/browse/SKILL.md", "b")
+	tr.write(".claude/settings.json", `{"enabledPlugins": {"superpowers@m": true}}`)
 	tr.run()
-	inst := tr.json("plugins/installed_plugins.json")
-	if ps := inst["plugins"].(map[string]any); len(ps) != 1 || ps["superpowers@m"] == nil {
-		t.Errorf("installed plugins = %v, want only superpowers@m", ps)
+	if _, ok := tr.json("settings.json")["enabledPlugins"]; ok {
+		t.Error("settings.json enables a plugin")
 	}
-	if inst["version"] != float64(2) {
-		t.Errorf("version = %v, want the other keys kept", inst["version"])
-	}
-	if en := tr.json("settings.json")["enabledPlugins"].(map[string]any); len(en) != 1 || en["superpowers@m"] != true {
-		t.Errorf("enabledPlugins = %v", en)
-	}
-	if km := tr.json("plugins/known_marketplaces.json"); len(km) != 1 || km["m"] == nil {
-		t.Errorf("known marketplaces = %v, want only m", km)
-	}
-	if exists(filepath.Join(tr.cfg, "plugins/cache/m/other")) || exists(filepath.Join(tr.cfg, "plugins/marketplaces/x")) {
-		t.Error("other@x was copied")
+	for _, p := range []string{"plugins", "skills"} {
+		if exists(filepath.Join(tr.cfg, p)) {
+			t.Errorf("%s was written", p)
+		}
 	}
 }
 
-func TestRelinksPluginPaths(t *testing.T) {
+func TestRerunClearsOldCopies(t *testing.T) {
 	tr := newTree(t)
-	tr.plugins("")
+	tr.write("cfg/plugins/stale", "x")
+	tr.write("cfg/skills/stale/SKILL.md", "x")
 	tr.run()
-	want := filepath.Join(tr.cfg, "plugins/cache/m/superpowers/1")
-	got := tr.json("plugins/installed_plugins.json")["plugins"].(map[string]any)["superpowers@m"].([]any)[0].(map[string]any)["installPath"]
-	if got != want {
-		t.Errorf("installPath = %v, want %s", got, want)
-	}
-	if loc := tr.json("plugins/known_marketplaces.json")["m"].(map[string]any)["installLocation"]; loc != filepath.Join(tr.cfg, "plugins/marketplaces/m") {
-		t.Errorf("installLocation = %v", loc)
-	}
-	if tr.read("plugins/cache/m/superpowers/1/SKILL.md") != "sp" || tr.read("plugins/marketplaces/m/x") != "mk" {
-		t.Error("the plugin folders were not copied")
+	if exists(filepath.Join(tr.cfg, "plugins")) || exists(filepath.Join(tr.cfg, "skills")) {
+		t.Error("a run kept an old plugins or skills folder")
 	}
 }
 
-func TestOutsidePluginsIsNotCopied(t *testing.T) {
-	tr := newTree(t)
-	outside := filepath.Join(tr.home, "elsewhere/sp")
-	tr.write("elsewhere/sp/SKILL.md", "sp")
-	tr.plugins(outside)
-	stderr := tr.run()
-	if !strings.Contains(stderr, "note: "+outside+" is outside your plugins folder; parity does not copy it\n") {
-		t.Errorf("stderr = %q", stderr)
-	}
-	got := tr.json("plugins/installed_plugins.json")["plugins"].(map[string]any)["superpowers@m"].([]any)[0].(map[string]any)["installPath"]
-	if got != outside {
-		t.Errorf("installPath = %v, want it unchanged", got)
-	}
-	if exists(filepath.Join(tr.cfg, "plugins/elsewhere")) || exists(filepath.Join(tr.cfg, "plugins/sp")) {
-		t.Error("an outside folder was copied")
-	}
-}
+func exists(p string) bool { _, err := os.Lstat(p); return err == nil }
 
 func TestKeepsOnlyMatchbloxHooks(t *testing.T) {
 	tr := newTree(t)
@@ -151,7 +99,6 @@ func TestKeepsOnlyMatchbloxHooks(t *testing.T) {
 	  "statusLine": {"type": "command", "command": "/x/matchblox hook statusline"}, "permissions": {"allow": ["Bash(ls:*)"]}}`)
 	tr.run()
 	want := `{
-  "enabledPlugins": {},
   "env": {
     "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "85"
   },
@@ -210,56 +157,11 @@ func TestCodeGraphMergesIntoExistingState(t *testing.T) {
 		t.Error("wrote .claude.json without a code graph server")
 	}
 	for _, n := range []string{
-		"note: superpowers is not installed; the builder-led run has no superpowers\n",
-		"note: gstack is not installed; the builder-led run has no gstack\n",
 		"note: codebase-memory-mcp is not set up; the builder-led run has no code graph\n",
 	} {
 		if !strings.Contains(stderr, n) {
 			t.Errorf("stderr lacks %q: %q", n, stderr)
 		}
-	}
-}
-
-func TestGstackLinkAndOwnedCopies(t *testing.T) {
-	tr := newTree(t)
-	tr.write(".claude/skills/gstack/browse/SKILL.md", "b")
-	tr.write(".claude/skills/browse/.gstack-owned", "own")
-	tr.write(".claude/skills/personal/SKILL.md", "p")
-	link := filepath.Join(tr.src, "skills/browse/SKILL.md")
-	if err := os.Symlink(filepath.Join(tr.src, "skills/gstack/browse/SKILL.md"), link); err != nil {
-		t.Fatal(err)
-	}
-	tr.run()
-	if got, err := os.Readlink(filepath.Join(tr.cfg, "skills/gstack")); err != nil || got != filepath.Join(tr.src, "skills/gstack") {
-		t.Errorf("skills/gstack -> %q, %v", got, err)
-	}
-	if tr.read("skills/browse/.gstack-owned") != "own" {
-		t.Error("the gstack-owned folder was not copied")
-	}
-	if got, err := os.Readlink(filepath.Join(tr.cfg, "skills/browse/SKILL.md")); err != nil || got != filepath.Join(tr.src, "skills/gstack/browse/SKILL.md") {
-		t.Errorf("the copied symlink -> %q, %v; want it kept as a link", got, err)
-	}
-	if exists(filepath.Join(tr.cfg, "skills/personal")) {
-		t.Error("a personal skill was copied")
-	}
-}
-
-func TestRerunClearsOldCopies(t *testing.T) {
-	tr := newTree(t)
-	tr.plugins("")
-	tr.write(".claude/skills/gstack/SKILL.md", "g")
-	tr.write(".claude/skills/browse/.gstack-owned", "own")
-	tr.run()
-	if err := os.RemoveAll(filepath.Join(tr.src, "skills/browse")); err != nil {
-		t.Fatal(err)
-	}
-	tr.write("cfg/plugins/stale", "x")
-	tr.run()
-	if exists(filepath.Join(tr.cfg, "skills/browse")) || exists(filepath.Join(tr.cfg, "plugins/stale")) {
-		t.Error("a second run kept an old copy")
-	}
-	if tr.read("plugins/cache/m/superpowers/1/SKILL.md") != "sp" || !exists(filepath.Join(tr.cfg, "skills/gstack")) {
-		t.Error("a second run did not rebuild the copies")
 	}
 }
 

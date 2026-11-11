@@ -71,16 +71,16 @@ After a run, the runner writes `verdict.json` next to the transcripts. It holds 
 
 `parity.sh` works on Claude Code only.
 
-    bash tests/evals/parity.sh             # run the builder and shape fixtures in two setups
+    bash tests/evals/parity.sh             # run the seven flow fixtures in two setups
     bash tests/evals/parity.sh --dry-run   # print the builder-led settings and the commands only
 
 This eval answers one question: does builder replace a hand-built setup and keep its results?
 
 - Current: `claude -p` with your setup as it is.
 - Builder-led: `CLAUDE_CONFIG_DIR` points to a separate folder that holds only what builder recommends, each one accepted.
-  Builder loads with `--plugin-dir`. superpowers is enabled. `env` sets `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` to 85. The `codebase-memory-mcp` server comes from your `.claude.json`.
+  Builder loads with `--plugin-dir`. No other skill pack is enabled. `env` sets `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` to 85. The `codebase-memory-mcp` server comes from your `.claude.json`.
   The matchblox hooks and status line come from your settings. If your settings have none, the run has none, and a note tells you to run `matchblox setup` first.
-  The folder holds a copy of your installed superpowers version and its marketplace, so both runs use the same version. It links your gstack clone and copies the skill folders that gstack setup made. It holds no other plugin or skill.
+  The folder holds no plugin and no skill besides builder, so the builder-led run uses builder alone.
 
 Both runs use the deny list and the PATH shims of `run.sh` (shared in `lib.sh`) and the same temp builder home.
 

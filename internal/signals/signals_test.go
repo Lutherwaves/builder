@@ -122,18 +122,6 @@ func TestMatchbloxGarbageOutput(t *testing.T) {
 	want(t, out, "weekly_pct", nil)
 }
 
-func TestPluginAndSkillFiles(t *testing.T) {
-	f := setup(t)
-	out := f.collect(generous)
-	want(t, out, "superpowers", false)
-	want(t, out, "gstack", false)
-	f.write(filepath.Join(f.home, ".claude/plugins/installed_plugins.json"), `{"plugins":{"superpowers@x":[]}}`)
-	os.MkdirAll(filepath.Join(f.home, ".claude/skills/gstack"), 0o755)
-	out = f.collect(generous)
-	want(t, out, "superpowers", true)
-	want(t, out, "gstack", true)
-}
-
 func TestGhAndPgrep(t *testing.T) {
 	f := setup(t)
 	want(t, f.collect(generous), "gh", false)
@@ -339,19 +327,6 @@ func TestCodeGraphFromTheLocalScopeInClaudeJson(t *testing.T) {
 	want(t, f.collectIn(sub, generous, ""), "code_graph", false)
 }
 
-func TestPluginsAndGstackComeFromClaudeConfigDirWhenSet(t *testing.T) {
-	f := setup(t)
-	cfg := filepath.Join(f.root, "cfg")
-	f.write(filepath.Join(cfg, "plugins/installed_plugins.json"), `{"plugins":{"superpowers@x":[]}}`)
-	os.MkdirAll(filepath.Join(cfg, "skills/gstack"), 0o755)
-	want(t, f.collect(generous), "superpowers", false)
-	out := f.collectIn(f.cwd, generous, "", "CLAUDE_CONFIG_DIR", cfg)
-	want(t, out, "superpowers", true)
-	want(t, out, "gstack", true)
-	os.MkdirAll(filepath.Join(f.home, ".claude/skills/gstack"), 0o755)
-	want(t, f.collectIn(f.cwd, generous, "", "CLAUDE_CONFIG_DIR", filepath.Join(f.root, "empty")), "gstack", false)
-}
-
 func TestAutocompactFromSettingsEnvOrProcessEnv(t *testing.T) {
 	f := setup(t)
 	s := filepath.Join(f.home, ".claude/settings.json")
@@ -366,16 +341,14 @@ func TestAutocompactFromSettingsEnvOrProcessEnv(t *testing.T) {
 
 func TestHarnessNoneUsesDetect(t *testing.T) {
 	f := setup(t)
-	f.write(filepath.Join(f.home, ".codex/config.toml"), "[plugins.\"superpowers@x\"]\nenabled = true\n")
-	want(t, f.collectIn(f.cwd, generous, "", "BUILDER_HARNESS", "codex"), "superpowers", true)
+	f.write(filepath.Join(f.home, ".codex/config.toml"), "[mcp_servers.codebase-memory]\ncommand = \"x\"\n")
+	want(t, f.collectIn(f.cwd, generous, "", "BUILDER_HARNESS", "codex"), "code_graph", true)
 }
 
 func TestNonUTF8ConfigTomlDoesNotCrash(t *testing.T) {
 	f := setup(t)
-	f.write(filepath.Join(f.home, ".codex/config.toml"), "[plugins.\"superpowers@x\"]\nname = \"\xff\xfe\"\n[mcp_servers.codebase-memory]\n")
-	out := f.sig("codex")
-	want(t, out, "superpowers", false)
-	want(t, out, "code_graph", false)
+	f.write(filepath.Join(f.home, ".codex/config.toml"), "[plugins.\"x\"]\nname = \"\xff\xfe\"\n[mcp_servers.codebase-memory]\n")
+	want(t, f.sig("codex"), "code_graph", false)
 }
 
 func TestCodexReadsMcpFromConfigToml(t *testing.T) {
@@ -399,29 +372,16 @@ func TestCodexTomlRegexFallback(t *testing.T) {
 	parseTOML = false
 	t.Cleanup(func() { parseTOML = true })
 	c := filepath.Join(f.home, ".codex/config.toml")
-	f.write(c, "[mcp_servers.codebase-memory-mcp]\ncommand = \"x\"\n[plugins.\"superpowers@mk\"]\nenabled = true\n")
-	out := f.sig("codex")
-	want(t, out, "code_graph", true)
-	want(t, out, "superpowers", true)
-	f.write(c, "[mcp_servers.other]\n[plugins.\"other@mk\"]\n")
-	out = f.sig("codex")
-	want(t, out, "code_graph", false)
-	want(t, out, "superpowers", false)
+	f.write(c, "[mcp_servers.codebase-memory-mcp]\ncommand = \"x\"\n")
+	want(t, f.sig("codex"), "code_graph", true)
+	f.write(c, "[mcp_servers.other]\n")
+	want(t, f.sig("codex"), "code_graph", false)
 }
 
 func TestCodexBadTomlIsNotACrash(t *testing.T) {
 	f := setup(t)
 	f.write(filepath.Join(f.home, ".codex/config.toml"), "[mcp_servers.codebase-memory-mcp]\nbroken = = =\n")
 	want(t, f.sig("codex"), "code_graph", true)
-}
-
-func TestCodexSuperpowersNeedsAPluginsTable(t *testing.T) {
-	f := setup(t)
-	cfg := filepath.Join(f.home, ".codex")
-	f.write(filepath.Join(cfg, "config.toml"), "# superpowers@x\n[plugins.\"other@x\"]\n")
-	want(t, f.sig("codex"), "superpowers", false)
-	f.write(filepath.Join(cfg, "config.toml"), "[plugins.\"superpowers@x\"]\n")
-	want(t, f.sig("codex", "CODEX_HOME", cfg), "superpowers", true)
 }
 
 func TestCursorMcpJson(t *testing.T) {
@@ -446,27 +406,9 @@ func TestOpencodeMcpKey(t *testing.T) {
 	want(t, f.sig("opencode"), "code_graph", false)
 }
 
-func TestOpencodeSuperpowersFromPluginList(t *testing.T) {
-	f := setup(t)
-	c := filepath.Join(f.home, ".config/opencode/opencode.json")
-	for _, k := range []struct {
-		v any
-		w bool
-	}{
-		{[]any{"superpowers@git+https://x/superpowers.git"}, true},
-		{[]any{"other"}, false},
-		{"superpowers", false},
-	} {
-		f.write(c, map[string]any{"plugin": k.v})
-		want(t, f.sig("opencode"), "superpowers", k.w)
-	}
-}
-
 func TestUnknownSignalIsNone(t *testing.T) {
 	f := setup(t)
-	out := f.sig("cursor")
-	want(t, out, "superpowers", nil)
-	want(t, out, "autocompact", nil)
+	want(t, f.sig("cursor"), "autocompact", nil)
 	for _, h := range []string{"codex", "cursor", "opencode"} {
 		want(t, f.sig(h), "autocompact", nil)
 	}
@@ -475,18 +417,6 @@ func TestUnknownSignalIsNone(t *testing.T) {
 		want(t, f.sig(h), "matchblox_hooks", nil)
 	}
 	want(t, f.sig("claude"), "autocompact", false)
-	want(t, f.sig("claude"), "superpowers", false)
-}
-
-func TestGstackOnOtherHarnessesIsAnyGstackDashSkill(t *testing.T) {
-	f := setup(t)
-	for h, base := range map[string]string{"codex": ".codex", "cursor": ".cursor", "opencode": ".config/opencode"} {
-		want(t, f.sig(h), "gstack", false)
-		os.MkdirAll(filepath.Join(f.home, base, "skills/gstack"), 0o755)
-		want(t, f.sig(h), "gstack", false)
-		os.MkdirAll(filepath.Join(f.home, base, "skills/gstack-qa"), 0o755)
-		want(t, f.sig(h), "gstack", true)
-	}
 }
 
 func TestCursorMatchbloxHooksSignal(t *testing.T) {
@@ -529,10 +459,10 @@ func TestNoClaudeLiteral(t *testing.T) {
 	}
 }
 
-func TestCollectHasTheTwelveKeys(t *testing.T) {
+func TestCollectHasTheTenKeys(t *testing.T) {
 	f := setup(t)
 	out := f.collect(generous)
-	if len(out) != 12 {
+	if len(out) != 10 {
 		t.Fatalf("%d keys: %v", len(out), out)
 	}
 }

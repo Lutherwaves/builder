@@ -3,7 +3,6 @@ package ledger
 import (
 	"encoding/json"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -201,39 +200,39 @@ func TestNoneSignalNeverSatisfies(t *testing.T) {
 }
 
 func TestNoneOfferedOnceInOnboarding(t *testing.T) {
-	cat := []Item{item("a", map[string]any{"superpowers": false})}
-	if got := id(t, next(empty(), cat, sig("superpowers", nil), 1, true)); got != "a" {
+	cat := []Item{item("a", map[string]any{"signal": false})}
+	if got := id(t, next(empty(), cat, sig("signal", nil), 1, true)); got != "a" {
 		t.Fatal(got)
 	}
-	if got := next(led(false, "a", "later", 1.0), cat, sig("superpowers", nil), 2, true); got != nil {
+	if got := next(led(false, "a", "later", 1.0), cat, sig("signal", nil), 2, true); got != nil {
 		t.Fatal(got)
 	}
 }
 
 func TestNoneNeverOfferedJit(t *testing.T) {
-	cat := []Item{item("a", map[string]any{"superpowers": false})}
-	if got := next(empty(), cat, sig("superpowers", nil), 1, false); got != nil {
+	cat := []Item{item("a", map[string]any{"signal": false})}
+	if got := next(empty(), cat, sig("signal", nil), 1, false); got != nil {
 		t.Fatal(got)
 	}
 }
 
 func TestNoneAnsweredNotOfferedAgain(t *testing.T) {
-	cat := []Item{item("a", map[string]any{"superpowers": false})}
+	cat := []Item{item("a", map[string]any{"signal": false})}
 	for _, v := range []string{"yes", "never"} {
-		if got := next(led(false, "a", v, 1.0), cat, sig("superpowers", nil), 9e9, true); got != nil {
+		if got := next(led(false, "a", v, 1.0), cat, sig("signal", nil), 9e9, true); got != nil {
 			t.Fatal(v, got)
 		}
 	}
 }
 
 func TestNoneLaterNotOfferedAfterCooldown(t *testing.T) {
-	cat := []Item{item("a", map[string]any{"superpowers": false})}
+	cat := []Item{item("a", map[string]any{"signal": false})}
 	l := led(false, "a", "later", 1.0)
 	now := 1.0 + CooldownS + 1
-	if got := next(l, cat, sig("superpowers", nil), now, true); got != nil {
+	if got := next(l, cat, sig("signal", nil), now, true); got != nil {
 		t.Fatal(got)
 	}
-	if got := id(t, next(l, cat, sig("superpowers", false), now, true)); got != "a" {
+	if got := id(t, next(l, cat, sig("signal", false), now, true)); got != "a" {
 		t.Fatal(got)
 	}
 }
@@ -242,8 +241,8 @@ func TestOnboardingDoesNotMakeUnknownNumbersOrOtherConditionsHold(t *testing.T) 
 	if got := next(empty(), []Item{item("a", map[string]any{"sessions": map[string]any{">=": 1.0}})}, sig("sessions", nil), 1, true); got != nil {
 		t.Fatal(got)
 	}
-	cat := []Item{item("a", map[string]any{"superpowers": false, "gh": false})}
-	if got := next(empty(), cat, sig("superpowers", nil, "gh", true), 1, true); got != nil {
+	cat := []Item{item("a", map[string]any{"signal": false, "gh": false})}
+	if got := next(empty(), cat, sig("signal", nil, "gh", true), 1, true); got != nil {
 		t.Fatal(got)
 	}
 }
@@ -290,29 +289,28 @@ func TestOldLedgerWithAChannelAnswerStillLoads(t *testing.T) {
 	}
 }
 
+func TestOldLedgerWithRetiredPackAnswersStillLoads(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "ledger.json")
+	os.WriteFile(p, []byte(`{"answers": {"superpowers": {"verdict": "yes", "at": 1.0}, "gstack": {"verdict": "never", "at": 2.0}}, "onboarded": false}`), 0o644)
+	l := Load(p)
+	if l.Answers["superpowers"].Verdict != "yes" || l.Answers["gstack"].Verdict != "never" {
+		t.Fatalf("got %#v", l.Answers)
+	}
+	cat := catalog(t)
+	for _, retired := range []string{"superpowers", "gstack"} {
+		if _, ok := byID(cat)[retired]; ok {
+			t.Fatalf("%s is in the catalog", retired)
+		}
+		if got := next(l, cat, sig("gh", false), 2, true); id(t, got) == retired {
+			t.Fatalf("%s offered", retired)
+		}
+	}
+}
+
 func TestReachAsksForTheChannelOnFirstUse(t *testing.T) {
 	b, err := os.ReadFile(filepath.Join(root, "skills/reach/SKILL.md"))
 	if err != nil || !strings.Contains(string(b), "If `channel` is missing, ask once") {
 		t.Fatal("reach SKILL.md lost its first-use channel question")
-	}
-}
-
-func TestGstackInstallGoesWhereTheSignalLooks(t *testing.T) {
-	how := byID(ForHarness(catalog(t), "claude"))["gstack"]["how"].(string)
-	target := `"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/gstack"`
-	if !strings.Contains(how, "CLAUDE_CONFIG_DIR") || !strings.Contains(how, target) {
-		t.Fatal(how)
-	}
-	for _, c := range []struct{ cfg, want string }{{"/cfg", "/cfg/skills/gstack"}, {"", "/h/.claude/skills/gstack"}} {
-		cmd := exec.Command("bash", "-c", "printf %s "+target)
-		cmd.Env = []string{"HOME=/h", "PATH=" + os.Getenv("PATH")}
-		if c.cfg != "" {
-			cmd.Env = append(cmd.Env, "CLAUDE_CONFIG_DIR="+c.cfg)
-		}
-		out, _ := cmd.Output()
-		if string(out) != c.want {
-			t.Fatalf("got %q want %q", out, c.want)
-		}
 	}
 }
 
@@ -472,14 +470,11 @@ func TestCodeGraphClaudeOnlyUntilOtherHarnessesWireIt(t *testing.T) { claudeOnly
 func TestPerHarnessItems(t *testing.T) {
 	for _, h := range harness.Names {
 		got := ids(ForHarness(catalog(t), h))
-		for _, need := range []string{"superpowers", "gstack", "matchblox-setup", "fleet", "budget", "canon"} {
+		for _, need := range []string{"matchblox-setup", "fleet", "budget", "canon"} {
 			if indexOf(got, need) < 0 {
 				t.Fatal(h, need)
 			}
 		}
-	}
-	if !strings.Contains(byID(ForHarness(catalog(t), "cursor"))["superpowers"]["how"].(string), "/add-plugin superpowers") {
-		t.Fatal("cursor superpowers how")
 	}
 }
 

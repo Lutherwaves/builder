@@ -21,12 +21,12 @@ type Match struct {
 
 // Paths are a harness's files. An empty string means the harness has no such file.
 type Paths struct {
-	ConfigDir               string
-	SkillsDirs              []string
-	PluginsRecord, Settings string
-	MCP, ProjectMCP         []MCPFile
-	ProcessMatch            []Match
-	PluginRootVar           string
+	ConfigDir       string
+	SkillsDirs      []string
+	Settings        string
+	MCP, ProjectMCP []MCPFile
+	ProcessMatch    []Match
+	PluginRootVar   string
 }
 
 type spec struct {
@@ -92,11 +92,9 @@ func For(name string, env map[string]string, home string) (Paths, error) {
 		}
 		p.MCP = []MCPFile{{filepath.Join(state, ".claude.json"), "mcpServers"}}
 		p.ProjectMCP = []MCPFile{{".mcp.json", "mcpServers"}}
-		p.PluginsRecord = filepath.Join(config, "plugins", "installed_plugins.json")
 		p.Settings = filepath.Join(config, "settings.json")
 	case "codex":
 		p.MCP = []MCPFile{{filepath.Join(config, "config.toml"), "mcp_servers"}}
-		p.PluginsRecord = filepath.Join(config, "config.toml")
 		p.SkillsDirs = append(p.SkillsDirs, filepath.Join(home, ".agents", "skills"))
 	case "cursor":
 		p.MCP = []MCPFile{{filepath.Join(config, "mcp.json"), "mcpServers"}}
@@ -104,7 +102,6 @@ func For(name string, env map[string]string, home string) (Paths, error) {
 		p.Settings = filepath.Join(config, "hooks.json")
 	default:
 		p.MCP = []MCPFile{{filepath.Join(config, "opencode.json"), "mcp"}}
-		p.PluginsRecord = filepath.Join(config, "opencode.json")
 	}
 	return p, nil
 }

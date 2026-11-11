@@ -21,6 +21,8 @@ func cliEnv(t *testing.T) string {
 	t.Setenv("CLAUDE_PLUGIN_ROOT", "")
 	t.Setenv("CLAUDE_CONFIG_DIR", "")
 	t.Setenv("CODEX_HOME", "")
+	t.Setenv("CLAUDE_AUTOCOMPACT_PCT_OVERRIDE", "")
+	os.Unsetenv("CLAUDE_AUTOCOMPACT_PCT_OVERRIDE")
 	return d
 }
 
@@ -99,10 +101,13 @@ func TestNextCliHarnessFlag(t *testing.T) {
 	d := cliEnv(t)
 	t.Setenv("PATH", filepath.Join(d, "nobin"))
 	t.Chdir(d)
-	answerAllBut(t, "superpowers")
-	codex, claude, unknown := nextFor(t, "codex"), nextFor(t, "claude"), nextFor(t, "unknown")
-	if !strings.Contains(codex["how"].(string), "/plugins") || !strings.Contains(claude["how"].(string), "/plugin install") {
-		t.Fatal(codex["how"], claude["how"])
+	answerAllBut(t, "autocompact")
+	claude, unknown := nextFor(t, "claude"), nextFor(t, "unknown")
+	if claude["id"] != "autocompact" || !strings.Contains(claude["how"].(string), "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE") {
+		t.Fatal(claude)
+	}
+	if code, out, _ := call(t, "ledger", "next", "--harness", "codex"); code != 0 || out != "null\n" {
+		t.Fatalf("%d %q", code, out)
 	}
 	a, _ := json.Marshal(unknown)
 	b, _ := json.Marshal(claude)
@@ -115,13 +120,14 @@ func TestNextCliReadsTheSignalsOfItsHarness(t *testing.T) {
 	d := cliEnv(t)
 	t.Setenv("PATH", filepath.Join(d, "nobin"))
 	t.Chdir(d)
-	os.MkdirAll(filepath.Join(d, ".codex"), 0o755)
-	os.WriteFile(filepath.Join(d, ".codex", "config.toml"), []byte("[plugins.\"superpowers@x\"]\nenabled = true\n"), 0o644)
-	answerAllBut(t, "superpowers")
-	if code, out, _ := call(t, "ledger", "next", "--harness", "codex"); code != 0 || out != "null\n" {
+	os.MkdirAll(filepath.Join(d, ".claude"), 0o755)
+	os.WriteFile(filepath.Join(d, ".claude", "settings.json"), []byte(`{"env": {"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "85"}}`), 0o644)
+	answerAllBut(t, "autocompact")
+	if code, out, _ := call(t, "ledger", "next", "--harness", "claude"); code != 0 || out != "null\n" {
 		t.Fatalf("%d %q", code, out)
 	}
-	if got := nextFor(t, "claude")["id"]; got != "superpowers" {
+	os.Remove(filepath.Join(d, ".claude", "settings.json"))
+	if got := nextFor(t, "claude")["id"]; got != "autocompact" {
 		t.Fatal(got)
 	}
 }

@@ -1,47 +1,5 @@
 [
   {
-    "id": "superpowers",
-    "order": 1,
-    "onboarding": true,
-    "when": {
-      "superpowers": false
-    },
-    "say": "Builder works best with the superpowers plugin, which adds planning, TDD and review skills.",
-    "why": "It gives every task a plan, a test and a review step.",
-    "how": {
-      "claude": "/plugin marketplace add obra/superpowers-marketplace, then /plugin install superpowers@superpowers-marketplace",
-      "codex": "In Codex, run /plugins, search for superpowers, and pick Install Plugin",
-      "cursor": "In Cursor Agent chat, run /add-plugin superpowers",
-      "opencode": "Tell opencode: Fetch and follow instructions from https://raw.githubusercontent.com/obra/superpowers/refs/heads/main/.opencode/INSTALL.md"
-    },
-    "sources": {
-      "codex": "https://github.com/obra/superpowers",
-      "cursor": "https://github.com/obra/superpowers",
-      "opencode": "https://github.com/obra/superpowers"
-    }
-  },
-  {
-    "id": "gstack",
-    "order": 2,
-    "onboarding": true,
-    "when": {
-      "gstack": false
-    },
-    "say": "Builder pairs well with gstack, a set of skills for browsing, QA and shipping.",
-    "why": "It adds a real browser and ship workflows that builder can route to.",
-    "how": {
-      "claude": "git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/gstack\" && cd \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/gstack\" && ./setup",
-      "codex": "git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git ~/gstack && cd ~/gstack && ./setup --host codex",
-      "cursor": "git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git ~/gstack && cd ~/gstack && ./setup --host cursor",
-      "opencode": "git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git ~/gstack && cd ~/gstack && ./setup --host opencode"
-    },
-    "sources": {
-      "codex": "https://github.com/garrytan/gstack",
-      "cursor": "https://github.com/garrytan/gstack",
-      "opencode": "https://github.com/garrytan/gstack"
-    }
-  },
-  {
     "id": "gh",
     "order": 3,
     "onboarding": true,

@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # Drop-in parity eval. See tests/evals/README.md.
 #   parity.sh [--dry-run]
-# Runs the builder and shape fixtures twice:
+# Runs the builder, shape, plan, build, review, ship and flow-gates fixtures twice:
 #   current  the person's setup as it is (no --plugin-dir)
 #   builder  CLAUDE_CONFIG_DIR=<cfg>: only builder (--plugin-dir) and what builder recommends,
-#            with every recommendation accepted. Same plugin and skill versions: no re-install.
+#            with every recommendation accepted. No other skill pack is in it.
 set -uo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 root="$(cd "$here/../.." && pwd)"
 evals="${BUILDER_EVAL_DIR:-$here}"
-fixtures=(builder shape)
+fixtures=(builder shape plan build review ship flow-gates)
 dry=0
 case "${1:-}" in
   --dry-run) dry=1 ;;
@@ -88,10 +88,9 @@ if [ -e "$cfg" ] || [ -L "$cfg" ]; then
 fi
 
 # The builder-led config dir. Parity owns it (marker .builder-parity) and rebuilds it on each run:
-# - plugins: a copy of the installed superpowers version and its marketplace, nothing else;
-# - skills: a link to the gstack clone, and a copy of the skill folders gstack setup made (.gstack-owned);
+# - plugins and skills: empty, so no other skill pack is in the builder-led run;
 # - settings.json and .claude.json: only what builder recommends.
-# No path in it leads back into the real config, except the gstack clone, which Claude Code does not manage.
+# No path in it leads back into the real config.
 # It never copies credentials or account data.
 make_config() {
   mkdir -p "$cfg" && : > "$cfg/.builder-parity" || return 1

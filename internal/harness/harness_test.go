@@ -104,16 +104,12 @@ func TestProjectMCP(t *testing.T) {
 }
 func TestRecordsSettingsSkills(t *testing.T) {
 	p := paths(t, "claude", env())
-	eq(t, p.PluginsRecord, "/h/.claude/plugins/installed_plugins.json")
 	eq(t, p.Settings, "/h/.claude/settings.json")
 	eq(t, p.SkillsDirs, []string{"/h/.claude/skills"})
 	c := paths(t, "codex", env())
-	eq(t, c.PluginsRecord, "/h/.codex/config.toml")
 	eq(t, c.SkillsDirs, []string{"/h/.codex/skills", "/h/.agents/skills"})
 	eq(t, c.Settings, "")
-	eq(t, paths(t, "cursor", env()).PluginsRecord, "")
 	eq(t, paths(t, "cursor", env()).Settings, "/h/.cursor/hooks.json")
-	eq(t, paths(t, "opencode", env()).PluginsRecord, "/h/.config/opencode/opencode.json")
 	eq(t, paths(t, "opencode", env()).Settings, "")
 }
 func TestPluginRootVar(t *testing.T) {

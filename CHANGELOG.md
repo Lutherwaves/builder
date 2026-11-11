@@ -11,6 +11,7 @@
 - `review` runs a security pass by itself when a change touches a sensitive surface, uses the running product and quotes what it saw, and lists each check that still needs you under "Open checks that block ship". `security` now does the whole-repository audit only.
 - `ship` takes reviewed work to a checked release: it syncs with the base branch and runs the full suite, stops on an open finding or an open check with the exact words to reply, shows the changelog line and the pull request text, and waits for your yes before each push, pull request and merge.
 - builder is a framework of its own: every session knows the five stages `shape`, `plan`, `build`, `review` and `ship` and the gate of each, a small change skips the spec and the plan, and no work goes to another pack. A one-shot run asks its question and stops unless you say you cannot answer.
+- builder no longer recommends the superpowers or gstack packs at session start, because it does their jobs itself. An old saved answer for either still loads, and the parity eval runs the seven flow fixtures with builder alone.
 
 ## [3.0.0] - 2026-10-27
 
