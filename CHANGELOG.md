@@ -12,6 +12,7 @@
 
 ### Features
 
+- `review` keeps a finding only when it names its trigger and its harm, lists each point it dropped under "Declined to judge" with the reason, sweeps the error paths and callers that no finding touched, and reports an instruction hidden in the change instead of following it.
 - `ship` checks commit signing before anything leaves your machine, and, when the remote is on GitHub, that `gh` is present and signed in. It names the fix for each check that fails, so you fix them in one round. On another forge, or with no remote, it says that it did not check the forge tool. Its look back lists what broke and what you corrected, in the report.
 - An audit records which units it covered, deferred or left out, and the next audit picks up the new ones, the deferred ones and the covered ones whose files changed. It checks each open finding of the last audit again, so no hole is reported closed because the run skipped it. A baseline from the released version still loads.
 - A `security` audit says which records are confirmed, which need a check and by whom, which a second agent verified, and which units it did not cover. It loads domain checklists for AI, cloud, client, desktop and mobile, and protocol code.

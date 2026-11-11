@@ -1,0 +1,10 @@
+# The agent may apply the change in a throwaway worktree and run the tests and its probes there.
+Bash(python3 -m unittest:*)
+Bash(git apply:*)
+Bash(git worktree:*)
+Bash(git diff:*)
+Bash(git status:*)
+Bash(mktemp:*)
+# The security pass scores its findings, and the review runs the product as the person does.
+Bash(*bin/builder* security *)
+Bash(python3 mailer.py:*)
