@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"github.com/Lutherwaves/builder/internal/cli"
-	"github.com/Lutherwaves/builder/internal/ledger"
+	"github.com/Lutherwaves/builder/internal/harness"
 	"github.com/Lutherwaves/builder/internal/reach"
 )
 
@@ -114,7 +114,8 @@ func reachCmd(args []string, stdout, stderr io.Writer) int {
 		}
 	}
 
-	home := ledger.Home()
+	userHome, _ := os.UserHomeDir()
+	home := harness.BuilderHome(harness.Env(), userHome)
 	rulesPath, logPath := filepath.Join(home, "reach.json"), filepath.Join(home, "reach-log.jsonl")
 	switch cmd {
 	case "check":

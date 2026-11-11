@@ -117,16 +117,6 @@ while IFS= read -r f; do
   grep -q 'says the binary is not installed or is off, stop' "$f" || err "guard: $f runs the shim but does not stop at a missing binary"
 done < <(grep -l 'bin/builder' skills/*/SKILL.md)
 
-# A string-valued `how` runs on every harness, so it names no slash command. A map-valued `how` is per harness.
-if ! how_hits="$(jq -r '.[] | select(.how | type == "string") | select(.how | test("(^|[\\s(\\x60])/(loop|usage|compact|clear|plugin|builder:[a-z-]+)\\b"))
-    | "lib/recommendations.json: \(.id) how names a slash command"' lib/recommendations.json 2>&1)"; then
-  printf '%s\n' "$how_hits"; err "lib/recommendations.json could not be read"
-elif [ -n "$how_hits" ]; then
-  while IFS= read -r h; do err "guard: $h"; done <<<"$how_hits"
-else
-  note "✓ no slash commands in string-valued recommendation steps"
-fi
-
 echo "→ no Python"
 # builder runs without Python. Only the sample projects of the eval fixtures may hold it.
 py_guard() {

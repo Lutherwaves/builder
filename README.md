@@ -82,14 +82,8 @@ codex plugin add builder@builder
 
 **Cursor CLI** and **opencode:** see [docs/install.md](docs/install.md).
 
-In your first session the agent does your work first, then offers one setup step per
-reply: a signed-in `gh` and signed commits. Answer yes, not now (quiet for 7 days) or
-never. Answers live in `~/.config/builder/ledger.json`; set `BUILDER_HOME`
-to move them. After setup, a session shows at most one recommendation, and only when
-something calls for it, such as your weekly usage passing 80%.
-
-The first session also asks to install the helper binary. It runs the setup steps, the
-send checks and the forecasts. The installer downloads the binary of your plugin's
+The first session asks to install the helper binary. It runs the session-start hook and
+the security score. Answer yes, not now (quiet for 7 days) or never. The installer downloads the binary of your plugin's
 version from builder's GitHub release, checks the checksum and, with a signed-in `gh`,
 the build provenance. It installs to `~/.config/builder/bin`. To install it yourself, run
 `bash <plugin root>/scripts/install.sh`.

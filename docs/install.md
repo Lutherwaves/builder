@@ -22,7 +22,7 @@ codex plugin add builder@builder
 
 Codex runs a plugin's hooks only after you trust them, and builder doesn't work around
 that. Until you trust the hook, load the `builder` skill by name. Until Codex detection
-lands (issue #17), builder's session start on Codex uses the Claude Code setup steps.
+lands (issue #17), builder's session start on Codex prints the Claude Code action map.
 
 ## Cursor CLI
 

@@ -18,34 +18,60 @@ func env(t *testing.T) (map[string]string, string) {
 	return map[string]string{"HOME": d, "BUILDER_HOME": filepath.Join(d, "b"), "PATH": bin}, d
 }
 
-func TestHookOnboardingNamesTheShim(t *testing.T) {
+func soulLine(t *testing.T) string {
+	b, err := os.ReadFile(filepath.Join(root, "skills/builder/soul-compact.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return strings.SplitN(string(b), "\n", 2)[0]
+}
+
+func claudeBlock(t *testing.T) string {
+	b, err := os.ReadFile(filepath.Join(root, "skills/builder/harnesses/claude.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return strings.TrimSpace(strings.SplitN(strings.SplitN(string(b), "<!-- hook -->", 2)[1], "<!-- /hook -->", 2)[0])
+}
+
+func TestHookPrintsSoulRootAndMap(t *testing.T) {
 	e, home := env(t)
 	text := Build(root, "claude", e, home, home, 1)
-	for _, want := range []string{
-		`/bin/builder" ledger next --harness claude`,
-		`/bin/builder" ledger onboarded`,
-		"builder onboarding: this person is new to builder.",
-		"builder root: " + root + ".",
-	} {
+	for _, want := range []string{soulLine(t), "builder root: " + root + ".", claudeBlock(t)} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("missing %q in\n%s", want, text)
 		}
 	}
-	if strings.Contains(text, "python") {
-		t.Fatal("the hook text names python")
+}
+
+func TestHookOffersAndAsksNothing(t *testing.T) {
+	e, home := env(t)
+	for _, name := range []string{"claude", "codex", "cursor", "opencode"} {
+		text := Build(root, name, e, home, home, 1)
+		for _, banned := range []string{"builder recommends", "onboarding", "ledger", "yes|later|never"} {
+			if strings.Contains(text, banned) {
+				t.Fatalf("%s: %q in\n%s", name, banned, text)
+			}
+		}
 	}
 }
 
-func TestHookAfterOnboardingShowsAtMostOneBlock(t *testing.T) {
+func TestHookIgnoresAnOldLedger(t *testing.T) {
 	e, home := env(t)
+	without := Build(root, "claude", e, home, home, 1)
 	os.MkdirAll(e["BUILDER_HOME"], 0o755)
-	os.WriteFile(filepath.Join(e["BUILDER_HOME"], "ledger.json"), []byte(`{"answers": {}, "onboarded": true}`), 0o644)
-	text := Build(root, "claude", e, home, home, 1)
-	if n := strings.Count(text, "builder recommends:"); n != 1 {
-		t.Fatalf("%d blocks", n)
+	os.WriteFile(filepath.Join(e["BUILDER_HOME"], "ledger.json"), []byte(`{"onboarded":false,"answers":{"fleet":"later"}}`), 0o644)
+	if with := Build(root, "claude", e, home, home, 1); with != without {
+		t.Fatalf("an old ledger changes the output:\n%s\n---\n%s", with, without)
 	}
-	if strings.Contains(text, "builder onboarding") {
-		t.Fatal("onboarding after onboarded")
+}
+
+func TestHookUnknownHarnessGetsTheSoul(t *testing.T) {
+	e, home := env(t)
+	soul, _ := os.ReadFile(filepath.Join(root, "skills/builder/soul-compact.md"))
+	want := strings.TrimRight(string(soul), "\n") + "\n\nbuilder root: " + root + ". Where a builder skill says ${CLAUDE_PLUGIN_ROOT}, use this path."
+	if got := Build(root, "nope", e, home, home, 1); got != want {
+		t.Fatalf("%q", got)
 	}
 }
 
@@ -77,8 +103,7 @@ func TestHookFailureFallsBackToSoul(t *testing.T) {
 
 func TestHookIncludesTheHarnessMapping(t *testing.T) {
 	e, home := env(t)
-	b, _ := os.ReadFile(filepath.Join(root, "skills/builder/harnesses/claude.md"))
-	block := strings.TrimSpace(strings.SplitN(strings.SplitN(string(b), "<!-- hook -->", 2)[1], "<!-- /hook -->", 2)[0])
+	block := claudeBlock(t)
 	if !strings.HasSuffix(Build(root, "claude", e, home, home, 1), "\n\n"+block) {
 		t.Fatal("no mapping block at the end")
 	}
@@ -97,14 +122,12 @@ func TestHookUnderOneSecond(t *testing.T) {
 	}
 }
 
-func TestHookQuotesTheShimPathPlainly(t *testing.T) {
+func TestHookQuotesTheRootPathPlainly(t *testing.T) {
 	e, home := env(t)
 	r := t.TempDir() + `/plugin é\x`
 	os.MkdirAll(filepath.Join(r, "skills/builder"), 0o755)
-	os.MkdirAll(filepath.Join(r, "lib"), 0o755)
 	os.WriteFile(filepath.Join(r, "skills/builder/soul-compact.md"), []byte("S\n"), 0o644)
-	os.WriteFile(filepath.Join(r, "lib/recommendations.json"), []byte("[]"), 0o644)
-	if text := Build(r, "claude", e, home, home, 1); !strings.Contains(text, `"`+r+`/bin/builder" ledger onboarded`) {
+	if text := Build(r, "claude", e, home, home, 1); !strings.Contains(text, "builder root: "+r+".") {
 		t.Fatal(text)
 	}
 }

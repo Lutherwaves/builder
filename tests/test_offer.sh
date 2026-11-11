@@ -25,7 +25,7 @@ text=(--harness opencode --format text)
 
 offer_ok() {
   has 'builder install: the helper binary is missing.' \
-    && has "builder's helper binary is not installed. It runs the setup steps, send checks and forecasts. Install it now? yes, not now, or never." \
+    && has "builder's helper binary is not installed. It runs the session-start hook and the security score. Install it now? yes, not now, or never." \
     && has "On yes, run: bash \"$1/scripts/install.sh\". It downloads from GitHub, so report it under ↗ Outside." \
     && has "On not now, run: \"$1/bin/builder\" install-answer later" \
     && has "On never, run: \"$1/bin/builder\" install-answer never" \

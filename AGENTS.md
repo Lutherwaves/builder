@@ -16,14 +16,12 @@ This guide routes an agent that works on builder itself.
 | A domain checklist of an audit (AI, cloud, client, desktop and mobile, protocol) | `skills/security/domains.md` | `bash tests/evals/run.sh security-audit` |
 | The soul the hook injects | `skills/builder/soul-compact.md` (keep it in step with `skills/builder/SKILL.md`) | `bash tests/test_hook.sh` |
 | The SessionStart hook | `hooks/session-start`, `internal/hook` | `bash tests/test_hook.sh`, `go test ./internal/hook/` |
-| A recommendation or its signal | `lib/recommendations.json`, `internal/signals`, `internal/ledger` | `go test ./internal/signals/ ./internal/ledger/` |
 | The security score, CWE checks and audit baseline | `internal/security`, `skills/security/standards.md` | `go test ./internal/security/` |
 | A send rule for `reach` | `internal/reach`, `skills/reach/rules.default.json` | `go test ./internal/reach/` |
 | The budget forecast | `internal/budget` | `go test ./internal/budget/` |
 | The graph drift check | `skills/harness/drift.sh` | `bash tests/test_drift.sh` |
 | An issue or rule template | `skills/shape/issue-template.md`, `skills/canon/rule-template.md` | `go test ./tests/` |
-| The parity eval | `tests/evals/parity.sh`, `tests/evals/lib.sh`, `cmd/parity-config` | `bash tests/evals/parity.sh --dry-run`, `go test ./cmd/parity-config/` |
-| Which harness runs builder, and where it keeps its files | `internal/harness` | `go test ./internal/harness/` |
+| Which harness runs builder, and where builder keeps its files | `internal/harness` | `go test ./internal/harness/` |
 | What an action means on one harness (ask, schedule, usage, compact) | `skills/builder/harnesses/<harness>.md` | `bash scripts/validate.sh` |
 | The manifests | `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, `.cursor-plugin/plugin.json`, `package.json` (description and keywords only; `version` stays equal in all four) | `bash scripts/validate.sh` |
 | The opencode adapter | `.opencode/plugins/builder.js` | `node --test tests/test_opencode.mjs` |

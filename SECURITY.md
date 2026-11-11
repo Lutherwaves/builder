@@ -28,15 +28,13 @@ of its normal flow, it runs shell commands and schedules recurring agent prompts
 Security-relevant surfaces:
 
 - `hooks/` — the SessionStart hook. It runs at the start of every session and
-  adds text to the session context. It runs local commands only (`git`,
-  `gh auth token`, `ps`, `matchblox sessions --json`, `matchblox usage --json`)
-  under one 0.5 s budget, and reads local files.
+  adds text to the session context. It reads local files only.
 - The `builder` binary (`cmd/builder`, `internal/*`) and its shim `bin/builder`.
   The hook and the skills run it through the shim. It runs locally.
 - `skills/*/SKILL.md` — instructions the harness treats as trusted content.
 - `skills/*/*.sh` and `scripts/*.sh` — run locally.
-- Files under `~/.config/builder/` (or `$BUILDER_HOME`): `ledger.json` (setup
-  answers), `reach.json` (send rules and the team channel) and `reach-log.jsonl`.
+- Files under `~/.config/builder/` (or `$BUILDER_HOME`): `reach.json` (send
+  rules and the team channel) and `reach-log.jsonl`.
   **`reach-log.jsonl` holds the full text of each message** that `reach` sent or
   skipped, with its recipient. It is written with mode 0600.
 - Files under `$BUILDER_HOME/code-graph/` (the graph registry) and
@@ -65,8 +63,6 @@ Network:
   (`annotate_in_tracker`), on a mark, or on the person's yes.
 - The `codebase-memory-mcp` binary that `harness` sets up makes one version
   check against GitHub.
-- A setup step that installs a tool (for example `gh auth login` or a
-  `git clone`) runs only after the person's yes.
 
 builder stores no secrets.
 

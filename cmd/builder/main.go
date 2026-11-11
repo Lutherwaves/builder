@@ -1,12 +1,16 @@
-// Command builder runs builder's hook, ledger, send rules, security score and forecast.
+// Command builder runs builder's hook, send rules, security score and forecast.
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"sort"
 	"strings"
+	"time"
+
+	"github.com/Lutherwaves/builder/internal/cli"
 )
 
 var version = "dev"
@@ -18,6 +22,20 @@ var commands = map[string]command{
 		fmt.Fprintln(stdout, version)
 		return 0
 	},
+}
+
+func now() float64 { return float64(time.Now().UnixNano()) / 1e9 }
+
+func unwritable(stderr io.Writer, path string, err error) int {
+	fmt.Fprintf(stderr, "builder cannot write %s (%s); set BUILDER_HOME to a writable folder.\n", path, cli.Strerror(err))
+	return 1
+}
+
+func printJSON(stdout io.Writer, v any, indent string) {
+	enc := json.NewEncoder(stdout)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", indent)
+	enc.Encode(v)
 }
 
 func usage(stderr io.Writer) int {

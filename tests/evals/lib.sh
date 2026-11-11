@@ -1,4 +1,4 @@
-# Shared by run.sh and parity.sh. Source it: it defines a deny list and functions, and runs nothing.
+# Used by run.sh. Source it: it defines a deny list and functions, and runs nothing.
 # The functions read these globals: fx (the fixture dir), tmp (the temp root), tmp_slug (set by eval_init),
 # root (the builder repository root, for the per-harness functions).
 
@@ -195,12 +195,11 @@ SHIM
   export PATH="$tmp/bin:$PATH"
 }
 
-# A temp builder home: onboarded, every recommendation answered "never". The hook then
-# injects only the soul, so no setup question pollutes the transcript.
+# A temp builder home, so no state of the person's own builder home reaches the transcript.
 # The binary goes where the shim looks for it, and BUILDER_BIN is unset, so the agents run the real shim path.
 eval_builder_home() { # $1 = the builder repository root
   export BUILDER_HOME="$tmp/builder-home"
-  local id version
+  local version
   version="$(jq -r .version "$1/.claude-plugin/plugin.json")" && [ -n "$version" ] && [ "$version" != null ] || return 1
   mkdir -p "$BUILDER_HOME/bin" || return 1
   if [ -n "${BUILDER_BIN:-}" ]; then
@@ -209,8 +208,4 @@ eval_builder_home() { # $1 = the builder repository root
     (cd "$1" && go build -o "$BUILDER_HOME/bin/builder-$version" ./cmd/builder) || return 1
   fi
   unset BUILDER_BIN
-  "$1/bin/builder" ledger onboarded >/dev/null || return 1
-  for id in $(jq -r '.[].id' "$1/lib/recommendations.json"); do
-    "$1/bin/builder" ledger answer "$id" never >/dev/null || return 1
-  done
 }

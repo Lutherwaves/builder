@@ -53,7 +53,7 @@ install_block() {
   printf '%s\n%s\n%s\n%s\n%s\n%s' \
     "builder install: the helper binary is missing." \
     "Answer the person's request first. At the end of that reply, ask this once, word for word:" \
-    "  builder's helper binary is not installed. It runs the setup steps, send checks and forecasts. Install it now? yes, not now, or never." \
+    "  builder's helper binary is not installed. It runs the session-start hook and the security score. Install it now? yes, not now, or never." \
     "On yes, run: bash \"$PLUGIN_ROOT/scripts/install.sh\". It downloads from GitHub, so report it under ↗ Outside." \
     "On not now, run: \"$PLUGIN_ROOT/bin/builder\" install-answer later" \
     "On never, run: \"$PLUGIN_ROOT/bin/builder\" install-answer never"
