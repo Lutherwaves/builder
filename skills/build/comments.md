@@ -32,8 +32,8 @@ A comment is worth fixing when all of these are true:
 - The problem is in the scope of this change.
 - No recorded decision of the project says otherwise: a spec ruling, a rules file, a note in the code.
 
-A real problem outside the scope of this change is declined. The reason names the scope. List it for the person.
-A real problem that a recorded decision settles is declined. The reason names the decision. List it for the person.
+A real problem outside the scope of this change is declined. The reason names the scope. List it under Calls, with the reason.
+A real problem that a recorded decision settles is declined. The reason names the decision. List it under Calls, with the reason.
 The drop list of `skills/review/bar.md` applies here too, from the side of the fixer.
 A comment that the drop list covers is declined. Its reason is that item of the list.
 
