@@ -113,7 +113,7 @@ Three rules have no skill of their own:
 - Done means that the tests ran in this session and the report quotes their output.
 - Show a mockup, a diagram or a visual as a shareable page (the "make a shareable page" action). With no such action, write a file in the repository and give its path. Never only a local browser tab.
 
-Use `security` for an audit of a whole repository. Use `canon` after a ship, to turn what broke into a rule.
+Use `security` for an audit of a whole repository.
 
 Skills name actions, not tools. The tool for each action on your harness is in `skills/builder/harnesses/<harness>.md` (`claude`, `codex`, `cursor` or `opencode`).
 

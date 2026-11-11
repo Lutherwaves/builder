@@ -17,6 +17,8 @@ This checkout is the branch `feat/export`. Its base branch is `main`. The copy h
 
 main has moved: apply base/main.patch to sync.
 
+The eval run blocks `gh` (a deny rule and a PATH shim), so the tool check for `gh` fails in every run.
+
 ## Tests
 
     python3 -m pytest

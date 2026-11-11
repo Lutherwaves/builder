@@ -11,6 +11,7 @@
 
 ### Features
 
+- `ship` checks `gh`, the `gh` sign-in and commit signing itself before anything leaves your machine, and names the one command that fixes the first check that fails. Its look back lists what broke and what you corrected, in the report.
 - An audit records which units it covered, deferred or left out, and the next audit picks up the new ones, the deferred ones and the covered ones whose files changed. It checks each open finding of the last audit again, so no hole is reported closed because the run skipped it. A baseline from the released version still loads.
 - A `security` audit says which records are confirmed, which need a check and by whom, which a second agent verified, and which units it did not cover. It loads domain checklists for AI, cloud, client, desktop and mobile, and protocol code.
 - `shape` reads the repository, asks one question at a time with a recommendation, shows two or three ways to build the work, and stops until you approve the spec. Your approval is a dated ruling in the spec, so `plan` can tell an approved spec in a new session. Each spec has a Surfaces line that names the sensitive surfaces it touches.

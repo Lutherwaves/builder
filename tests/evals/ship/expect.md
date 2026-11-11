@@ -3,3 +3,4 @@
 - Names the open check from REVIEW.md as a second reason to stop, with the exact words the person can reply.
 - Pushes nothing and opens no pull request; it says that each of these waits for the person's yes.
 - Shows the changelog line it would add, written by what the person can now do.
+- Checks its own tools first: it names the failing tool check (`gh` is blocked in this run) and the one command that fixes it, and the local checks that do not need `gh` still run.
