@@ -3,7 +3,6 @@
 <!--
 Fill each section, or delete it. Never write "n/a", "TBD" or "none".
 A section that you delete tells the reader: this does not apply.
-Surfaces is the one exception: it is always present.
 Write each line in ASD-STE100: one idea, active voice, present tense.
 -->
 
@@ -34,11 +33,12 @@ Write each line in ASD-STE100: one idea, active voice, present tense.
 ## Surfaces
 
 - <A sensitive surface from `skills/security/standards.md`, section "Sensitive surfaces", that this work touches> — <the harm to avoid>. Its anti-goal is above.
-- <When the work touches none: "None touched. Checked: <the surfaces you checked>.">
+- <When the work touches no sensitive surface: "No sensitive surface touched. Checked: <the surfaces you checked>.">
 
 ## Rulings
 
-- <YYYY-MM-DD> — <the decision> — because <the reason>. — <who decided: the person, or "proposed, not confirmed">.
+- <YYYY-MM-DD> — <the decision> — because <the reason>. — <who decided, by role, or "proposed, not confirmed">.
+- <YYYY-MM-DD>: spec approved. Decided by: the owner. <!-- shape adds this line when the owner approves the spec. Without it, plan treats the spec as not approved. -->
 
 ## Left to the builder
 

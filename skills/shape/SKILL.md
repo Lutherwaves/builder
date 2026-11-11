@@ -10,8 +10,7 @@ A request names a thing. The work is a change for one person at one moment.
 `shape` asks the questions, writes the spec and stops at the gate. The builder skill `plan` takes the approved spec.
 The builder skill sets how to ask and what to do when nobody answers. Read its "Questions" and "When nobody answers" rules.
 
-A small change skips `shape`. Small means: the request says everything that matters, and one task covers it.
-If a small change grows, stop, say so, and start `shape`.
+A small change skips `shape`. The size rule of the builder skill defines a small change, and says when it steps up to `shape`.
 
 ## Look before you ask
 
@@ -59,7 +58,7 @@ Write the title after the moment. Fill the rest in this order, because each sect
 7. **Surfaces.** Take the list from `skills/security/standards.md`, section "Sensitive surfaces". Never copy the list into the spec.
    Name each surface that the work touches, with the harm to avoid. Each touched surface gets its own anti-goal.
    Example: a rota with phone numbers touches personal data. Its anti-goal: "phone numbers reach the group chat".
-   When the work touches no surface, write the surfaces you checked.
+   When the work touches no surface, write "No sensitive surface touched. Checked: <the surfaces you checked>."
 8. **Rulings.** Each decision already made: date, decision, reason, and who decided, by role.
 9. **Left to the builder.** Decisions you hand over on purpose. This stops the spec from becoming a plan.
 10. **Calls to check.** Each open question, with your recommendation, its reason and the cost if wrong.
@@ -84,14 +83,14 @@ A long spec that prescribes the build is a plan. Move that content to `plan`.
 ## The gate
 
 The person approves the spec. Nothing is planned or built before that approval.
+On approval, add one ruling to Rulings: `<YYYY-MM-DD>: spec approved. Decided by: the owner.` Name the approver by role, never by name. `plan` reads this line.
 Write no plan, no task list and no product code while you shape.
 Until the person approves, each turn ends with one question, or with the spec and a request for approval.
 
-A run is unattended only when the person says they cannot answer, or the run is plainly scheduled or overnight.
-In doubt, ask and stop.
+The "When nobody answers" rule of the builder skill says when a run is unattended, and what to do in doubt.
 In an unattended run, do not wait. Take your recommendations, and pick the way to build it yourself.
 The ruling still lists each way and its trade-off.
-Mark each decision you made alone "proposed, not confirmed", and list it under Calls to check.
+Mark each decision you made alone "proposed, not confirmed", and list it under Calls to check. Write no approval line.
 Go on to `plan` only when the request asked for the build. Otherwise the spec is the deliverable.
 
 ## After the spec
@@ -115,6 +114,7 @@ Then offer the next step in one line: "Approve it, and I plan it with `plan`. Or
 | The spec specifies columns, endpoints, libraries and test lists | Keep what the person sees. Move the rest to "Left to the builder" or to the plan. |
 | Done-when says "tests pass" | Write a check the person can run and see. |
 | A decision with no date, no reason or a real person's name | Each ruling has a date and a reason. The decider is a role, such as "the owner". |
+| An approval in the chat only | Add the approval ruling to the spec. `plan` reads the spec, not the chat. |
 | Posting the spec to a tracker to "finish" | Write the file. Post only after a yes. |
 
 ## Self-check
@@ -133,5 +133,6 @@ Before you hand the spec over:
 - [ ] No section is empty, "n/a" or "TBD".
 - [ ] Each done-when line is a check a person can run and see.
 - [ ] I wrote no plan, no task list and no code before the approval.
+- [ ] An approved spec has the ruling `<YYYY-MM-DD>: spec approved. Decided by: the owner.` An unattended spec has none.
 - [ ] Nothing went to a tracker without a yes.
 - [ ] The reply ends with the builder report, then a one-line offer of the next step.

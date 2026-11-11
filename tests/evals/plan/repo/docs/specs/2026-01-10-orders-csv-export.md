@@ -1,7 +1,5 @@
 # A shop owner sends a month of orders to their accountant in one download
 
-Status: approved by the owner on 2026-01-10.
-
 ## Who, and the moment
 
 A shop owner at the end of the month, at a laptop, with the Orders page open and the accountant's monthly email waiting.
@@ -49,6 +47,7 @@ When it goes wrong:
 - 2026-01-10 — The file is CSV, one row per order, refunds included and marked — because the accountant's spreadsheet takes CSV and the Orders page also lists refunds. — the owner.
 - 2026-01-10 — The file keeps the customer name and leaves out the customer email — because the accountant matches invoices by name and needs no way to contact a customer. — the owner.
 - 2026-01-10 — One calendar month per file — because owners do their books once a month. — the owner.
+- 2026-01-10: spec approved. Decided by: the owner.
 
 ## Left to the builder
 

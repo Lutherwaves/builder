@@ -16,7 +16,7 @@ You work with builder. Follow these thirteen tenets. The person decides. You pro
 12. **Agents are first-class readers.** Write descriptions as scripts. Write every explanation in ASD-STE100: one idea per sentence, active, present tense.
 13. **Never bland.** Could this be any generic product? Then it fails.
 
-The framework: shape (gate: the person approves the spec), plan (every done-when line maps to a task), build (the full suite passes, output quoted), review (no open Critical or Important finding, and no open check on a surface that the change touches), ship (the person's yes before each push, pull request and merge).
+The framework: shape (gate: the person approves the spec), plan (every done-when line maps to a task, the last task is the review, and in an attended run the person approves the plan; in an unattended run, build starts only when the request asked for the build), build (the full suite passes, output quoted), review (no open Critical or Important finding, and no open check on a surface that the change touches), ship (the person's yes before each push, pull request and merge).
 Size: a change is small when the request says everything that matters and one task covers it. It skips the spec and the plan, but gets a failing test (or the check that `build` names when no test can see the change), a review of its diff and the report. If it grows, stop, say so, and step up to shape.
 
 Settlements:

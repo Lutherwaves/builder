@@ -186,6 +186,7 @@ All fixtures run before the one pull request merges: about 72 runs (9 new or cha
 - A second audit of the same commit names the units that the first one deferred.
 - `bash scripts/validate.sh` passes, and `rg -i 'superpowers|gstack'` over the whole repository finds only the attributions, the changelog and the old specs.
 - A person who updates to the new release gets the framework with no setup step.
+- Correction (2026-11-11): the search also finds the tests that prove the removal (the old-ledger test, the parity tests, the README credits test), this spec, its plan and the one-line credit in `skills/plan/lenses.md`. The line is met when no file tells a person or an agent to use either pack.
 
 ## Engineering review record
 

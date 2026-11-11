@@ -77,9 +77,9 @@ Two rules settle how far you go on your own.
 **Questions.** In an interactive session, ask one decision at a time with the "ask the person to choose" action of your harness (text only when it has none). A question with no recommendation is a stall. Each question gives: **What is at stake** (two or three plain sentences; what breaks on a wrong pick), **Recommendation** (the option and one reason; that option comes first, its label ends with `(recommended)`), each option's concrete pro and con, and a **Net** line with the real trade-off.
 A destructive or irreversible option needs the typed word, for example `delete`. "ok" is not a yes.
 
-**When nobody answers.** This applies only when the person says they cannot answer, or the run is plainly scheduled or overnight.
+**When nobody answers.** A run is unattended only when the person says they cannot answer, or the run is plainly scheduled or overnight.
 In doubt, ask one question and stop. A one-shot or headless run alone does not mean that nobody answers.
-Then do not wait for work that stays inside the repository and is easy to undo.
+In an unattended run, do not wait for work that stays inside the repository and is easy to undo.
 Take your recommendations, build, test, and list them under Calls.
 Still stop before a step that leaves the repository, destroys data, or costs money.
 
@@ -97,7 +97,7 @@ Work goes through five stages. Each stage has one owner skill and one gate. Do n
 | Stage | Skill | Gate before the next stage |
 |---|---|---|
 | Shape | `shape` | The person approves the spec. |
-| Plan | `plan` | Every done-when line of the spec maps to a task. The last task is the review. |
+| Plan | `plan` | Every done-when line of the spec maps to a task. The last task is the review. In an attended run, the person approves the plan. In an unattended run, `build` starts only when the request asked for the build. |
 | Build | `build` | The full suite passes after the last change. The report quotes its output. |
 | Review | `review` | No open Critical or Important finding, and no open check on a surface that the change touches. |
 | Ship | `ship` | The person says yes to each push, pull request and merge. |

@@ -15,8 +15,7 @@ An audit remembers what it found and what it covered, so the next audit says wha
 - Prove the harm. Name the person, the situation and what they lose. Report only a concrete path to harm. A finding with no harm is a nit. Drop it.
 - Never invent what code can compute. The score, the rating, the Top 25 mark and the baseline diff come from `builder security`.
 - Probe only where nothing real can break. Use a throwaway worktree: `git worktree add <temp dir>/sec HEAD`, or `.security-wt` inside the folder when your tools reach only it (add it to `.git/info/exclude`).
-  Prefer an in-process probe: a test file that calls the handler with the hostile input. A local server on `localhost` is allowed.
-  A remote, shared or live system needs the person's explicit go each time. Remove the worktree at the end.
+  Prefer an in-process probe: a test file that calls the handler with the hostile input. A local server on `localhost` is allowed. A remote, shared or live system needs the person's explicit go each time. Remove the worktree at the end.
 - Defensive only. Write no working exploit for a live target, and do not inflate a severity.
 - Post nothing. A comment, an issue or an advisory leaves the machine only after the person's yes.
 - Never assume a control that the source does not show. A proxy, a provider setting or an identity policy can hold a control outside the repository. Do not call it present or absent.
@@ -45,9 +44,11 @@ If a `bin/builder` command exits 3 and says the binary is not installed or is of
    This map goes in the report. A `none` on a public or expensive surface is a finding by itself. Step 5 sets its state.
 4. Seed the units. A unit is one surface and one dimension, with the id `<surface>/<dimension>`, for example `webhook-payments/data-integrity`.
    The surface has no `/`. The dimension is a name from `standards.md`. `files` maps each file of the unit to its hash from `git hash-object <path>`.
-5. Write the findings file of step 6 with these units, each `not_inspected` with the reason "not yet hunted", and `findings: []`.
-   Run `"${CLAUDE_PLUGIN_ROOT}/bin/builder" security baseline diff <findings.json>`. Read its `units` object.
-   `carried` lists each unit that the last audit deferred or did not inspect and that this run has not yet covered. `changed` lists covered units whose files changed since. Both are work for this run.
+5. Write the findings file of step 6 with these units, each `not_inspected` with the reason "not yet hunted", `dimensions: []` and `findings: []`.
+   Run `"${CLAUDE_PLUGIN_ROOT}/bin/builder" security baseline diff <findings.json>`. Read its `units` object and its `not_rechecked` list.
+   Three unit lists are work for this run: `new` (no audit saw the unit), `carried` (the last audit deferred it or did not inspect it) and `changed` (the last audit covered it, and its files changed since).
+   Leave out of the final file each unit that is in no list. The baseline then keeps it as covered.
+   `not_rechecked` lists each open finding of the last audit. Check each one again in this run, and write it into the final file with its state: `confirmed` if it still holds, `rejected` with a reason if the source now refutes it. A finding that the final file leaves out is closed by silence.
 
 ## 3. Hunt, by dimension
 
@@ -81,7 +82,7 @@ Set each unit as you go: `covered` when you read all its files, else `deferred`,
 
 - `confirmed`: the source shows the whole path to harm, and the verifier did not refute it. Only this state carries `vector`.
 - `needs_validation`: the harm depends on a fact that the source does not show. `missing` names the fact and who can observe it. No `vector`.
-- `rejected`: the source or the verifier refutes it. `reason` says why. No `vector`. Keep it, so the next audit does not raise it again.
+- `rejected`: the source or the verifier refutes it. `reason` says why. No `vector`.
 
 A missing limit or check on a public or expensive surface is `confirmed` when the source shows the whole path.
 It is `needs_validation` when the control can live outside the repository, for example a rate limit at a load balancer that the repository does not configure.
@@ -93,8 +94,7 @@ Only code can do some controls, such as a signature check on a webhook body or a
    Each finding has `id` (`<dimension>/<CWE>/<file>/<symbol>`), `dimension`, `cwe`, `location`, `title` and `state`.
    A `confirmed` finding adds `vector` (`CVSS:3.1/...`). A `needs_validation` finding adds `missing`. A `rejected` finding adds `reason`.
    Each unit has `id`, `status`, `files`, and a `reason` unless the status is `covered`. Put the file outside the repository, for example in a temp dir.
-2. Run `"${CLAUDE_PLUGIN_ROOT}/bin/builder" security score <findings.json>`. It adds `score` and `rating` to each confirmed finding and `top25` to every finding, or names the bad field.
-   Fix the field and run it again. Never write a score yourself.
+2. Run `"${CLAUDE_PLUGIN_ROOT}/bin/builder" security score <findings.json>`. It adds `score` and `rating` to each confirmed finding and `top25` to every finding, or names the bad field. Fix the field and run it again. Never write a score yourself.
 3. Escalate when the base score understates the blast radius, for example a Medium DoS on the only payment path. Say why. Keep the computed score next to it.
 
 ## 7. Remember
@@ -121,6 +121,7 @@ If you found nothing important, say so plainly. Do not pad the report.
 | "The proxy surely limits this" | The source does not show it. Write `needs_validation` and name who can check the proxy. |
 | A record that only the hunter checked, reported as verified | Start a verifier, or write "not independently verified". |
 | A unit marked `covered` when the budget ran out | Mark it `deferred`, with the reason. |
+| Only `carried` and `changed` units hunted, or a `not_rechecked` finding left out of the final file | Hunt the `new` units too. Check each `not_rechecked` finding again and write it with its state. Silence closes it. |
 | A CWE or CAPEC id from memory | Take it from `standards.md`. If no row fits, check the source and say so. |
 | A matrix full of `inspected` | Mark only what you looked at. The rest is `not inspected`, with its reason. |
 | A forced finding at L1 or L2 | Name the provider. Write `provider`. |
@@ -139,5 +140,6 @@ If you found nothing important, say so plainly. Do not pad the report.
 - [ ] Each confirmed record names its verifier, or says "not independently verified".
 - [ ] Each `needs_validation` record names the missing fact and who can observe it.
 - [ ] Each unit has a status, and each unit that is not covered has a reason.
+- [ ] Each open finding of the last audit is in the final file again, with its state. Each `new`, `carried` and `changed` unit was work for this run.
 - [ ] The baseline is saved and its path is named.
 - [ ] I ran nothing in the checkout. The throwaway worktree is removed. Nothing reached the forge without the person's yes.

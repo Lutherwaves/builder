@@ -10,21 +10,22 @@ A spec says what changes for whom. A plan says how to build it, one task at a ti
 It hands the plan to the builder skill `build`. The builder of each task has the plan and the repository, and nothing else.
 The builder skill sets how to ask and what to do when nobody answers. Read its "Questions" and "When nobody answers" rules.
 
-A small change skips the plan. Small means: the request says everything that matters, and one task covers it.
+A small change skips the plan. The size rule of the builder skill defines a small change.
 
 ## The rules
 
 - Write no product code. The plan names the code. `build` writes it.
 - Every step is concrete. "Add error handling", "write tests" and "handle edge cases" are not steps.
   Name the behaviour, the input and the test that proves it.
-- Every task ends in a passing test and one commit.
+- Every code task ends in a passing test and one commit. The last task is the review.
 - Every done-when line and every anti-goal of the spec has a task. The plan names the task.
 - The plan is reviewed before the gate. A review that changes nothing still writes its reason.
 
 ## 1. Read the spec
 
 1. Read the spec, then the code and the tests it touches. Say what you found: "`orders.month` already returns one shop's month."
-2. Check that the spec is approved: a line in it, a ticket state or the person's words.
+2. Check that the spec is approved. Its Rulings section holds the line `<YYYY-MM-DD>: spec approved. Decided by: <role>.`, which `shape` adds on approval.
+   A spec with no such line, or with an approval marked "proposed, not confirmed", is not approved. When the person approves it now, add the line first.
    If it is not approved, stop. Say so, and offer `shape`.
    In an unattended run, go on. Write "spec not approved; planned anyway" at the top of the plan and under Calls.
 3. Copy out each done-when line, each anti-goal and each line of Surfaces. Step 5 checks the plan against them.
@@ -90,7 +91,8 @@ A line with no task is a gap. Add the task, or move the line to Calls with the r
 
 The last task of every plan is the review of the whole change.
 It names the builder skill `review`, the spec and the test command.
-Then the plan goes to the builder skill `build`. In an interactive run, the person approves the plan first.
+The gate to `build`: every done-when line maps to a task, the last task is the review, and in an attended run the person approves the plan.
+In an unattended run, go on to `build` only when the request asked for the build. Otherwise the plan is the deliverable.
 Build nothing while you plan.
 
 ## After the plan
@@ -110,6 +112,7 @@ Then offer the next step in one line: "Approve it, and I build it with `build`. 
 | The design lens skipped for a change the person sees | Run it on every screen, message, file and error the person meets. |
 | A done-when line with no task | Map each line by task name. Close each gap with a task. |
 | The plan ends with the last code task | The last task is the review. |
+| A spec with no approval ruling treated as approved | Look for `<YYYY-MM-DD>: spec approved. Decided by: <role>.` under Rulings. Without it, the spec is not approved. |
 | Code written "to check the plan works" | The plan names code. `build` writes it. |
 | Asking where to put the plan in an unattended run | Use `docs/plans/YYYY-MM-DD-<slug>.md` and list it under Calls. |
 
@@ -117,7 +120,7 @@ Then offer the next step in one line: "Approve it, and I build it with `build`. 
 
 Before you hand the plan over:
 
-- [ ] The spec is approved, or the plan says "spec not approved; planned anyway".
+- [ ] The spec holds the approval ruling, or the plan says "spec not approved; planned anyway".
 - [ ] The plan opens with the file map. Each file has one job.
 - [ ] Each task has files, a failing test, the command with its result before and after, a done-when line and a commit.
 - [ ] No step is a placeholder. Each names a behaviour and its test.
@@ -125,6 +128,6 @@ Before you hand the plan over:
 - [ ] I ran the engineering lens, and the design lens when a person sees anything.
 - [ ] Each finding changed the plan or says "no change, because …".
 - [ ] Each done-when line and each anti-goal maps to a task by name.
-- [ ] The last task is the review.
+- [ ] The last task is the review. In an unattended run, `build` starts only when the request asked for the build.
 - [ ] I wrote no product code.
 - [ ] The reply ends with the builder report, then a one-line offer of the next step.

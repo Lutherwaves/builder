@@ -96,7 +96,7 @@ From `builder security baseline save`. The `units` object of the `baseline diff`
 - Still open: <id>, open <n> days since <first_seen> (<first_sha>).
 - Closed: <ids>.
 - Not re-checked: <ids>, with the dimension that did not run.
-- Units carried: <ids> that the last audit deferred or did not inspect, and that this run did not name.
+- Units carried: <ids> that the last audit deferred or did not inspect, and that this run has not covered.
 - Units changed: <ids> that the last audit covered, and whose files changed since.
 
 Write "No earlier audit for this repository." when no baseline exists.

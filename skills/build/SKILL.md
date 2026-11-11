@@ -76,7 +76,7 @@ Commit the plan change with the task it changes.
 
 ## 6. The small change
 
-A small change has no plan. Small means: the request says everything that matters, and one task covers it.
+A small change has no plan. The size rule of the builder skill defines a small change, and says to step up to `shape` when the work grows.
 
 1. Write one test that fails without the change. Run it and quote the failure.
 2. Make the change. Run the test, then the full suite. Quote the result.
@@ -86,8 +86,6 @@ Sometimes no test can see the change, for example in prose or a comment. Then na
 A check is a search that finds the wrong text before the change and not after it, or a link check.
 Run the check before and after the change, and quote both results. Still run the full suite.
 In the report, say under ⚠ Not proven that no test covers the change.
-
-If the work grows past one task, stop. Say so, and step up to the builder skills `shape` and `plan`.
 
 ## 7. Done
 

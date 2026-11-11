@@ -60,7 +60,7 @@ Use these headings word for word, in this order: What I ran · Coverage · Most 
 Leave out Coverage and Open checks that block ship only when the security pass did not run. Then write "no security pass" and the reason in What I ran.
 The person and other agents scan for them. The verdict comes last, after the evidence, never at the top.
 
-Open with two parts:
+Open with three parts:
 
 - **What I ran.** One short paragraph: each command and its result.
 - **Coverage.** The security pass's table, then the coverage line: each surface that you checked, and each one that you did not, with the reason.
@@ -94,6 +94,8 @@ The gate: the change is ready to merge only with no open Critical or Important f
 An open check blocks `ship` until the person answers it. An unattended run stops before `ship` and lists each open check with the words to reply.
 
 Then say what stayed local: "Posted nothing. The checkout is unchanged." Offer the next step in one line: "Post these as review comments, or turn the fixes into a patch?"
+Save the whole review to one file outside the repository: a temp dir, or builder's local state. Never save it inside the checkout or on the forge.
+`ship` reads this file, also in a new session. The last line of the reply names its absolute path: "Review saved: <path>."
 If you found nothing important, say so plainly. Do not pad the review.
 
 ## Common mistakes
@@ -112,6 +114,7 @@ If you found nothing important, say so plainly. Do not pad the review.
 | Posting the review or approving to "finish" | Write the review here. Post only after a yes. |
 | No security pass because nobody asked | A touched sensitive surface starts the pass. Load `security-pass.md`. |
 | "Ready to merge" with an open check on a touched surface | The check blocks `ship`. List it under Open checks that block ship. |
+| The review only in the reply | Save it to one file outside the checkout, and name the path in the last line. `ship` reads it. |
 | "It works" from the diff alone | Use the running product and quote it, or write "not used as a running product". |
 
 ## Self-check
@@ -129,4 +132,5 @@ Before you hand the review over:
 - [ ] I ran nothing in the checkout. The throwaway worktree or temp dir is removed.
 - [ ] No finding repeats what an existing test already covers.
 - [ ] It ends with "Declined to judge", then the verdict with its reason. The verdict is not at the top.
+- [ ] The review is saved to one file outside the checkout. The reply's last line names its absolute path.
 - [ ] Nothing reached the forge without the person's yes.

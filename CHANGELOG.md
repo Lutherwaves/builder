@@ -10,13 +10,13 @@
 
 ### Features
 
-- An audit records which units it covered, deferred or left out, and the next audit picks up the deferred ones and the covered ones whose files changed. A baseline from the released version still loads.
+- An audit records which units it covered, deferred or left out, and the next audit picks up the new ones, the deferred ones and the covered ones whose files changed. It checks each open finding of the last audit again, so no hole is reported closed because the run skipped it. A baseline from the released version still loads.
 - A `security` audit says which records are confirmed, which need a check and by whom, which a second agent verified, and which units it did not cover. It loads domain checklists for AI, cloud, client, desktop and mobile, and protocol code.
-- `shape` reads the repository, asks one question at a time with a recommendation, shows two or three ways to build the work, and stops until you approve the spec. Each spec has a Surfaces line that names the sensitive surfaces it touches.
+- `shape` reads the repository, asks one question at a time with a recommendation, shows two or three ways to build the work, and stops until you approve the spec. Your approval is a dated ruling in the spec, so `plan` can tell an approved spec in a new session. Each spec has a Surfaces line that names the sensitive surfaces it touches.
 - `plan` turns an approved spec into a file map and tasks that each start with a failing test and end in one commit, reviews the plan as an engineer and as a designer, and maps every done-when line of the spec to a task.
 - `build` runs a plan one task at a time: a failing test first, then the code, then one commit per task. It stops at a wrong step, proposes the change and updates the plan, and ends with the full test run quoted and the change handed to `review`. A small change that no test can see, such as a typo, gets a named check that runs before and after it.
-- `review` runs a security pass by itself when a change touches a sensitive surface, uses the running product and quotes what it saw, and lists each check that still needs you under "Open checks that block ship". `security` now does the whole-repository audit only.
-- `ship` takes reviewed work to a checked release: it syncs with the base branch and runs the full suite, stops on an open finding or an open check with the exact words to reply, shows the changelog line and the pull request text, and waits for your yes before each push, pull request and merge.
+- `review` runs a security pass by itself when a change touches a sensitive surface, uses the running product and quotes what it saw, and lists each check that still needs you under "Open checks that block ship". It saves the review to a file outside the repository and names its path, so `ship` can read it in a new session. `security` now does the whole-repository audit only.
+- `ship` takes reviewed work to a checked release: it syncs with the base branch and runs the full suite, stops on an open finding or an open check with the exact words to reply, shows the changelog line and the pull request text, and waits for your yes before each push, pull request and merge. Your answer to each open check goes into the pull request text, and a merge conflict leaves the checkout as it was.
 
 ### Documentation
 
