@@ -131,10 +131,12 @@ out="$(run_in "$tmp/guard")"; rc=$?
 
 # Case 15b (guard_flags_slash_in_neutral_how): a string-valued `how` with a slash command fails; a map-valued `how` may have one.
 rm -rf "$tmp/guard"; mkrepo "$tmp/clean" "$tmp/guard"
-jq '(.[] | select(.id == "fleet") | .how) = "Ask me: /builder:fleet"' "$tmp/guard/lib/recommendations.json" > "$tmp/guard/r.json" \
+jq '(.[] | select(.id == "fleet") | .how) = "Ask me: /builder:fleet"
+    | (.[] | select(.id == "budget") | .how) = {"claude": "Run /usage", "codex": "Run /status"}' \
+  "$tmp/guard/lib/recommendations.json" > "$tmp/guard/r.json" \
   && mv "$tmp/guard/r.json" "$tmp/guard/lib/recommendations.json"
 out="$(run_in "$tmp/guard")"; rc=$?
-[ "$rc" -eq 1 ] && grep -q '✗ guard: lib/recommendations.json: fleet how' <<<"$out" && ! grep -q 'guard: lib/recommendations.json: superpowers' <<<"$out" \
+[ "$rc" -eq 1 ] && grep -q '✗ guard: lib/recommendations.json: fleet how' <<<"$out" && ! grep -q 'guard: lib/recommendations.json: budget' <<<"$out" \
   && check "guard flags slash command in a string how, allows it in a map how" ok || check "guard flags slash command in a string how, allows it in a map how (got $rc)" bad
 
 # Case 17 (manifest_version_drift_fails): a manifest whose version differs from plugin.json fails.

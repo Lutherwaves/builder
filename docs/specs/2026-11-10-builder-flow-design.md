@@ -160,6 +160,7 @@ These are my calls, not the owner's. Each has a reason and the cost if it is wro
 
 The rule of the `builder` skill, "When nobody answers", holds for every gate.
 When the person says they cannot answer, or the run is headless, the agent takes its own recommendations.
+Correction (2026-11-11): a one-shot or headless run alone is not unattended. The rule applies when the person says they cannot answer, or the run is plainly scheduled or overnight (decision D3, the flow-gates fixture).
 It marks the spec "proposed, not confirmed", lists each call under Calls, and goes on to plan and build only when the request asked for the build.
 The eval fixtures run this way. The `flow-gates` fixture proves that the agent stops at the first gate. What happens after the person answers, the two-round review loop and the release check are proven by an attended run by the owner, not by a fixture.
 

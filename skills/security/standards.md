@@ -1,6 +1,6 @@
 # security — standards map
 
-The `security` skill reads this file when it maps a finding. Each identifier here comes from its source. Never add one from memory.
+The `security` and `review` skills read this file when they map a finding. Each identifier here comes from its source. Never add one from memory.
 If a finding fits no row, find its CWE at <https://cwe.mitre.org> and say "no row in standards.md" in the finding.
 
 ## Editions

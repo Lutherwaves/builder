@@ -143,9 +143,9 @@ py_guard() {
 }
 py_guard git ls-files '*.py' ':!tests/evals/*/*' \
   && note "✓ no Python file"
-py_guard git grep -n -I -w -e python3 -- . ':!tests/evals/*/*' ':!docs/superpowers' ':!CHANGELOG.md' ':!scripts/validate.sh' ':!tests/test_validate.sh' \
+py_guard git grep -n -I -w -e python3 -- . ':!tests/evals/*/*' ':!docs/specs' ':!docs/plans' ':!CHANGELOG.md' ':!scripts/validate.sh' ':!tests/test_validate.sh' \
   && note "✓ no python3 command"
-py_guard git grep -n -E 'lib/(harness|ledger|reach|security|signals)\.py|burn-proj\.py|session_start\.py|support-table\.py' -- . ':!docs/superpowers' ':!CHANGELOG.md' ':!scripts/validate.sh' ':!tests/test_validate.sh' ':!skills/budget/SKILL.md' ':!tests/templates_test.go' \
+py_guard git grep -n -E 'lib/(harness|ledger|reach|security|signals)\.py|burn-proj\.py|session_start\.py|support-table\.py' -- . ':!docs/specs' ':!docs/plans' ':!CHANGELOG.md' ':!scripts/validate.sh' ':!tests/test_validate.sh' ':!skills/budget/SKILL.md' ':!tests/templates_test.go' \
   && note "✓ no deleted Python tool named"
 
 echo "→ go"
@@ -204,7 +204,7 @@ echo "→ hedges"
 hedges=0
 for p in "was proven" "were proven" "only the local path" "is not verified" "is unverified" "does not claim" "no live"; do
   rc=0
-  out="$(git grep -l -I -i -F -e "$p" -- README.md CONTRIBUTING.md 'docs/*.md' ':!docs/superpowers' 2>&1)" || rc=$?
+  out="$(git grep -l -I -i -F -e "$p" -- README.md CONTRIBUTING.md 'docs/*.md' ':!docs/specs' ':!docs/plans' 2>&1)" || rc=$?
   if [ "$rc" -eq 0 ]; then
     while IFS= read -r f; do err "hedge: $f: $p"; done <<<"$out"; hedges=1
   elif [ "$rc" -ne 1 ]; then

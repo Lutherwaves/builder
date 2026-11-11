@@ -1,6 +1,6 @@
 {
   "name": "builder",
-  "description": "Builder habits for coding agents: guided setup, decisions with reasons, proof before done, and nothing sent without your yes.",
+  "description": "A framework for coding agents: shape, plan, build, review and ship, with security in every stage and nothing sent without your yes.",
   "version": "3.0.0",
   "author": {
     "name": "Lutherwaves"
@@ -13,6 +13,9 @@
     "soul",
     "onboarding",
     "shaping",
+    "planning",
+    "tdd",
+    "shipping",
     "rulings",
     "peer-messaging",
     "fleet",

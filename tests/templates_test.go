@@ -283,12 +283,7 @@ func TestQuestionsFollowTheDecisionBrief(t *testing.T) {
 
 func whyBuilderSection(t *testing.T) string {
 	t.Helper()
-	_, after, ok := strings.Cut(readme(t), "## Why builder")
-	if !ok {
-		t.Fatal(`README has no "## Why builder" section`)
-	}
-	section, _, _ := strings.Cut(after, "\n## ")
-	return section
+	return readmeSection(t, "## Why builder")
 }
 
 func TestReadmeLinksResolve(t *testing.T) {
@@ -304,16 +299,38 @@ func TestReadmeLinksResolve(t *testing.T) {
 	}
 }
 
+func readmeSection(t *testing.T, heading string) string {
+	t.Helper()
+	_, after, ok := strings.Cut(readme(t), "\n"+heading+"\n")
+	if !ok {
+		t.Fatalf("README has no %q section", heading)
+	}
+	section, _, _ := strings.Cut(after, "\n## ")
+	return section
+}
+
 func TestReadmeSaysWhyBuilder(t *testing.T) {
 	section := whyBuilderSection(t)
-	for _, name := range []string{"superpowers", "gstack", "CLAUDE.md"} {
-		mustContain(t, section, name)
+	for _, part := range []string{"shape", "plan", "build", "review", "ship", "security", "CLAUDE.md"} {
+		mustContain(t, section, part)
 	}
+}
+
+func TestReadmeNamesOtherPacksOnlyInCredits(t *testing.T) {
+	credits := readmeSection(t, "## Credits")
+	for _, source := range []string{"obra/superpowers", "garrytan/gstack", "cloudflare/security-audit-skill"} {
+		mustContain(t, credits, source)
+	}
+	rest := strings.ToLower(strings.Replace(readme(t), credits, "", 1))
+	for _, pack := range []string{"superpowers", "gstack"} {
+		mustNotContain(t, rest, pack)
+	}
+	mustContain(t, readmeSection(t, "## License"), "[Credits](#credits)")
 }
 
 func TestWhyBuilderClaimsHold(t *testing.T) {
 	section := whyBuilderSection(t)
-	// superpowers also injects itself at every session start, and the report comes once per piece of work.
+	// A pack can inject itself at every session start, and the report comes once per piece of work.
 	mustNotContain(t, section, "when that\nskill runs")
 	mustNotContain(t, section, "every reply")
 	// A hand-written CLAUDE.md can ask for a reason and for proof too.

@@ -1,11 +1,10 @@
 # security — report template
 
 Use these headings word for word, in this order. The person and other agents scan for them.
-Leave out "Since the last audit" only when no baseline exists and the mode is change.
 
 ## What I ran
 
-One short paragraph: the mode (change or audit), the profile, the agent cap if the person set one, the base and head (or the audited SHA), and each command with its result.
+One short paragraph: the profile, the agent cap if the person set one, the audited SHA, and each command with its result.
 Name the build, the tests, every probe, each verifier, and the `builder security score` and `baseline` calls.
 
 ## Coverage
@@ -90,17 +89,18 @@ Take each identifier from `standards.md`. Copy the score, the rating and the Top
 
 ## Since the last audit
 
-From `builder security baseline diff` (change mode) or `baseline save` (audit mode):
+From `builder security baseline save`. The `units` object of the `baseline diff` that seeded the units gives the last two lines.
+`baseline diff` saves nothing and closes nothing. Only `baseline save` closes a gap.
 
 - New: <ids>.
 - Still open: <id>, open <n> days since <first_seen> (<first_sha>).
-- Closed: <ids>. Audit mode only: a change review never closes a gap.
-- Not re-checked: <ids>, with the dimension that did not run. In change mode, this is every known gap the diff did not touch.
+- Closed: <ids>.
+- Not re-checked: <ids>, with the dimension that did not run.
 - Units carried: <ids> that the last audit deferred or did not inspect, and that this run did not name.
 - Units changed: <ids> that the last audit covered, and whose files changed since.
 
 Write "No earlier audit for this repository." when no baseline exists.
-In audit mode, add the baseline path from the `saved` field.
+Add the baseline path from the `saved` field.
 
 ## Limits
 

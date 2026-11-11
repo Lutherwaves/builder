@@ -1,6 +1,6 @@
 # builder — agent guide
 
-builder is a plugin for coding agents: ten skills, one session-start hook, and one Go binary, `builder`. The skills and the hook run it through `bin/builder`. builder has adapters for Claude Code, Codex CLI, Cursor CLI and opencode.
+builder is a plugin for coding agents: thirteen skills, one session-start hook, and one Go binary, `builder`. The skills and the hook run it through `bin/builder`. builder has adapters for Claude Code, Codex CLI, Cursor CLI and opencode.
 This guide routes an agent that works on builder itself.
 
 ## Where each change goes
@@ -8,6 +8,12 @@ This guide routes an agent that works on builder itself.
 | You change… | Edit | Then run |
 | --- | --- | --- |
 | A skill's behaviour | `skills/<name>/SKILL.md` and its eval fixture `tests/evals/<name>/` | `bash tests/evals/run.sh --check`, then `bash tests/evals/run.sh <name>` |
+| The plan stage | `skills/plan/SKILL.md` and its eval fixture `tests/evals/plan/` | `bash tests/evals/run.sh --check`, then `bash tests/evals/run.sh plan` |
+| The build stage | `skills/build/SKILL.md` and its eval fixture `tests/evals/build/` | `bash tests/evals/run.sh --check`, then `bash tests/evals/run.sh build` |
+| The ship stage | `skills/ship/SKILL.md` and its eval fixture `tests/evals/ship/` | `bash tests/evals/run.sh --check`, then `bash tests/evals/run.sh ship` |
+| The engineering and design lenses of a plan review | `skills/plan/lenses.md` | `bash tests/evals/run.sh plan` |
+| The security pass of a review | `skills/review/security-pass.md` | `bash tests/evals/run.sh review-security` |
+| A domain checklist of an audit (AI, cloud, client, desktop and mobile, protocol) | `skills/security/domains.md` | `bash tests/evals/run.sh security-audit` |
 | The soul the hook injects | `skills/builder/soul-compact.md` (keep it in step with `skills/builder/SKILL.md`) | `bash tests/test_hook.sh` |
 | The SessionStart hook | `hooks/session-start`, `internal/hook` | `bash tests/test_hook.sh`, `go test ./internal/hook/` |
 | A recommendation or its signal | `lib/recommendations.json`, `internal/signals`, `internal/ledger` | `go test ./internal/signals/ ./internal/ledger/` |
@@ -46,3 +52,11 @@ Before every commit, run `bash scripts/validate.sh`. It runs all of the checks a
 The `harness` skill derives its framing from Ryan Lopopolo's **Harness Engineering** corpus
 (<https://github.com/lopopolo/harness-engineering>), licensed CC BY 4.0.
 builder adapts its vocabulary and applies its improve-harness loop. It copies no prose.
+
+builder takes ideas, and no text, from three MIT-licensed projects:
+
+- **obra/superpowers** (<https://github.com/obra/superpowers>): the spec, plan and build loop. `shape`, `plan` and `build` follow it.
+- **garrytan/gstack** (<https://github.com/garrytan/gstack>): the reviews of a plan, the use of the running product, and shipping. `skills/plan/lenses.md`, `review` and `ship` follow it.
+- **cloudflare/security-audit-skill** (<https://github.com/cloudflare/security-audit-skill>): the audit method. `security` and `skills/security/domains.md` follow it.
+
+Keep each credit when you change the file that carries it. Copy no prose from any of the three.

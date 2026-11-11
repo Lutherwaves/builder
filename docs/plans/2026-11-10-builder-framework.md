@@ -8,7 +8,7 @@
 
 **Tech Stack:** Markdown skills (ASD-STE100), Go 1.x (`internal/security`, `cmd/builder`), Bash tests, eval fixtures under `tests/evals/`.
 
-**Spec:** `docs/superpowers/specs/2026-11-10-builder-flow-design.md`. Read its goals 1 to 10, its "Calls to check" and its "Decision ledger" (owner rulings D1 to D8) before any task.
+**Spec:** `docs/specs/2026-11-10-builder-flow-design.md`. Read its goals 1 to 10, its "Calls to check" and its "Decision ledger" (owner rulings D1 to D8) before any task.
 
 ## Global Constraints
 

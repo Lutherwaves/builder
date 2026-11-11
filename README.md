@@ -10,7 +10,8 @@ report: is it done, what you have to do, what isn't proven yet, what left your m
 and every call the agent made on its own, with the reason. Nothing leaves the machine
 (no push, no PR, no message) without a send rule or your yes.
 
-It's a plugin for Claude Code, Codex CLI, Cursor CLI and opencode. Skills and one
+It's a plugin for Claude Code, Codex CLI, Cursor CLI and opencode. It takes a request
+through shape, plan, build, review and ship, with security in every stage. Skills and one
 session hook; no server, no account, no network call at session start.
 
 > **▶ Needs you:** a customer who moved can now change their email at checkout, in one step.
@@ -31,24 +32,35 @@ recommendation first.
 
 ## Why builder
 
-superpowers and gstack make the agent better at a job: planning, debugging, a browser,
-QA. builder's report is the same whichever skill ran: every finished piece of work ends
-with what's done, what's yours to do, and what isn't proven. builder also covers ground
-neither pack does: messages to people, rules that remember their incident, many sessions
-at once, and your usage limit.
+builder is one framework from a request to a release. Five stages hand the work on,
+and each stage stops at a gate before the next one starts.
 
-| | builder | superpowers | gstack | your own CLAUDE.md |
-|---|---|---|---|---|
-| Starts from the person and the non-goals | every piece of work | in brainstorming | in `/spec`, `/office-hours` | if you wrote it |
-| Each solo call recorded with its reason | every report, under Calls | while executing a plan | durable decisions, in a decision log | if you wrote it |
-| Unproven work marked as unproven | every report | when verification runs | in QA and review | if you wrote it |
-| Messages to people: send rules, duplicate check, 6 an hour | `reach` | no | no | no |
-| A rule carries its incident and a check that fails | `canon` | no | no | no |
-| Many sessions, one lane each, hand-offs as briefs | `fleet` | no | no | no |
-| Weekly usage-limit forecast | `budget` | no | no | no |
+| Stage | Skill | You get | Gate before the next stage |
+| --- | --- | --- | --- |
+| Shape | `shape` | A spec: the person, the moment, the non-goals and when it is done | You approve the spec |
+| Plan | `plan` | Tasks that each start with a failing test and end in one commit | Each done-when line of the spec maps to a task |
+| Build | `build` | The code, one task at a time, test first | Every test passes, with the output quoted |
+| Review | `review` | Each way the change hurts a person, proven, with a fix and a test | No open Critical or Important finding |
+| Ship | `ship` | A pull request, then a merged and checked release | Your yes before anything leaves the machine |
 
-builder doesn't replace either pack. It routes to them: planning, TDD and debugging go to
-superpowers; the browser, QA and shipping go to gstack. Install all three.
+A small change skips the spec and the plan. It still gets a failing test or a named check,
+a review and the report.
+
+Security is a step of each stage, not a pass someone must remember. The spec names each
+sensitive surface the work touches. A task on such a surface writes its hostile-input
+test first. The review runs a security pass by itself, and `ship` stops on an open check.
+`security` audits the whole repository and remembers what it covered.
+
+| | builder | your own CLAUDE.md |
+|---|---|---|
+| Starts from the person and the non-goals | every piece of work | if you wrote it |
+| Each solo call recorded with its reason | every report, under Calls | if you wrote it |
+| Unproven work marked as unproven | every report | if you wrote it |
+| Security in each stage, not on request | spec, plan, build, review and ship | if you wrote it |
+| Messages to people: send rules, duplicate check, 6 an hour | `reach` | no |
+| A rule carries its incident and a check that fails | `canon` | no |
+| Many sessions, one lane each, hand-offs as briefs | `fleet` | no |
+| Weekly usage-limit forecast | `budget` | no |
 
 ## Install
 
@@ -71,8 +83,8 @@ codex plugin add builder@builder
 **Cursor CLI** and **opencode:** see [docs/install.md](docs/install.md).
 
 In your first session the agent does your work first, then offers one setup step per
-reply: superpowers, gstack, a signed-in `gh`, signed commits. Answer yes, not now (quiet
-for 7 days) or never. Answers live in `~/.config/builder/ledger.json`; set `BUILDER_HOME`
+reply: a signed-in `gh` and signed commits. Answer yes, not now (quiet for 7 days) or
+never. Answers live in `~/.config/builder/ledger.json`; set `BUILDER_HOME`
 to move them. After setup, a session shows at most one recommendation, and only when
 something calls for it, such as your weekly usage passing 80%.
 
@@ -96,16 +108,19 @@ A harness counts as supported once every eval fixture passes on it.
 
 | Skill | What you get |
 | --- | --- |
-| `builder` | The thirteen tenets, routing to superpowers and gstack, and the report. |
-| `shape` | A feature name becomes an issue: the person, the moment, anti-goals, open questions with a recommendation. |
+| `builder` | The thirteen tenets, the five stages and their gates, and the report. |
+| `shape` | A request becomes a spec. It reads the repository, asks one question at a time with its recommendation, shows two or three ways to build it, and waits for your approval. |
+| `plan` | An approved spec becomes tasks that each start with a failing test, reviewed as an engineer and as a designer. |
+| `build` | The plan runs one task at a time, test first, one commit per task. It stops when a step is wrong and proposes the change. |
+| `review` | A review that proves each harm with evidence, a fix and a test, with a security pass and the running product. Posts nothing without your yes. |
+| `ship` | Reviewed work becomes a checked release. It stops on an open finding and waits for your yes before each push, pull request and merge. |
+| `security` | A whole-repository audit: every layer, standards-mapped findings with CVSS scores, and what changed since last time. |
 | `canon` | A repo rule with its incident and a check that fails when someone breaks it. |
 | `reach` | Messages to teammates wait for your yes, with a duplicate check and 6 sends an hour. |
 | `fleet` | Many sessions side by side, one lane each; work outside a lane goes to its owner. |
 | `intake` | Today's captured tasks reconciled against work in motion; nothing filed without your yes. |
 | `budget` | A forecast of your weekly usage limit, and which idle session to compact. |
 | `harness` | A local code graph that answers "what calls this?" in one query. |
-| `review` | A review that proves each harm with evidence, a fix and a test. Posts nothing without your yes. |
-| `security` | A full security stance: every layer, standards-mapped findings with CVSS scores, and what changed since last time. |
 
 Ask for a skill by name, or just describe the job. The agent loads the right one.
 
@@ -113,8 +128,6 @@ Ask for a skill by name, or just describe the job. The agent loads the right one
 
 builder runs on its own and says once when a partner is missing.
 
-- [superpowers](https://github.com/obra/superpowers): planning, TDD, debugging, review.
-- [gstack](https://github.com/garrytan/gstack): a real browser, QA, security and ship workflows.
 - [gh](https://cli.github.com): `intake` reads open PRs and issues through it.
 - [matchblox](https://matchblox.sh): `budget` reads your plan windows and `fleet` your live sessions from it ([docs](https://docs.matchblox.com)).
 - Your team channel's MCP server: `reach` sends through it. For Slack, the claude.ai Slack connector or Slack's own MCP server.
@@ -125,8 +138,16 @@ builder runs on its own and says once when a partner is missing.
 Every change lands through a pull request that passes `bash scripts/validate.sh`. See
 [CONTRIBUTING.md](CONTRIBUTING.md), and [SECURITY.md](SECURITY.md) to report a vulnerability.
 
-## License
+## Credits
 
-MIT. The `harness` skill takes its framing from Ryan Lopopolo's
+builder takes ideas, and no text, from three MIT-licensed projects:
+[obra/superpowers](https://github.com/obra/superpowers) (the spec, plan and build loop),
+[garrytan/gstack](https://github.com/garrytan/gstack) (the reviews of a plan, the use of the running product, shipping)
+and [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) (the audit method).
+The `harness` skill takes its framing from Ryan Lopopolo's
 [Harness Engineering](https://github.com/lopopolo/harness-engineering) (CC BY 4.0);
 builder adapts the ideas and copies no prose.
+
+## License
+
+MIT. The ideas builder learned from other projects, and their licenses, are in [Credits](#credits).

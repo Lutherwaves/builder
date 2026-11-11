@@ -2,7 +2,14 @@
 
 ## [Unreleased]
 
+### ⚠ Breaking
+
 - A finding has a state (`confirmed`, `needs_validation` or `rejected`), and `builder security score` scores only a confirmed one.
+- builder is a framework of its own: every session knows the five stages `shape`, `plan`, `build`, `review` and `ship` and the gate of each, a small change skips the spec and the plan, and no work goes to another pack. A one-shot run asks its question and stops unless you say you cannot answer.
+- builder no longer recommends the superpowers or gstack packs at session start, because it does their jobs itself. An old saved answer for either still loads, and the parity eval runs the seven flow fixtures with builder alone.
+
+### Features
+
 - An audit records which units it covered, deferred or left out, and the next audit picks up the deferred ones and the covered ones whose files changed. A baseline from the released version still loads.
 - A `security` audit says which records are confirmed, which need a check and by whom, which a second agent verified, and which units it did not cover. It loads domain checklists for AI, cloud, client, desktop and mobile, and protocol code.
 - `shape` reads the repository, asks one question at a time with a recommendation, shows two or three ways to build the work, and stops until you approve the spec. Each spec has a Surfaces line that names the sensitive surfaces it touches.
@@ -10,8 +17,10 @@
 - `build` runs a plan one task at a time: a failing test first, then the code, then one commit per task. It stops at a wrong step, proposes the change and updates the plan, and ends with the full test run quoted and the change handed to `review`. A small change that no test can see, such as a typo, gets a named check that runs before and after it.
 - `review` runs a security pass by itself when a change touches a sensitive surface, uses the running product and quotes what it saw, and lists each check that still needs you under "Open checks that block ship". `security` now does the whole-repository audit only.
 - `ship` takes reviewed work to a checked release: it syncs with the base branch and runs the full suite, stops on an open finding or an open check with the exact words to reply, shows the changelog line and the pull request text, and waits for your yes before each push, pull request and merge.
-- builder is a framework of its own: every session knows the five stages `shape`, `plan`, `build`, `review` and `ship` and the gate of each, a small change skips the spec and the plan, and no work goes to another pack. A one-shot run asks its question and stops unless you say you cannot answer.
-- builder no longer recommends the superpowers or gstack packs at session start, because it does their jobs itself. An old saved answer for either still loads, and the parity eval runs the seven flow fixtures with builder alone.
+
+### Documentation
+
+- The README, the agent guide and the plugin manifests describe builder as one framework from a request to a release, with security in every stage. The README credits the three projects that builder takes ideas from. The design and plan documents live in `docs/specs/` and `docs/plans/`.
 
 ## [3.0.0] - 2026-10-27
 
