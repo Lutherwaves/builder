@@ -31,7 +31,7 @@ func soul(root string) string {
 }
 
 // Build is the hook text before it is shaped for the harness.
-func Build(root, name string, env map[string]string, home, cwd string, now float64) string {
+func Build(root, name string) string {
 	text := soul(root) +
 		fmt.Sprintf("\n\nbuilder root: %s. Where a builder skill says ${CLAUDE_PLUGIN_ROOT}, use this path.", root)
 	if m := mappingBlock(root, name); m != "" {

@@ -8,7 +8,6 @@ import (
 	"os"
 	"sort"
 	"strings"
-	"time"
 )
 
 var version = "dev"
@@ -21,8 +20,6 @@ var commands = map[string]command{
 		return 0
 	},
 }
-
-func now() float64 { return float64(time.Now().UnixNano()) / 1e9 }
 
 func printJSON(stdout io.Writer, v any, indent string) {
 	enc := json.NewEncoder(stdout)

@@ -11,13 +11,6 @@ import (
 
 const root = "../.."
 
-func env(t *testing.T) (map[string]string, string) {
-	d := t.TempDir()
-	bin := filepath.Join(d, "bin")
-	os.MkdirAll(bin, 0o755)
-	return map[string]string{"HOME": d, "BUILDER_HOME": filepath.Join(d, "b"), "PATH": bin}, d
-}
-
 func soulLine(t *testing.T) string {
 	b, err := os.ReadFile(filepath.Join(root, "skills/builder/soul-compact.md"))
 	if err != nil {
@@ -35,8 +28,7 @@ func claudeBlock(t *testing.T) string {
 }
 
 func TestHookPrintsSoulRootAndMap(t *testing.T) {
-	e, home := env(t)
-	text := Build(root, "claude", e, home, home, 1)
+	text := Build(root, "claude")
 	for _, want := range []string{soulLine(t), "builder root: " + root + ".", claudeBlock(t)} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("missing %q in\n%s", want, text)
@@ -45,9 +37,8 @@ func TestHookPrintsSoulRootAndMap(t *testing.T) {
 }
 
 func TestHookOffersAndAsksNothing(t *testing.T) {
-	e, home := env(t)
 	for _, name := range []string{"claude", "codex", "cursor", "opencode"} {
-		text := Build(root, name, e, home, home, 1)
+		text := Build(root, name)
 		for _, banned := range []string{"builder recommends", "onboarding", "ledger", "yes|later|never"} {
 			if strings.Contains(text, banned) {
 				t.Fatalf("%s: %q in\n%s", name, banned, text)
@@ -56,21 +47,10 @@ func TestHookOffersAndAsksNothing(t *testing.T) {
 	}
 }
 
-func TestHookIgnoresAnOldLedger(t *testing.T) {
-	e, home := env(t)
-	without := Build(root, "claude", e, home, home, 1)
-	os.MkdirAll(e["BUILDER_HOME"], 0o755)
-	os.WriteFile(filepath.Join(e["BUILDER_HOME"], "ledger.json"), []byte(`{"onboarded":false,"answers":{"fleet":"later"}}`), 0o644)
-	if with := Build(root, "claude", e, home, home, 1); with != without {
-		t.Fatalf("an old ledger changes the output:\n%s\n---\n%s", with, without)
-	}
-}
-
 func TestHookUnknownHarnessGetsTheSoul(t *testing.T) {
-	e, home := env(t)
 	soul, _ := os.ReadFile(filepath.Join(root, "skills/builder/soul-compact.md"))
 	want := strings.TrimRight(string(soul), "\n") + "\n\nbuilder root: " + root + ". Where a builder skill says ${CLAUDE_PLUGIN_ROOT}, use this path."
-	if got := Build(root, "nope", e, home, home, 1); got != want {
+	if got := Build(root, "nope"); got != want {
 		t.Fatalf("%q", got)
 	}
 }
@@ -95,39 +75,34 @@ func TestHookFailureFallsBackToSoul(t *testing.T) {
 	r := t.TempDir()
 	os.MkdirAll(filepath.Join(r, "skills/builder/harnesses"), 0o755)
 	os.WriteFile(filepath.Join(r, "skills/builder/soul-compact.md"), []byte("SOUL\n"), 0o644)
-	e, home := env(t)
-	if got := Build(r, "claude", e, home, home, 1); got != "SOUL\n\nbuilder root: "+r+". Where a builder skill says ${CLAUDE_PLUGIN_ROOT}, use this path." {
+	if got := Build(r, "claude"); got != "SOUL\n\nbuilder root: "+r+". Where a builder skill says ${CLAUDE_PLUGIN_ROOT}, use this path." {
 		t.Fatalf("%q", got)
 	}
 }
 
 func TestHookIncludesTheHarnessMapping(t *testing.T) {
-	e, home := env(t)
 	block := claudeBlock(t)
-	if !strings.HasSuffix(Build(root, "claude", e, home, home, 1), "\n\n"+block) {
+	if !strings.HasSuffix(Build(root, "claude"), "\n\n"+block) {
 		t.Fatal("no mapping block at the end")
 	}
-	if strings.Contains(Build(root, "unknown", e, home, home, 1), block) {
+	if strings.Contains(Build(root, "unknown"), block) {
 		t.Fatal("an unknown harness gets no mapping")
 	}
 }
 
 func TestHookUnderOneSecond(t *testing.T) {
-	e, home := env(t)
-	os.WriteFile(filepath.Join(e["PATH"], "gh"), []byte("#!/bin/bash\n/bin/sleep 5\n"), 0o755)
 	start := time.Now()
-	Build(root, "claude", e, home, home, 1)
+	Build(root, "claude")
 	if d := time.Since(start); d >= time.Second {
 		t.Fatalf("took %v", d)
 	}
 }
 
 func TestHookQuotesTheRootPathPlainly(t *testing.T) {
-	e, home := env(t)
 	r := t.TempDir() + `/plugin é\x`
 	os.MkdirAll(filepath.Join(r, "skills/builder"), 0o755)
 	os.WriteFile(filepath.Join(r, "skills/builder/soul-compact.md"), []byte("S\n"), 0o644)
-	if text := Build(r, "claude", e, home, home, 1); !strings.Contains(text, "builder root: "+r+".") {
+	if text := Build(r, "claude"); !strings.Contains(text, "builder root: "+r+".") {
 		t.Fatal(text)
 	}
 }

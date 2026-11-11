@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"os"
 	"strings"
 
 	"github.com/Lutherwaves/builder/internal/cli"
@@ -43,17 +42,14 @@ func hookCmd(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, err)
 		return 2
 	}
-	env := harness.Env()
-	name = harness.Detect(env, name)
+	name = harness.Detect(harness.Env(), name)
 	if format == "" {
 		format = "json"
 		if name == "opencode" {
 			format = "text"
 		}
 	}
-	home, _ := os.UserHomeDir()
-	cwd, _ := os.Getwd()
-	text := hook.Build(root, name, env, home, cwd, now())
+	text := hook.Build(root, name)
 	if format == "json" {
 		text = hook.Shape(name, text)
 	}

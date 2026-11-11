@@ -8,8 +8,8 @@ The full action map for this harness is in skills/builder/harnesses/cursor.md.
 | load a skill (and its syntax) | load by its name; Cursor loads builder skills from the plugin and from `.agents/skills` |
 | ask the person to choose | not verified: ask in plain text, one question at a time, with your recommendation |
 | start a subagent | not verified: do the work in this session, or ask the person to start another agent |
-| compact the context | not verified: write the durable record, then ask the person to start a fresh chat |
-| clear the context | not verified: write the durable record, then ask the person to start a fresh chat |
+| compact the context | not verified: write the record file, then ask the person to start a fresh chat |
+| clear the context | not verified: write the record file, then ask the person to start a fresh chat |
 | make a shareable page | not verified: write a local file and give its path |
 | use a browser | not verified: say 'not used as a running product' |
 

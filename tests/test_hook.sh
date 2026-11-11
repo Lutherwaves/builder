@@ -61,10 +61,8 @@ out="$(env -u CLAUDE_PLUGIN_ROOT HOME="$tmp/home" BUILDER_HOME="$tmp/bh" bash "$
 grep -q 'Build the right thing' <<<"$(jq -er '.hookSpecificOutput.additionalContext' <<<"$out")" && check "works from \$0" ok || check "works from \$0" bad
 
 echo "test_hook_fast"
-mkdir -p "$tmp/fakebin"
-printf '#!/bin/sh\nsleep 5\n' > "$tmp/fakebin/matchblox"; chmod +x "$tmp/fakebin/matchblox"
 s=$(now_ms)
-out="$(PATH="$tmp/fakebin:$PATH" run "$hook")"
+out="$(run "$hook")"
 e=$(now_ms)
 jq -e . >/dev/null <<<"$out" && check "valid JSON" ok || check "valid JSON" bad
 [ $(( e - s )) -lt 1000 ] && check "under 1 s" ok || check "under 1 s" bad
