@@ -25,7 +25,7 @@
 
 ### Documentation
 
-- The README, the agent guide and the plugin manifests describe builder as one framework from a request to a release, with security in every stage. The README credits the three projects that builder takes ideas from. The design and plan documents live in `docs/specs/` and `docs/plans/`.
+- The README, the agent guide and the plugin manifests describe builder as one framework from a request to a release, with security in every stage. The README credits the four projects that builder takes ideas from. The design and plan documents live in `docs/specs/` and `docs/plans/`.
 
 ## [3.0.0] - 2026-10-27
 

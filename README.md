@@ -124,10 +124,11 @@ Every change lands through a pull request that passes `bash scripts/validate.sh`
 
 ## Credits
 
-builder takes ideas, and no text, from three MIT-licensed projects:
+builder takes ideas, and no text, from four MIT-licensed projects:
 [obra/superpowers](https://github.com/obra/superpowers) (the spec, plan and build loop),
 [garrytan/gstack](https://github.com/garrytan/gstack) (the reviews of a plan, the use of the running product, shipping)
-and [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) (the audit method).
+[cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) (the audit method)
+and [PostHog/posthog](https://github.com/PostHog/posthog), MIT outside its `ee/` folder (the bar a review finding must pass, the last sweep, the handling of review comments).
 
 ## License
 
