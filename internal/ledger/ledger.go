@@ -8,6 +8,7 @@ import (
 	"slices"
 	"sort"
 
+	"github.com/Lutherwaves/builder/internal/cli"
 	"github.com/Lutherwaves/builder/internal/harness"
 )
 
@@ -80,36 +81,7 @@ func truthy(v any) bool {
 	return true
 }
 
-func Save(path string, l Ledger) error { return SaveJSON(path, l, "") }
-
-// SaveJSON writes v as JSON through a temp file in the same folder, then renames it into place.
-func SaveJSON(path string, v any, indent string) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return err
-	}
-	b, err := json.Marshal(v)
-	if indent != "" {
-		b, err = json.MarshalIndent(v, "", indent)
-	}
-	if err != nil {
-		return err
-	}
-	f, err := os.CreateTemp(filepath.Dir(path), filepath.Base(path)+".*.tmp")
-	if err != nil {
-		return err
-	}
-	_, err = f.Write(b)
-	if cerr := f.Close(); err == nil {
-		err = cerr
-	}
-	if err == nil {
-		err = os.Rename(f.Name(), path)
-	}
-	if err != nil {
-		os.Remove(f.Name())
-	}
-	return err
-}
+func Save(path string, l Ledger) error { return cli.SaveJSON(path, l, "") }
 
 func LoadCatalog(root string) ([]Item, error) {
 	b, err := os.ReadFile(filepath.Join(root, "lib", "recommendations.json"))

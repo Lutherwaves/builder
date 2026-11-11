@@ -10,7 +10,6 @@ import (
 
 	"github.com/Lutherwaves/builder/internal/cli"
 	"github.com/Lutherwaves/builder/internal/harness"
-	"github.com/Lutherwaves/builder/internal/ledger"
 	"github.com/Lutherwaves/builder/internal/security"
 )
 
@@ -61,7 +60,7 @@ func baseline(action, path string, today time.Time) (map[string]any, error) {
 	}
 	out["units"] = units
 	if action == "save" {
-		if err := ledger.SaveJSON(bpath, security.NextBaseline(prior, current, today), "  "); err != nil {
+		if err := cli.SaveJSON(bpath, security.NextBaseline(prior, current, today), "  "); err != nil {
 			return nil, err
 		}
 		out["saved"] = bpath

@@ -159,7 +159,7 @@ func reachCmd(args []string, stdout, stderr io.Writer) int {
 		} else {
 			data["channel"] = name
 		}
-		if err := ledger.SaveJSON(rulesPath, data, ""); err != nil {
+		if err := cli.SaveJSON(rulesPath, data, ""); err != nil {
 			return unwritable(stderr, rulesPath, err)
 		}
 		fmt.Fprintln(stdout, "ok")
