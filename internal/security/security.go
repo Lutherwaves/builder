@@ -302,6 +302,11 @@ func enrichOne(f map[string]any, fid string, seen map[string]bool) (map[string]a
 		if _, has := f["vector"]; has {
 			return nil, fmt.Errorf("only a confirmed finding has a vector (state '%s')", state)
 		}
+		for _, key := range []string{"score", "rating"} {
+			if _, has := f[key]; has {
+				return nil, fmt.Errorf("only a confirmed finding has a score (state '%s')", state)
+			}
+		}
 		why := map[string]string{"needs_validation": "missing", "rejected": "reason"}[state]
 		if _, err := text(f, why); err != nil {
 			return nil, err

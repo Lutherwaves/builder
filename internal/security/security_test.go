@@ -334,6 +334,20 @@ func TestOnlyConfirmedHasAVector(t *testing.T) {
 	}
 }
 
+func TestNonConfirmedRefusesAScore(t *testing.T) {
+	cases := map[string]map[string]any{
+		"needs_validation score":  finding("state", "needs_validation", "missing", unobserved, "vector", del, "score", 9.8),
+		"needs_validation rating": finding("state", "needs_validation", "missing", unobserved, "vector", del, "rating", "Critical"),
+		"rejected score":          finding("state", "rejected", "reason", "the sink is unreachable", "vector", del, "score", 9.8),
+	}
+	for name, f := range cases {
+		_, err := Enrich(doc([]any{f}, "audit"))
+		if err == nil || !strings.Contains(err.Error(), "only a confirmed finding has a score") {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+}
+
 func TestNeedsValidationHasNoScore(t *testing.T) {
 	out, err := Enrich(doc([]any{finding("state", "needs_validation", "missing", unobserved, "vector", del)}, "audit"))
 	if err != nil {

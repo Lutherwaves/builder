@@ -4,7 +4,7 @@
 
 ### ⚠ Breaking
 
-- A finding has a state (`confirmed`, `needs_validation` or `rejected`), and `builder security score` scores only a confirmed one.
+- A finding has a state (`confirmed`, `needs_validation` or `rejected`), and `builder security score` scores only a confirmed one and refuses a hand-written score or rating on any other.
 - builder is a framework of its own: every session knows the five stages `shape`, `plan`, `build`, `review` and `ship` and the gate of each, a small change skips the spec and the plan, and no work goes to another pack. A one-shot run asks its question and stops unless you say you cannot answer.
 - builder no longer recommends the superpowers or gstack packs at session start, because it does their jobs itself. An old saved answer for either still loads, and the parity eval runs the seven flow fixtures with builder alone.
 
