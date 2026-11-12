@@ -100,7 +100,7 @@ func TestRejects(t *testing.T) {
 	}
 }
 
-func TestRejectMessagesMatchPython(t *testing.T) {
+func TestRejectMessages(t *testing.T) {
 	for v, want := range map[any]string{
 		nil:                                   "vector must be a string like CVSS:3.1/..., got None",
 		"CVSS:3.0/AV:N":                       "vector must start with CVSS:3.1/, got 'CVSS:3.0'",
@@ -311,7 +311,7 @@ func TestKeyIsStable(t *testing.T) {
 	}
 }
 
-func TestBaselinePathMatchesPython(t *testing.T) {
+func TestBaselinePathIsStable(t *testing.T) {
 	// pythonBaselinePath is what the Python security.baseline_path("/tmp/no-such-repo", {"BUILDER_HOME": "/b"}, "/h") returned.
 	if got := BaselinePath("/tmp/no-such-repo", map[string]string{"BUILDER_HOME": "/b"}, "/h"); got != pythonBaselinePath {
 		t.Fatal(got)
@@ -526,5 +526,16 @@ func TestDiffUnitsPutsUnseenUnitInNew(t *testing.T) {
 	out := DiffUnits(map[string]any{"units": []any{}}, map[string]any{"units": []map[string]any{unit()}})
 	if len(out["new"]) != 1 || out["new"][0]["id"] != "upload/memory" {
 		t.Fatal(out)
+	}
+}
+
+func TestDeferredUnitKeepsItsDimensionOpen(t *testing.T) {
+	for _, status := range []string{"deferred", "not_inspected"} {
+		d := doc([]any{}, "audit", "memory")
+		d["units"] = []any{unit("status", status, "reason", "no time")}
+		out := Diff(prior("2026-10-01"), enriched(t, d), day("2026-10-24"))
+		if len(out["closed"]) != 0 || !reflect.DeepEqual(ids(out["not_rechecked"]), []any{finding()["id"]}) {
+			t.Fatalf("%s: %v", status, out)
+		}
 	}
 }

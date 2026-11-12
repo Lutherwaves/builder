@@ -44,7 +44,10 @@ func baseline(action, path string, today time.Time) (map[string]any, error) {
 	if action == "save" && current["mode"] != "audit" {
 		return nil, fmt.Errorf("only an audit saves the baseline (this run is mode '%s')", current["mode"])
 	}
-	home, _ := os.UserHomeDir()
+	home, err := os.UserHomeDir()
+	if err != nil && harness.Env()["BUILDER_HOME"] == "" {
+		return nil, fmt.Errorf("cannot find the home folder for the baseline (%v). Set HOME or BUILDER_HOME", err)
+	}
 	bpath := security.BaselinePath(current["repo"].(string), harness.Env(), home)
 	prior, err := security.LoadBaseline(bpath)
 	if err != nil {
@@ -59,6 +62,8 @@ func baseline(action, path string, today time.Time) (map[string]any, error) {
 		units[k] = v
 	}
 	out["units"] = units
+	// A missing baseline reads as a first audit, so the output says which one this is.
+	out["baseline"] = map[string]any{"path": bpath, "found": prior != nil}
 	if action == "save" {
 		if err := cli.SaveJSON(bpath, security.NextBaseline(prior, current, today), "  "); err != nil {
 			return nil, err

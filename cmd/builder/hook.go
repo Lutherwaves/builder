@@ -12,7 +12,7 @@ import (
 
 func init() { commands["hook"] = hookCmd }
 
-// hookCmd ignores flags it does not know, as the Python hook's parse_known_args does.
+// hookCmd ignores flags it does not know, so that a newer harness flag never breaks the hook.
 func hookCmd(args []string, stdout, stderr io.Writer) int {
 	name, format := "auto", ""
 	for n := 0; n < len(args); n++ {

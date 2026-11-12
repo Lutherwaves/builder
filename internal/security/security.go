@@ -412,6 +412,13 @@ func Diff(prior, current map[string]any, today time.Time) map[string][]map[strin
 		for _, d := range current["dimensions"].([]any) {
 			ran[fmt.Sprint(d)] = true
 		}
+		// A dimension with a unit that this run deferred or did not inspect was not fully checked.
+		for _, u := range unitList(current["units"]) {
+			if s := u["status"]; s == "deferred" || s == "not_inspected" {
+				_, dim, _ := strings.Cut(fmt.Sprint(u["id"]), "/")
+				delete(ran, dim)
+			}
+		}
 	}
 	out := map[string][]map[string]any{"new": {}, "still_open": {}, "closed": {}, "not_rechecked": {}}
 	found := map[string]bool{}
