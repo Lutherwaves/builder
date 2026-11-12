@@ -61,7 +61,7 @@ Mark each finding with the exact words "confirmed by running" or "from reading".
 
 ## 3. Write the review
 
-Use these headings word for word, in this order: What I ran · Coverage · Most important first · the findings · Open checks that block ship · Claims checked · Not proven · Declined to judge · Verdict.
+Use these headings word for word, in this order: What I ran · Coverage · Most important first · the findings · Open checks that block ship · Claims checked · Not proven · Declined to judge · Slop · Verdict.
 Leave out Coverage and Open checks that block ship only when the security pass did not run. Then write "no security pass" and the reason in What I ran.
 The person and other agents scan for them. The verdict comes last, after the evidence, never at the top.
 
@@ -93,6 +93,7 @@ Close with these parts:
 - **Claims checked.** Each claim from step 1: true, or false with the finding number.
 - **Not proven.** Each thing that no command in this review proves. "not used as a running product" goes here when it applies.
 - **Declined to judge.** Each thing you considered and set aside, and each item that the drop list in `bar.md` removed, one line each, with the reason.
+- **Slop.** Each line that the change added and did not need, by the list in `../build/deslop.md`: one line each, with `file:line` and the item. Slop is not a finding and does not touch the gate. Write "none" when there is none.
 - **Verdict.** Ready to merge, ready with fixes, or not yet. Add a one-line reason.
 
 The gate: the change is ready to merge only with no open Critical or Important finding and no open check on a surface that the change touches.
@@ -103,7 +104,7 @@ Save the whole review to `${BUILDER_HOME:-$HOME/.config/builder}/reviews/<repo>/
 The first line of the file is `Head: <full commit hash>`. `ship` finds the review there, also in a new session. The last line of the reply names its absolute path: "Review saved: <path>."
 Then name the next step in one line:
 - The gate passes on a change that builder built: "Reply `ship` to start `builder:ship`." Load it now when the request asked to ship.
-- The gate fails on a change that builder built: the findings go back to `builder:build`, section 8.
+- The gate fails on a change that builder built: the findings and the slop go back to `builder:build`, section 8.
 - Someone else's change: "Post these as review comments, or turn the fixes into a patch?"
 
 If you found nothing important, say so plainly. Do not pad the review.
@@ -142,6 +143,6 @@ Before you hand the review over:
 - [ ] I ran nothing in the checkout. The throwaway worktree or temp dir is removed.
 - [ ] No finding repeats what an existing test already covers.
 - [ ] The sweep ran, and the last sentence of What I ran says what it found. Each dropped item is under "Declined to judge" with its reason.
-- [ ] It ends with "Declined to judge", then the verdict with its reason. The verdict is not at the top.
+- [ ] It ends with "Declined to judge", "Slop", then the verdict with its reason. The verdict is not at the top.
 - [ ] The review is saved at the fixed path, with `Head:` as its first line. The reply names the path, then the next step.
 - [ ] Nothing reached the forge without the person's yes.

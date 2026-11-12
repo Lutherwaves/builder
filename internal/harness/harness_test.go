@@ -48,7 +48,16 @@ func TestCursorArrivesOnlyExplicitly(t *testing.T) {
 func TestClaudePluginRootIsClaude(t *testing.T) {
 	eq(t, Detect(env("CLAUDE_PLUGIN_ROOT", "/x"), ""), "claude")
 }
-func TestCodexOnlyViaExplicitOrBuilderHarness(t *testing.T) {
+func TestCodexByItsOwnMarker(t *testing.T) {
+	// Codex sets PLUGIN_ROOT for a plugin hook, and CLAUDE_PLUGIN_ROOT beside it.
+	eq(t, Detect(env("PLUGIN_ROOT", "/x", "CLAUDE_PLUGIN_ROOT", "/x"), "auto"), "codex")
+	eq(t, Detect(env("PLUGIN_ROOT", "/x", "CLAUDE_PLUGIN_ROOT", "/x", "CLAUDECODE", "1"), "auto"), "claude")
+}
+func TestGrokByItsOwnMarker(t *testing.T) {
+	eq(t, Detect(env("GROK_PLUGIN_ROOT", "/x", "CLAUDE_PLUGIN_ROOT", "/x"), "auto"), "grok")
+	eq(t, Detect(env("CLAUDE_PLUGIN_ROOT", "/x"), "grok"), "grok")
+}
+func TestCodexAlsoViaExplicitOrBuilderHarness(t *testing.T) {
 	eq(t, Detect(env("CLAUDE_PLUGIN_ROOT", "/x"), ""), "claude")
 	eq(t, Detect(env("CLAUDE_PLUGIN_ROOT", "/x"), "codex"), "codex")
 	eq(t, Detect(env("CLAUDE_PLUGIN_ROOT", "/x", "BUILDER_HARNESS", "codex"), ""), "codex")

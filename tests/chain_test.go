@@ -60,3 +60,47 @@ func TestNoStageIsStillNamedShape(t *testing.T) {
 		}
 	}
 }
+
+// debug is outside the five stages: build loads it when a test fails, and it hands a bug fix to review.
+func TestAFailureGoesToDebugAndComesBack(t *testing.T) {
+	mustContain(t, read(t, "build", "SKILL.md"), "Load `builder:debug`")
+	debug := read(t, "debug", "SKILL.md")
+	for _, want := range []string{"load `builder:review`", "step up to `builder:spec`", "After the third fix that did not hold, stop"} {
+		mustContain(t, debug, want)
+	}
+	for _, f := range []string{"SKILL.md", "soul-compact.md"} {
+		mustContain(t, read(t, "builder", f), "`builder:debug`")
+	}
+}
+
+// One list of slop, one owner: build runs the pass over its own diff, and review reads the same file.
+func TestBuildAndReviewShareOneSlopList(t *testing.T) {
+	mustContain(t, read(t, "build", "SKILL.md"), "Load `deslop.md`, next to this file")
+	mustContain(t, read(t, "build", "SKILL.md"), "Remove each item under its Slop heading")
+	mustContain(t, read(t, "review", "SKILL.md"), "`../build/deslop.md`")
+	mustContain(t, read(t, "review", "SKILL.md"), "Declined to judge · Slop · Verdict")
+	mustContain(t, read(t, "review", "bar.md"), "Slop is not a finding")
+	deslop := read(t, "build", "deslop.md")
+	for _, want := range []string{"## The pass", "## The list", "## What is never slop", "Remove, do not rewrite"} {
+		mustContain(t, deslop, want)
+	}
+}
+
+// A handoff says `builder:<name>`. Only Claude Code and Codex show that name, so each other map says what it means.
+func TestEachHarnessMapSaysHowToLoadAStage(t *testing.T) {
+	for _, h := range []string{"claude", "codex", "cursor", "grok", "opencode"} {
+		m := read(t, "builder", "harnesses", h+".md")
+		hook, _, _ := strings.Cut(m, "<!-- /hook -->")
+		if !strings.Contains(hook, "builder:<name>") {
+			t.Errorf("the session-start block of harnesses/%s.md does not say what builder:<name> means", h)
+		}
+		mustContain(t, m, "| load a skill (and its syntax) |")
+	}
+}
+
+// A skill that runs the binary still finds it when no session-start hook named the builder root.
+func TestTheBinaryPathHasAFallbackWithoutTheHook(t *testing.T) {
+	for _, f := range [][]string{{"security", "SKILL.md"}, {"review", "security-pass.md"}} {
+		mustContain(t, read(t, f...), "With no \"builder root\" line from the session start")
+	}
+}

@@ -1,11 +1,12 @@
 <!-- hook -->
 On opencode, load a builder skill with the native skill tool.
+A skill text that says `builder:<name>` means the skill `<name>` of builder. When two skills share that name, take the one under the builder root.
 The full action map for this harness is in skills/builder/harnesses/opencode.md.
 <!-- /hook -->
 
 | Action | opencode |
 |---|---|
-| load a skill (and its syntax) | native `skill` tool |
+| load a skill (and its syntax) | native `skill` tool, with the name without the `builder:` prefix |
 | ask the person to choose | not verified: ask in plain text, one question at a time, with your recommendation |
 | start a subagent | `task` with `subagent_type: "general"` (v1.x); `subagent` with `agent: "general"` (v2) |
 | compact the context | not verified: write the record file, then ask the person to start a fresh session |

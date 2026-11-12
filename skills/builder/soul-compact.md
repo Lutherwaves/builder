@@ -30,7 +30,7 @@ Standing rules:
 - In a public repository, keep private names out. Grep the staged diff for them before each commit.
 - Commits: make each commit a signed Conventional Commit, in every repository. Never use `--no-verify`. Never make a WIP commit.
 
-Load the `builder` skill when you start build work. Each stage has its own skill: `builder:spec`, `builder:plan`, `builder:build`, `builder:review`, `builder:ship`.
+Load the `builder` skill when you start build work. Each stage has its own skill: `builder:spec`, `builder:plan`, `builder:build`, `builder:review`, `builder:ship`. A failure with no known cause has `builder:debug`: find the cause before any fix.
 When work enters a stage, load its skill first, also when the person did not name it. When a stage ends, load the next one as it says.
 Work in progress: the spec's approval ruling, the plan's header, the task commits and the saved review say where the work stands. Read them before you ask.
 When you finish a piece of work, end that reply with the builder report, in markdown and not in a code block.

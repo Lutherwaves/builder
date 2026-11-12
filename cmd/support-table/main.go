@@ -23,7 +23,7 @@ import (
 )
 
 var (
-	harnesses = []struct{ id, name string }{{"claude", "Claude Code"}, {"codex", "Codex CLI"}, {"cursor", "Cursor CLI"}, {"opencode", "opencode"}}
+	harnesses = []struct{ id, name string }{{"claude", "Claude Code"}, {"codex", "Codex CLI"}, {"cursor", "Cursor CLI"}, {"grok", "Grok Build"}, {"opencode", "opencode"}}
 	version   = regexp.MustCompile(`^[A-Za-z0-9._ +()-]{1,60}$`)
 	fixtureRe = regexp.MustCompile(`^[a-z0-9_-]+$`)
 	dateRe    = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)

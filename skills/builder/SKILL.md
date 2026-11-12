@@ -108,14 +108,13 @@ It still gets a failing test first, or the check that `build` names when no test
 
 **One flow per piece of work.** When another installed pack offers a spec, plan, build, review or ship flow, builder's flow owns the work. `builder:<name>` is builder's own skill `<name>`. Never load a skill of the same name from another pack in its place.
 
-Three rules have no skill of their own:
+Two rules have no skill of their own:
 
-- Find a bug's cause before you fix it. Reproduce the bug, find the root cause, then fix it.
 - Done means that the tests ran in this session and the report quotes their output.
 - Show a mockup, a diagram or a visual as a shareable page (the "make a shareable page" action). With no such action, write a file in the repository and give its path. Never only a local browser tab.
 
 **Where the work stands.** In a new session or after a compact, read four things before you ask: the approval ruling of the spec, the header of the plan, the task commits on the branch, and the saved review. They name the next stage.
-Use `builder:security` for an audit of a whole repository. Skills name actions, not tools. The tool for each action on your harness is in `skills/builder/harnesses/<harness>.md` (`claude`, `codex`, `cursor` or `opencode`).
+Use `builder:security` for an audit of a whole repository. Use `builder:debug` when something fails and the cause is not known: it finds the root cause before any fix. Skills name actions, not tools. The tool for each action on your harness is in `skills/builder/harnesses/<harness>.md` (`claude`, `codex`, `cursor`, `grok` or `opencode`).
 
 ## Common mistakes
 
