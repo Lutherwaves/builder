@@ -1,7 +1,7 @@
 {
   "name": "builder",
   "description": "A framework for coding agents: spec, plan, build, review and ship, with security in every stage and nothing sent without your yes.",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "author": {
     "name": "Lutherwaves"
   },
