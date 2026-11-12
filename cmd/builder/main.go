@@ -1,7 +1,8 @@
-// Command builder runs builder's hook, ledger, send rules, security score and forecast.
+// Command builder runs builder's hook and security score.
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -18,6 +19,13 @@ var commands = map[string]command{
 		fmt.Fprintln(stdout, version)
 		return 0
 	},
+}
+
+func printJSON(stdout io.Writer, v any, indent string) {
+	enc := json.NewEncoder(stdout)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", indent)
+	enc.Encode(v)
 }
 
 func usage(stderr io.Writer) int {

@@ -1,7 +1,7 @@
-// The shape and canon templates keep the section order their SKILL.md lists.
+// The spec template keeps the section order its SKILL.md lists.
 //
-// Eval agents cannot read the templates (they sit outside the eval's working
-// directory), so the order written in each SKILL.md must match the template.
+// Eval agents cannot read the template (it sits outside the eval's working
+// directory), so the order written in SKILL.md must match the template.
 package tests
 
 import (
@@ -71,18 +71,10 @@ func submatches(re, text string) []string {
 }
 
 func TestIssueTemplateMatchesShapeSkill(t *testing.T) {
-	headings := submatches(`(?m)^## (.+?)(?: \(.*\))?$`, read(t, "shape", "issue-template.md"))
-	want := listedOrder(t, read(t, "shape", "SKILL.md"), "Its sections, in order:")
+	headings := submatches(`(?m)^## (.+?)(?: \(.*\))?$`, read(t, "spec", "issue-template.md"))
+	want := listedOrder(t, read(t, "spec", "SKILL.md"), "Its sections, in order:")
 	if !reflect.DeepEqual(headings, want) {
 		t.Fatalf("issue-template headings %q, SKILL.md lists %q", headings, want)
-	}
-}
-
-func TestRuleTemplateMatchesCanonSkill(t *testing.T) {
-	lines := submatches(`(?m)^\*\*(\w+)\.\*\*`, read(t, "canon", "rule-template.md"))
-	want := listedOrder(t, read(t, "canon", "SKILL.md"), "Its lines, in order:")
-	if !reflect.DeepEqual(lines, want) {
-		t.Fatalf("rule-template lines %q, SKILL.md lists %q", lines, want)
 	}
 }
 
@@ -152,6 +144,19 @@ func TestSoulListsTheLinesInOrder(t *testing.T) {
 		t.Fatalf("soul lists %q, want %q", got, want)
 	}
 	mustContain(t, soul, "not in a code block")
+}
+
+// removedSkills are gone from builder; the soul and the builder skill name none of them.
+var removedSkills = []string{"fleet", "canon", "intake", "harness", "reach", "budget"}
+
+func TestSoulNamesNoRemovedSkill(t *testing.T) {
+	for _, name := range []string{"soul-compact.md", "SKILL.md"} {
+		text := read(t, "builder", name)
+		for _, skill := range removedSkills {
+			mustNotContain(t, text, "`"+skill+"`")
+			mustNotContain(t, text, skill+" skill")
+		}
+	}
 }
 
 func TestReadmeExampleFollowsTheOrder(t *testing.T) {
@@ -239,34 +244,27 @@ func TestNoSkillUsesAnOldReportLine(t *testing.T) {
 
 func TestReportAsksWithAnActionEveryHarnessMaps(t *testing.T) {
 	mustContain(t, read(t, "builder", "SKILL.md"), `the "ask the person to choose" action of your harness`)
-	for _, harness := range []string{"claude", "codex", "cursor", "opencode"} {
+	for _, harness := range []string{"claude", "codex", "cursor", "grok", "opencode"} {
 		mustContain(t, read(t, "builder", "harnesses", harness+".md"), "| ask the person to choose |")
 	}
 }
 
-// builder reach lets a send rule allow a message. Every text that names the gate says so.
+// Each send needs the person's yes in the session. No text names a rule that allows a send.
 
-func TestReachTeammateRowNamesTheSendRule(t *testing.T) {
-	var row string
-	for _, l := range strings.Split(read(t, "reach", "SKILL.md"), "\n") {
-		if strings.HasPrefix(l, "| **teammate**") {
-			row = l
-			break
-		}
-	}
-	if row == "" {
-		t.Fatal("reach SKILL.md has no teammate row")
-	}
-	mustContain(t, row, "unless a send rule allows the kind")
-	mustContain(t, row, "the person's yes")
+func TestBuilderGateTextsNameThePersonsYes(t *testing.T) {
+	skill := read(t, "builder", "SKILL.md")
+	mustContain(t, skill, "without the person's yes in this session")
+	mustContain(t, skill, "- [ ] Nothing left the repository without the person's yes.")
+	mustNotContain(t, skill, "sent by rule")
+	mustNotContain(t, skill, "Nothing left the repository without a yes.")
 }
 
-func TestBuilderGateTextsNameTheSendRule(t *testing.T) {
-	skill := read(t, "builder", "SKILL.md")
-	mustContain(t, skill, "without a send rule or the person's yes in this session")
-	mustContain(t, skill, "- [ ] Nothing left the repository without a send rule or the person's yes.")
-	mustContain(t, skill, "sent by rule: <n>, logged.")
-	mustNotContain(t, skill, "Nothing left the repository without a yes.")
+func TestNoSendRuleInTheBuilderSkill(t *testing.T) {
+	for _, name := range []string{"SKILL.md", "soul-compact.md"} {
+		if strings.Contains(read(t, "builder", name), "send rule") {
+			t.Errorf("builder %s names a send rule", name)
+		}
+	}
 }
 
 func TestQuestionsFollowTheDecisionBrief(t *testing.T) {
@@ -283,12 +281,7 @@ func TestQuestionsFollowTheDecisionBrief(t *testing.T) {
 
 func whyBuilderSection(t *testing.T) string {
 	t.Helper()
-	_, after, ok := strings.Cut(readme(t), "## Why builder")
-	if !ok {
-		t.Fatal(`README has no "## Why builder" section`)
-	}
-	section, _, _ := strings.Cut(after, "\n## ")
-	return section
+	return readmeSection(t, "## Why builder")
 }
 
 func TestReadmeLinksResolve(t *testing.T) {
@@ -304,22 +297,55 @@ func TestReadmeLinksResolve(t *testing.T) {
 	}
 }
 
+func readmeSection(t *testing.T, heading string) string {
+	t.Helper()
+	_, after, ok := strings.Cut(readme(t), "\n"+heading+"\n")
+	if !ok {
+		t.Fatalf("README has no %q section", heading)
+	}
+	section, _, _ := strings.Cut(after, "\n## ")
+	return section
+}
+
 func TestReadmeSaysWhyBuilder(t *testing.T) {
 	section := whyBuilderSection(t)
-	for _, name := range []string{"superpowers", "gstack", "CLAUDE.md"} {
-		mustContain(t, section, name)
+	for _, part := range []string{"spec", "plan", "build", "review", "ship", "security", "CLAUDE.md"} {
+		mustContain(t, section, part)
+	}
+}
+
+func TestReadmeNamesOtherPacksOnlyInCredits(t *testing.T) {
+	credits := readmeSection(t, "## Credits")
+	rest := strings.ToLower(strings.Replace(readme(t), credits, "", 1))
+	for _, pack := range []string{"superpowers", "gstack", "posthog"} {
+		mustNotContain(t, rest, pack)
+	}
+	mustContain(t, readmeSection(t, "## License"), "[Credits](#credits)")
+}
+
+func TestCreditsNameFourSources(t *testing.T) {
+	agents, err := os.ReadFile("../AGENTS.md")
+	if err != nil {
+		t.Fatalf("read AGENTS.md: %v", err)
+	}
+	_, attribution, ok := strings.Cut(string(agents), "\n## Attribution\n")
+	if !ok {
+		t.Fatal("AGENTS.md has no Attribution section")
+	}
+	for name, text := range map[string]string{"README Credits": readmeSection(t, "## Credits"), "AGENTS.md Attribution": attribution} {
+		for _, source := range []string{"obra/superpowers", "garrytan/gstack", "cloudflare/security-audit-skill", "PostHog/posthog"} {
+			if !strings.Contains(text, source) {
+				t.Errorf("%s misses %q", name, source)
+			}
+		}
 	}
 }
 
 func TestWhyBuilderClaimsHold(t *testing.T) {
 	section := whyBuilderSection(t)
-	// superpowers also injects itself at every session start, and the report comes once per piece of work.
+	// A pack can inject itself at every session start, and the report comes once per piece of work.
 	mustNotContain(t, section, "when that\nskill runs")
 	mustNotContain(t, section, "every reply")
 	// A hand-written CLAUDE.md can ask for a reason and for proof too.
 	mustNotContain(t, section, "| no |\n| Unproven")
-}
-
-func TestBudgetFindsTheOldWatcher(t *testing.T) {
-	mustContain(t, read(t, "budget", "SKILL.md"), "`builder budget` or the old `burn-proj.py`")
 }

@@ -1,0 +1,137 @@
+---
+name: ship
+description: Use when reviewed work must reach its users ("ship it", "open the PR", "merge and release", "land this"), on work that any tool or person built.
+---
+
+# ship — take reviewed work to a checked release
+
+A merge is not a release. A release that nobody checked is a hope.
+`ship` takes a reviewed change to the place where the person meets it, and proves that it arrived.
+It is the fifth stage of the builder flow. It takes the review that `builder:review` wrote.
+The builder skill sets how to ask and what to do when nobody answers. Read its "Questions" and "When nobody answers" rules.
+
+## The rules
+
+- Nothing leaves the machine without the person's yes in this session. A push, a pull request, a merge, a tag and a release are each one write.
+  A yes counts only when it comes after step 5 shows that write. A yes from earlier in the session does not.
+- "Ship it" is not a yes for each write. It starts the stage. Each write still waits for its own yes.
+- Never force a push. Never retry a merge or a push by yourself. A refusal stops the stage.
+- Run before you claim. Every "passes", "merged" or "live" has a command and its output behind it.
+- Collect every reason to stop, then stop once. After the first reason, still run each local check of steps 1 to 3 that can run. The person then fixes everything in one round.
+- A dirty tree or a merge conflict stops the stage at once. No later check can run on it.
+
+## 1. Check the tools
+
+Run these checks as shell commands before anything leaves the machine.
+A check that fails is a reason to stop. Name it with its fix. The local checks that do not need the failed tool still run.
+
+1. Commit signing. Run `git config --type=bool --get commit.gpgsign`. It must print `true`.
+   This check does not need `gh`. Always run it. When it fails, report it as its own reason.
+   Fix: run `git config commit.gpgsign true`, and set a signing key with `git config user.signingkey <key>`.
+   When the repository has a `CONTRIBUTING` file that describes signing, follow it. The check proves the setting, not the key: the first commit of step 4 proves the key.
+2. The forge tool. Run `git remote get-url --push origin`. When its host is exactly `github.com`, run the two `gh` checks in this order, and report the first that fails:
+   - `gh --version`. Fix: install `gh`.
+   - `gh auth status --hostname github.com`. Fix: run `gh auth login`.
+   Never print a password or a token that the remote address holds.
+   On another forge, or with no remote, skip both `gh` checks. Write under ⚠ Not proven that the forge tool was not checked.
+
+One run reports at most two tool reasons. The person fixes them in one round.
+
+## 2. Check the gate
+
+1. Read the review of this change. Look first at the path where `builder:review` saves it:
+   `${BUILDER_HOME:-$HOME/.config/builder}/reviews/<repo>/<branch>.md`, with the folder name of the checkout and the branch with each `/` as `-`.
+   A path that the person gives comes before it, also a file inside the repository. A forge approval is not a review.
+   With no review to read, stop. Say to run `builder:review` first.
+   A saved review opens with `Head: <commit hash>`. When the head has commits that the review did not see, other than the commits of step 4, stop. Name them, and say to run `builder:review` again.
+   With no `Head:` line, write under ⚠ Not proven that the review names no head.
+   Read its "Most important first" list, its findings and the heading `Open checks that block ship`.
+2. An open Critical or Important finding stops the stage. Name each one with its fix.
+3. An open check on a surface that the change touches stops the stage. It has no severity, but it blocks until the person answers it.
+   Copy each check with its missing fact, who can observe it, and the exact words to reply, as the review gives them.
+4. In an unattended run, list each stop as a ▶ You item: "Reply `<exact words>` to <what the answer allows>."
+5. A Minor finding does not stop the stage. List it in the pull request text.
+6. Write the person's answer to each open check into the pull request text.
+   An answer that the control does not exist, such as "there is no limit, fix it", sends the work back to `build`, with the test that the review names.
+
+## 3. Sync and test
+
+1. Check that the working tree is clean. If it is not, stop. Name the changed files. Never stash, reset or discard them.
+2. Bring the base branch up to date, then merge it into the branch. Never rebase a branch that is already pushed.
+   A merge conflict stops the stage. Name each file in conflict. Do not resolve a conflict in code that the review did not see.
+   Abort the merge (`git merge --abort`), so that the checkout is not left in the middle of a merge.
+3. Run the full suite of the project after the merge, not only the tests of the change. Quote the summary line.
+4. A test that fails after the sync stops the stage. Name the test, the line that fails, and the cause in the base branch's change.
+   Name the fix. Do not write it here: new code goes back to `build`, and then to `review`.
+
+## 4. Write it up
+
+1. Write the changelog line under `## [Unreleased]`, or in the place where the repository keeps its changes.
+   Write it by what the person can now do, not by what the code does. Example: "You can download your contacts as a CSV file." Not: "Add export_csv."
+2. Follow the repository's own release rules first, for example in `CONTRIBUTING.md` or `RELEASING.md`. Never edit a version that a release bot owns.
+3. Make commits as the "Commits" rules of the builder skill say: signed Conventional Commits, and in a public repository a grep of the staged diff for private names.
+4. Write the pull request text: what the person can now do, the review's verdict, the suite's result after the sync, each Minor finding and the answer to each open check.
+5. When the stage stopped in step 1, 2 or 3, still write the changelog line and the pull request text as drafts. Show them in the report. Commit nothing that the stop concerns.
+   The report still says that the push, the pull request and the merge each wait for the person's yes.
+
+## 5. Show, then send
+
+1. Show the diff against the base branch, the changelog line and the pull request text.
+2. Ask for each write on its own: the push, then the pull request, then the merge, then each tag and each release. Give the exact words to reply for each.
+   A release job that a merge starts is part of the merge: say so when you ask for the merge.
+3. Before each write, check again that the branch, the remote and the target are the ones that the person approved.
+4. After each write, quote its result: the pushed commit, the link to the pull request, the merge commit.
+
+## 6. After the merge
+
+1. Find where the person meets the change: the page, the package registry, the download, the app, the API.
+2. Check the released thing there, as the person uses it. Use the "use a browser" action of your harness mapping for a page.
+   Example: install the package version from the registry and run its new command.
+3. Quote what you saw: the command or the page, and the result.
+4. When you cannot reach it, write "release not checked where the person meets it" under ⚠ Not proven, with the reason.
+
+## 7. When it fails
+
+Each failure stops the stage and names the fix. Never retry by yourself.
+
+- **The suite fails after the sync.** Name the test and its cause. The fix goes to `build`, then to `review`.
+- **The remote refuses the push.** Quote the refusal. Name the cause: a protected branch, a moved remote, missing rights. Never force the push.
+- **The release check fails.** Quote what the person sees. Name the revert or the fix, and ask before either runs.
+
+## 8. Look back
+
+1. List what broke during this ship: each stop, each failed check, each surprise.
+2. List what the person corrected, in their words.
+3. Put both lists in the report.
+
+## Common mistakes
+
+| Mistake | Fix |
+|---|---|
+| "Ship it" taken as a yes for the push, the pull request and the merge | Each write waits for its own yes. Ask for each one. |
+| Stop at the first open check, with no sync and no test run | Run steps 2 and 3 in full. Report every reason to stop at once. |
+| Only the tests of the change run after the sync | Run the full suite. A change in the base breaks tests the change never touched. |
+| The failing test is fixed inside `ship` | Name the fix. New code goes to `build`, then `review`. |
+| An open check on a touched surface is called "non-blocking" because it has no severity | It blocks `ship` until the person answers. Give the exact words to reply. |
+| The changelog says "Add export_csv" | Write what the person can now do. |
+| A refused push is forced, or a failed merge is retried | Quote the refusal. Name the fix. Stop. |
+| "Merged, done" | Check the released thing where the person meets it, and quote it. |
+| No look back | List what broke and what the person corrected, in the report. |
+| The tools are not checked, so a push fails late | Run the tool checks first: signing always, the two `gh` checks when the remote is on GitHub. Name each reason with its fix. |
+| The review looked for in the chat history, or a forge approval taken as the review | Read the review file at its fixed path. With none, or with a newer head, stop and say to run `builder:review`. |
+
+## Self-check
+
+Before you report:
+
+- [ ] I read the review file, and its `Head:` line names this head. Each open Critical or Important finding, and each open check on a touched surface, is a stop in my report.
+- [ ] Each open check has its missing fact, who can observe it, and the exact words to reply.
+- [ ] Each answer of the person to an open check is in the pull request text.
+- [ ] I merged the base branch and ran the full suite after it. I quoted the result.
+- [ ] Each failing test is named, with its cause and its fix. I did not write the fix here.
+- [ ] I showed the changelog line, written by what the person can now do, and the pull request text.
+- [ ] Each push, pull request, merge, tag and release had its own yes, given after I showed it. With none, it is a ▶ You item.
+- [ ] Nothing was forced. Nothing was retried by itself.
+- [ ] After the merge, I checked the released thing where the person meets it and quoted it, or it is under ⚠ Not proven.
+- [ ] The look back lists what broke and what the person corrected, in the report.
+- [ ] I ran the signing check first, and the two `gh` checks when the remote is on GitHub. Each failing check is named with its fix. Skipped `gh` checks are under ⚠ Not proven.

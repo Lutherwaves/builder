@@ -8,15 +8,9 @@ The full action map for this harness is in skills/builder/harnesses/claude.md.
 | load a skill (and its syntax) | `Skill` tool, or `/builder:<name>`; name a skill as `builder:<name>` |
 | ask the person to choose | `AskUserQuestion` |
 | start a subagent | `Agent` tool |
-| message a peer session | `SendMessage` |
-| send the person a notification | `PushNotification` |
-| schedule a recurring check | `/loop <interval> <prompt>`; cron tools `CronCreate`, `CronDelete`; `ScheduleWakeup` for one wake-up |
-| see usage limits | `/usage`; or `matchblox usage --json` |
 | compact the context | `/compact` |
 | clear the context | `/clear` |
 | make a shareable page | `Artifact` tool |
-| fetch a web page | `WebFetch` |
-| track a todo list | `TodoWrite` |
-| edit a file | `Edit`; `Write` for a new file |
+| use a browser | not verified: say 'not used as a running product' |
 
 A cell that starts with `not verified:` says what to do instead; the tool name is not confirmed on this harness.

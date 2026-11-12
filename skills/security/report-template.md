@@ -1,12 +1,11 @@
 # security — report template
 
 Use these headings word for word, in this order. The person and other agents scan for them.
-Leave out "Since the last audit" only when no baseline exists and the mode is change.
 
 ## What I ran
 
-One short paragraph: the mode (change or audit), the base and head (or the audited SHA), and each command with its result.
-Name the build, the tests, every probe, and the `builder security score` and `baseline` calls.
+One short paragraph: the profile, the agent cap if the person set one, the audited SHA, and each command with its result.
+Name the build, the tests, every probe, each verifier, and the `builder security score` and `baseline` calls.
 
 ## Coverage
 
@@ -35,16 +34,36 @@ Under the table, give one line for the dimensions with no OWASP row: memory, ava
 In audit mode, add the surface map before the table: one row per public, expensive or webhook surface, and one row per CI workflow.
 Each row gives the protections the surface has (auth, signature, rate limit, size cap, timeout). Write `none` where a protection is missing.
 
+### Coverage units
+
+One row per unit, from the findings file. A quick or scoped run lists only its units, and says that the rest is not covered by this run.
+
+| Unit (`<surface>/<dimension>`) | Status | Reason |
+|---|---|---|
+| `webhook-payments/data-integrity` | covered | |
+| `search/availability` | deferred | <why: the budget ended, the cap was reached, ...> |
+
+Status is `covered`, `deferred`, `out_of_scope` or `not_inspected`. Every status except `covered` has a reason.
+
 ## Most important first
 
-A numbered list, one line per finding, worst first. Sort by real harm. Use the escalated severity where there is one.
+One row per record that is not rejected, worst first. Sort by real harm. Use the escalated severity where there is one.
+
+| # | Headline | State | Severity |
+|---|---|---|---|
+| 1 | <harm to a person> | confirmed | <Critical, High, Medium or Low> |
+| 2 | <harm to a person> | needs validation | — |
+
+A `needs_validation` record has no severity. A rejected record goes under Declined to judge.
 
 ## The findings
 
-One entry per finding:
+One entry per confirmed record:
 
 ```
 **<One-line headline that states the harm to a person.>** `path/to/file:line` — <Critical | High | Medium | Low>
+State: confirmed
+Verified by: <a second agent, and what it ran | not independently verified, and why>
 What goes wrong: <who, in which concrete situation, and what they lose>.
 Standards: <CWE-n (Top 25)> · <CAPEC-n> · <OWASP Axx:2025> · <APIx:2023> · <ASVS 5.0 Vn> · <VRT category> · <NIST control> · <CIS safeguard>
 CVSS: <vector> → <score> <rating> (computed by builder security score)
@@ -55,20 +74,33 @@ Fix: <the smallest change that removes the harm>.
 Test: <test name>: asserts <what>.
 ```
 
+One entry per `needs_validation` record. It has no CVSS line and no severity:
+
+```
+**<One-line headline that states the possible harm.>** `path/to/file:line`
+State: needs validation
+Missing: <the exact fact that the source does not show> · Who can observe it: <the person or the role, and where they look>
+What goes wrong if the fact is no: <who, in which concrete situation, and what they lose>.
+Fix if the fact is no: <the smallest change that removes the harm>.
+```
+
 Take the severity word from the CVSS rating, or from the escalation when there is one.
 Take each identifier from `standards.md`. Copy the score, the rating and the Top 25 mark from the `score` output.
 
 ## Since the last audit
 
-From `builder security baseline diff` (change mode) or `baseline save` (audit mode):
+From `builder security baseline save`. The `units` object of the `baseline diff` that seeded the units gives the last two lines.
+`baseline diff` saves nothing and closes nothing. Only `baseline save` closes a gap.
 
 - New: <ids>.
 - Still open: <id>, open <n> days since <first_seen> (<first_sha>).
-- Closed: <ids>. Audit mode only: a change review never closes a gap.
-- Not re-checked: <ids>, with the dimension that did not run. In change mode, this is every known gap the diff did not touch.
+- Closed: <ids>.
+- Not re-checked: <ids>, with the dimension that did not run.
+- Units carried: <ids> that the last audit deferred or did not inspect, and that this run has not covered.
+- Units changed: <ids> that the last audit covered, and whose files changed since.
 
 Write "No earlier audit for this repository." when no baseline exists.
-In audit mode, add the baseline path from the `saved` field.
+Add the baseline path from the `saved` field.
 
 ## Limits
 
@@ -77,6 +109,7 @@ Each `not inspected` and `provider` cell, with its reason. Name what a live test
 ## Declined to judge
 
 Each thing you considered and set aside, one line each, with the reason.
+Each rejected record goes here, with the reason from the verifier or the source.
 
 ## Verdict
 

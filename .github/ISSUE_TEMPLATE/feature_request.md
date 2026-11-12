@@ -11,7 +11,7 @@ labels: enhancement
 
 ## Proposed solution
 
-<!-- New skill? New watcher section? A tweak to the projection? -->
+<!-- New skill? A change to a stage? -->
 
 ## Alternatives considered
 

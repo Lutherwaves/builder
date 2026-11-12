@@ -11,7 +11,7 @@ second.
 /plugin install builder@builder
 ```
 
-Call a skill as `/builder:shape`.
+Call a skill as `/builder:spec`.
 
 ## Codex CLI
 
@@ -21,8 +21,7 @@ codex plugin add builder@builder
 ```
 
 Codex runs a plugin's hooks only after you trust them, and builder doesn't work around
-that. Until you trust the hook, load the `builder` skill by name. Until Codex detection
-lands (issue #17), builder's session start on Codex uses the Claude Code setup steps.
+that. Until you trust the hook, load the `builder` skill by name.
 
 ## Cursor CLI
 
@@ -44,6 +43,14 @@ builder never writes `AGENTS.md` itself.
 ```
 Use the builder skill for the soul of this work: for whom, what it is not, each call with its reason, proof, and what left the machine.
 ```
+
+## Grok Build
+
+Grok Build reads Claude Code marketplaces and plugins. Open `/plugins`, add `Lutherwaves/builder` as a
+marketplace, and install `builder`. For a local checkout, start it with `grok --plugin-dir <path to builder>`.
+
+When Grok Build asks you to trust the plugin's hook, trust it. Without the hook, load the `builder` skill by name.
+A builder skill has its plain name there: `/spec`, `/plan`, `/build`, `/review`, `/ship`.
 
 ## opencode
 

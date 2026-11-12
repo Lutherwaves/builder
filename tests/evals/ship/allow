@@ -1,0 +1,3 @@
+# The agent syncs with main, runs the tests and commits. The copy has no remote, so a push fails.
+Bash(git:*)
+Bash(python3 -m pytest:*)

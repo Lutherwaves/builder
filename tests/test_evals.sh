@@ -64,11 +64,11 @@ d="$(ls -d "$tmp"/out2/dash/*/ 2>/dev/null | head -1)"
 [ -n "$d" ] && grep -q 'fake-stderr' "$d/baseline.err" && grep -q 'fake-stderr' "$d/with.err" \
   && ! grep -q 'fake-stderr' "$d/baseline.md" "$d/with.md" \
   && check "stderr goes to .err files, not the transcript" ok || check "stderr goes to .err files, not the transcript" bad
-# Eval runs use a temp, onboarded builder home: no onboarding text and no recommendation reach the agent.
+# Eval runs use a temp builder home: no recommendation reaches the agent.
 [ -n "$d" ] && grep -q '^HOME_DIR: /' "$d/with.md" && ! grep -q "^HOME_DIR: $HOME/.config/builder" "$d/with.md" \
   && grep -q 'Build the right thing' "$d/with.md" \
   && ! grep -qi 'onboarding\|builder recommends' "$d/with.md" \
-  && check "eval runs use an onboarded temp BUILDER_HOME" ok || check "eval runs use an onboarded temp BUILDER_HOME" bad
+  && check "eval runs use a temp BUILDER_HOME" ok || check "eval runs use a temp BUILDER_HOME" bad
 # The work dir is a git repo with exactly one commit and a local throwaway identity.
 [ -n "$d" ] && [ "$(grep -c '^GITLOG: 1 eval@example.invalid false dotgit' "$d/baseline.md")" -eq 1 ] \
   && grep -q '^GITLOG: 1 eval@example.invalid false dotgit' "$d/with.md" \
@@ -128,10 +128,10 @@ rm -rf "$tmp/evals/allowed"
 
 # Per harness: the claude dry-run stays as it was; each other harness names its own runner.
 # Machine paths and the timestamp are normalised the same way on both sides.
-norm() { sed "s#$root#<root>#g; s#$1/shape/[0-9]\{8\}-[0-9]\{6\}#<out>#g"; }
+norm() { sed "s#$root#<root>#g; s#$1/spec/[0-9]\{8\}-[0-9]\{6\}#<out>#g"; }
 gold_run() { BUILDER_EVAL_OUT=/OUT bash "$root/tests/evals/run.sh" "$@" 2>&1 | norm /OUT; }
-[ "$(gold_run shape --dry-run)" = "$(cat "$root/tests/evals/golden-dry-run-claude.txt")" ] \
-  && [ "$(gold_run --harness claude shape --dry-run)" = "$(cat "$root/tests/evals/golden-dry-run-claude.txt")" ] \
+[ "$(gold_run spec --dry-run)" = "$(cat "$root/tests/evals/golden-dry-run-claude.txt")" ] \
+  && [ "$(gold_run --harness claude spec --dry-run)" = "$(cat "$root/tests/evals/golden-dry-run-claude.txt")" ] \
   && check "dry-run for claude is byte-identical to the golden output" ok || check "dry-run for claude is byte-identical to the golden output" bad
 runners_ok=1
 for pair in 'codex:^codex exec ' 'cursor:^agent -p --force ' 'opencode:^opencode run '; do
@@ -213,8 +213,8 @@ d="$(ls -d "$tmp"/hout-codex/h1/*/ | head -1)"
   && check "codex: temp CODEX_HOME, auth.json symlinked, builder installed only in the with run" ok || check "codex run ($(cat "$d/with.md" 2>&1))" bad
 d="$(ls -d "$tmp"/hout-cursor/h1/*/ | head -1)"
 { [ "$(grep -c '^HOOKS: ' "$d/baseline.md")" -eq 1 ] && ! grep -q 'session-start' "$d/baseline.md" \
-  && grep -q "^HOOKS: .*$root/hooks/session-start --harness cursor" "$d/with.md" && grep -q '^SKILLS: .*shape' "$d/with.md" \
-  && ! grep -q 'SKILLS: .*shape' "$d/baseline.md" && grep -q '^SKILLCOPY: regular' "$d/with.md" && grep -q '^CURSOR_CONFIG_DIR: unset' "$d/with.md" \
+  && grep -q "^HOOKS: .*$root/hooks/session-start --harness cursor" "$d/with.md" && grep -q '^SKILLS: .*spec' "$d/with.md" \
+  && ! grep -q 'SKILLS: .*spec' "$d/baseline.md" && grep -q '^SKILLCOPY: regular' "$d/with.md" && grep -q '^CURSOR_CONFIG_DIR: unset' "$d/with.md" \
   && grep -q 'PROBE gh => rc=3' "$d/with.md" && grep -q 'PROBE push => rc=3' "$d/with.md" && grep -q 'PROBE push2 => rc=3' "$d/with.md" \
   && grep -q 'PROBE status => rc=0' "$d/with.md"; } \
   && check "cursor: project hooks.json and skills in the with run only, real config dir untouched, gh and git push shimmed" ok || check "cursor run ($(cat "$d/with.md" 2>&1))" bad
@@ -230,104 +230,5 @@ v="$d/verdict.json"
   && ! grep -q "$tmp\|$root\|$HOME" "$v"; } \
   && check "run writes verdict.json: one stub bullet per expect.md line, no transcript, no path" ok || check "verdict.json ($(cat "$v" 2>&1))" bad
 rm -rf "$tmp/evals/h1"
-
-# parity.sh: the builder-led config, the guards, the auth gate, and two runs per fixture.
-ph="$tmp/phome"; mkdir -p "$ph/.claude/plugins/cache/m/superpowers/1" "$ph/.claude/plugins/cache/m/extra/1" \
-  "$ph/.claude/plugins/marketplaces/m" "$ph/.claude/plugins/marketplaces/other" \
-  "$ph/.claude/skills/gstack/browse" "$ph/.claude/skills/browse" "$ph/.claude/skills/personal"
-echo sp > "$ph/.claude/plugins/cache/m/superpowers/1/SKILL.md"; echo mk > "$ph/.claude/plugins/marketplaces/m/x"
-echo b > "$ph/.claude/skills/gstack/browse/SKILL.md"; echo own > "$ph/.claude/skills/browse/.gstack-owned"
-ln -s "$ph/.claude/skills/gstack/browse/SKILL.md" "$ph/.claude/skills/browse/SKILL.md"; echo p > "$ph/.claude/skills/personal/SKILL.md"
-cat > "$ph/.claude/settings.json" <<'JSON'
-{"hooks": {"Stop": [{"hooks": [{"type": "command", "command": "/x/matchblox hook Stop"}, {"type": "command", "command": "/x/other-hook"}]}],
-           "PostToolUse": [{"hooks": [{"type": "command", "command": "/x/other-hook"}]}]},
- "statusLine": {"type": "command", "command": "/x/matchblox hook statusline"},
- "enabledPlugins": {"superpowers@m": true, "extra@m": true}, "permissions": {"allow": ["Bash(ls:*)"]}}
-JSON
-real_settings="$(cat "$ph/.claude/settings.json")"
-printf '{"version":2,"plugins":{"superpowers@m":[{"installPath":"%s/.claude/plugins/cache/m/superpowers/1"}],"extra@m":[{"installPath":"%s/.claude/plugins/cache/m/extra/1"}]}}' "$ph" "$ph" > "$ph/.claude/plugins/installed_plugins.json"
-printf '{"m":{"installLocation":"%s/.claude/plugins/marketplaces/m"},"other":{"installLocation":"%s/.claude/plugins/marketplaces/other"}}' "$ph" "$ph" > "$ph/.claude/plugins/known_marketplaces.json"
-printf '{"mcpServers":{"codebase-memory-mcp":{"command":"/x/cbm"},"other":{}},"oauthAccount":{"secret":1}}' > "$ph/.claude.json"
-for f in builder shape; do mkdir -p "$tmp/pevals/$f"; echo "Do $f." > "$tmp/pevals/$f/prompt.md"; printf -- '- a\n- b\n- c\n' > "$tmp/pevals/$f/expect.md"; done
-cat > "$tmp/bin/claude" <<'FAKE'
-#!/usr/bin/env bash
-if [ "$1" = auth ]; then echo "warning: a stderr line" >&2; echo "{\"loggedIn\": ${FAKE_LOGGED_IN:-false}}"; exit 0; fi
-echo "STDIN: $(cat)"; echo "CFG: ${CLAUDE_CONFIG_DIR:-unset}"; echo "ARGS: $*"
-FAKE
-# env -u: the test also passes inside a Claude Code session that sets CLAUDE_CONFIG_DIR.
-prun() { env -u CLAUDE_CONFIG_DIR -u BUILDER_PARITY_CONFIG_DIR HOME="$ph" PATH="$tmp/bin:$PATH" BUILDER_EVAL_DIR="$tmp/pevals" "$@"; }
-parity="$root/tests/evals/parity.sh"
-out="$(prun BUILDER_EVAL_OUT="$tmp/pout0" bash "$parity" --dry-run 2>&1)"; rc=$?
-sj="$(sed -n '/^# settings.json:/,/^# builder current/p' <<<"$out" | sed '1d;$d')"
-[ "$rc" -eq 0 ] && [ ! -e "$tmp/pout0" ] \
-  && [ "$(jq -c '.enabledPlugins' <<<"$sj")" = '{"superpowers@m":true}' ] \
-  && [ "$(jq -r '.env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE' <<<"$sj")" = 85 ] \
-  && [ "$(jq -c '[.hooks[][].hooks[].command]' <<<"$sj")" = '["/x/matchblox hook Stop"]' ] \
-  && [ "$(jq -r '.statusLine.command' <<<"$sj")" = '/x/matchblox hook statusline' ] \
-  && [ "$(jq 'has("permissions")' <<<"$sj")" = false ] \
-  && [ "$(grep -c -- '--plugin-dir' <<<"$out")" -eq 2 ] && [ "$(grep -c '^CLAUDE_CONFIG_DIR=' <<<"$out")" -eq 2 ] \
-  && check "parity dry-run: builder-led settings hold only builder's recommendations" ok || check "parity dry-run ($out)" bad
-# No matchblox hooks in the person's settings: no invented hooks, and a note says so.
-cp "$ph/.claude/settings.json" "$tmp/settings.keep"; echo '{}' > "$ph/.claude/settings.json"
-out="$(prun bash "$parity" --dry-run 2>&1)"
-sj="$(sed -n '/^# settings.json:/,/^# builder current/p' <<<"$out" | sed '1d;$d')"
-[ "$(jq 'has("hooks") or has("statusLine")' <<<"$sj")" = false ] && grep -q 'no matchblox hooks' <<<"$out" \
-  && check "parity invents no matchblox hooks" ok || check "parity invents no matchblox hooks ($out)" bad
-cp "$tmp/settings.keep" "$ph/.claude/settings.json"
-# Guards: the eval config dir must never be the real config dir, sit inside it, or hold settings it did not write.
-guard_ok=1
-for bad in "$ph/.claude" "$ph/.claude/sub" "$ph"; do
-  out="$(prun BUILDER_PARITY_CONFIG_DIR="$bad" BUILDER_EVAL_OUT="$tmp/pout-g" bash "$parity" 2>&1)"; rc=$?
-  { [ "$rc" -eq 2 ] && grep -q 'refuses' <<<"$out"; } || { guard_ok=0; echo "    not refused: $bad ($rc: $out)"; }
-done
-out="$(prun CLAUDE_CONFIG_DIR="$ph/.claude" BUILDER_PARITY_CONFIG_DIR="$ph/.claude" bash "$parity" 2>&1)"; rc=$?
-[ "$rc" -eq 2 ] || { guard_ok=0; echo "    not refused under CLAUDE_CONFIG_DIR ($rc: $out)"; }
-mkdir -p "$tmp/foreign"; echo '{"mine": 1}' > "$tmp/foreign/settings.json"
-out="$(prun BUILDER_PARITY_CONFIG_DIR="$tmp/foreign" bash "$parity" 2>&1)"; rc=$?
-{ [ "$rc" -eq 2 ] && [ "$(cat "$tmp/foreign/settings.json")" = '{"mine": 1}' ]; } || { guard_ok=0; echo "    foreign settings not refused ($rc: $out)"; }
-# A folder parity did not create keeps its plugins/ and skills/: a checkout of this repository, and a foreign dir.
-git clone -q "$root" "$tmp/repo-copy" 2>/dev/null || cp -R "$root" "$tmp/repo-copy"
-mkdir -p "$tmp/other/plugins/p" "$tmp/other/skills/s"; echo keep > "$tmp/other/skills/s/SKILL.md"; echo keep > "$tmp/other/plugins/p/x"
-for bad in "$tmp/repo-copy" "$tmp/other"; do
-  before="$(cd "$bad" && find . -path ./.git -prune -o -print | sort)"
-  out="$(prun BUILDER_PARITY_CONFIG_DIR="$bad" BUILDER_EVAL_OUT="$tmp/pout-g" bash "$parity" 2>&1)"; rc=$?
-  after="$(cd "$bad" && find . -path ./.git -prune -o -print | sort)"
-  { [ "$rc" -eq 2 ] && grep -q 'not empty' <<<"$out" && [ "$before" = "$after" ] && [ -d "$bad/skills" ]; } \
-    || { guard_ok=0; echo "    non-empty dir not refused or changed: $bad ($rc: $out)"; }
-done
-# A ".." after a missing part resolves as Python's realpath does: $ph/missing/.. is $ph, which holds the real config.
-out="$(prun BUILDER_PARITY_CONFIG_DIR="$ph/missing/.." BUILDER_EVAL_OUT="$tmp/pout-g" bash "$parity" 2>&1)"; rc=$?
-{ [ "$rc" -eq 2 ] && grep -q 'holds your real config dir' <<<"$out" && [ ! -e "$ph/missing" ]; } \
-  || { guard_ok=0; echo "    not refused: $ph/missing/.. ($rc: $out)"; }
-[ "$guard_ok" -eq 1 ] && [ "$(cat "$ph/.claude/settings.json")" = "$real_settings" ] && [ ! -e "$ph/.claude/sub" ] && [ ! -e "$tmp/pout-g" ] \
-  && check "parity refuses a config dir that is or holds the real one" ok || check "parity refuses a config dir that is or holds the real one" bad
-out="$(prun BUILDER_EVAL_OUT="$tmp/pout1" bash "$parity" 2>&1)"; rc=$?
-[ "$rc" -eq 4 ] && grep -q 'not signed in under CLAUDE_CONFIG_DIR' <<<"$out" && grep -q 'never copies credentials' <<<"$out" \
-  && [ ! -e "$tmp/pout1" ] \
-  && check "parity stops before any run when the config dir is not signed in" ok || check "parity auth gate ($rc: $out)" bad
-mkdir -p "$tmp/pcfg"
-out="$(prun FAKE_LOGGED_IN=true BUILDER_PARITY_CONFIG_DIR="$tmp/pcfg" BUILDER_EVAL_OUT="$tmp/pout2" bash "$parity" 2>&1)"; rc=$?
-d="$(ls -d "$tmp"/pout2/parity/*/ 2>/dev/null | head -1)"
-[ "$rc" -eq 0 ] && [ -n "$d" ] && grep -q '^CFG: unset' "$d/builder/current.md" && grep -q "^CFG: $tmp/pcfg" "$d/shape/builder.md" \
-  && grep -q -- '--plugin-dir' "$d/shape/builder.md" && ! grep -q -- '--plugin-dir' "$d/shape/current.md" \
-  && grep -q '^STDIN: Do shape.' "$d/shape/builder.md" && grep -q '===== Builder-led setup =====' <<<"$out" \
-  && check "parity runs each fixture in the current and the builder-led setup (stderr ignored in auth)" ok || check "parity runs ($rc: $out)" bad
-links_ok=1
-while IFS= read -r l; do
-  t="$(readlink "$l")"; case "$t" in "$ph/.claude/skills/gstack"|"$ph/.claude/skills/gstack/"*) ;; *) links_ok=0; echo "    link out of gstack: $l -> $t" ;; esac
-done < <(find "$tmp/pcfg" -type l)
-[ "$links_ok" -eq 1 ] && [ -L "$tmp/pcfg/skills/gstack" ] && [ -f "$tmp/pcfg/skills/browse/.gstack-owned" ] && [ ! -e "$tmp/pcfg/skills/personal" ] \
-  && [ ! -L "$tmp/pcfg/plugins/cache" ] && [ -f "$tmp/pcfg/plugins/cache/m/superpowers/1/SKILL.md" ] && [ ! -e "$tmp/pcfg/plugins/cache/m/extra" ] \
-  && [ -f "$tmp/pcfg/plugins/marketplaces/m/x" ] && [ ! -e "$tmp/pcfg/plugins/marketplaces/other" ] \
-  && [ "$(jq -c '.mcpServers' "$tmp/pcfg/.claude.json")" = '{"codebase-memory-mcp":{"command":"/x/cbm"}}' ] \
-  && ! grep -q oauthAccount "$tmp/pcfg/.claude.json" \
-  && [ "$(jq -r '.plugins|keys|join(",")' "$tmp/pcfg/plugins/installed_plugins.json")" = 'superpowers@m' ] \
-  && grep -q "$tmp/pcfg/plugins/cache/m/superpowers/1" "$tmp/pcfg/plugins/installed_plugins.json" \
-  && [ "$(jq -r 'keys|join(",")' "$tmp/pcfg/plugins/known_marketplaces.json")" = m ] \
-  && grep -q "$tmp/pcfg/plugins/marketplaces/m" "$tmp/pcfg/plugins/known_marketplaces.json" \
-  && check "parity copies superpowers, links only gstack, adds the code graph, copies no account" ok || check "parity config contents" bad
-# A second run into the kept dir works: the marker shows parity wrote its settings.json.
-out="$(prun FAKE_LOGGED_IN=true BUILDER_PARITY_CONFIG_DIR="$tmp/pcfg" BUILDER_EVAL_OUT="$tmp/pout3" bash "$parity" 2>&1)"; rc=$?
-[ "$rc" -eq 0 ] && check "parity reuses its own kept config dir" ok || check "parity reuses its own kept config dir ($rc: $out)" bad
 
 exit "$fails"

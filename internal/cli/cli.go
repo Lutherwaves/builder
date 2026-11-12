@@ -27,7 +27,7 @@ func Parse(args []string, fs *flag.FlagSet) ([]string, error) {
 	}
 }
 
-// Root is the plugin root that bin/builder exports, where the catalog, soul and mappings live.
+// Root is the plugin root that bin/builder exports, where the soul and the harness mappings live.
 func Root() (string, error) {
 	if r := os.Getenv("BUILDER_ROOT"); r != "" {
 		return r, nil

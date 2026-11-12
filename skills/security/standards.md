@@ -1,6 +1,6 @@
 # security — standards map
 
-The `security` skill reads this file when it maps a finding. Each identifier here comes from its source. Never add one from memory.
+The `security` and `review` skills read this file when they map a finding. Each identifier here comes from its source. Never add one from memory.
 If a finding fits no row, find its CWE at <https://cwe.mitre.org> and say "no row in standards.md" in the finding.
 
 ## Editions
@@ -84,3 +84,16 @@ Each CWE here is ALLOWED or ALLOWED-WITH-REVIEW in MITRE's vulnerability-mapping
 | Rust | `unsafe` blocks and their invariants, `Vec::with_capacity` from an input length, `read_to_end` with no limit, `serde` on deeply nested input with no recursion limit, blocking calls in an async task. |
 | Java / JVM | XML parsers with external entities on, `ObjectInputStream`, `readAllBytes` with no limit, `ZipInputStream` with no cap, unbounded thread pools and queues. |
 | C / C++ | Buffer bounds (CWE-120, CWE-121, CWE-122, CWE-787, CWE-125), use after free (CWE-416), NULL dereference (CWE-476), integer overflow in a size calculation (CWE-190), format strings (CWE-134), `alloca` or VLA sized by input. |
+
+## Sensitive surfaces
+
+A change that touches one of these surfaces is a sensitive change. Other skills refer to this list and never copy it.
+
+- authentication
+- money
+- uploads
+- webhooks
+- secrets
+- CI
+- an agent's tools
+- personal data

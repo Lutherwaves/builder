@@ -1,2 +1,0 @@
-# The agent may run the fixture repository's tests.
-Bash(python3 -m unittest:*)

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Test the SessionStart hook: first run, quiet when onboarded, no binary, speed.
+# Test the SessionStart hook: the soul, the root line and the map; no binary; speed.
 set -uo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 hook="$root/hooks/session-start"
@@ -15,61 +15,54 @@ if [ -z "${BUILDER_BIN:-}" ]; then
 fi
 now_ms() { echo $(( $(date +%s%N) / 1000000 )); }
 
-echo "test_first_run"
-out="$(run "$hook")"
-text="$(jq -er '.hookSpecificOutput.additionalContext' <<<"$out")" && check "valid JSON" ok || check "valid JSON" bad
-[ "$(jq -r '.hookSpecificOutput.hookEventName' <<<"$out")" = SessionStart ] && check "event name" ok || check "event name" bad
-grep -q 'builder onboarding' <<<"$text" && check "onboarding marker present" ok || check "onboarding marker present" bad
-grep -q 'builder recommends' <<<"$text" && check "no recommendation block" bad || check "no recommendation block" ok
-grep -q 'Build the right thing' <<<"$text" && check "soul present" ok || check "soul present" bad
-grep -q 'bin/builder" ledger onboarded' <<<"$text" && check "onboarded command named" ok || check "onboarded command named" bad
-grep -qF "To find the next due step, run: \"$root/bin/builder\" ledger next" <<<"$text" && check "next-step command named" ok || check "next-step command named" bad
-grep -qF 'Never invent a step' <<<"$text" && check "no invented steps" ok || check "no invented steps" bad
-grep -qF 'This is required, even when the request is one line.' <<<"$text" && check "intro is required" ok || check "intro is required" bad
-grep -qF 'builder: you decide. I propose, build, and end each piece of work with a report.' <<<"$text" && check "literal intro given" ok || check "literal intro given" bad
+soul1="$(head -1 "$root/skills/builder/soul-compact.md")"
+block1() { awk '/<!-- hook -->/{on=1;next} /<!-- \/hook -->/{on=0} on' "$root/skills/builder/harnesses/$1.md" | head -1; }
 
-echo "test_next_command_names_the_harness"
-for h in claude codex cursor opencode; do
+echo "test_prints_soul_root_and_map"
+for h in claude codex cursor grok opencode; do
   text="$(run "$hook" --harness "$h" --format text)"
-  grep -qF "bin/builder\" ledger next --harness $h" <<<"$text" && check "$h: next command carries --harness $h" ok || check "$h: next command carries --harness $h" bad
+  grep -qF "$soul1" <<<"$text" && grep -qF "builder root: $root." <<<"$text" && grep -qF "$(block1 "$h")" <<<"$text" \
+    && check "$h: soul, root line and map" ok || check "$h: soul, root line and map" bad
 done
-text="$(run "$hook" --harness unknown --format text)"
-grep -qF 'bin/builder" ledger next --harness claude' <<<"$text" && check "unknown: next command carries --harness claude" ok || check "unknown: next command carries --harness claude" bad
-
-echo "test_onboarded_quiet"
-ids="$(jq -r '.[].id' "$root/lib/recommendations.json")"
-{ printf '{"onboarded": true, "answers": {'; sep=''
-  for i in $ids; do printf '%s"%s": {"verdict": "never", "at": 1}' "$sep" "$i"; sep=','; done
-  printf '}}'; } > "$tmp/ledger.json"
-mkdir -p "$tmp/bh"; cp "$tmp/ledger.json" "$tmp/bh/ledger.json"
 text="$(run "$hook" | ctx)"
-grep -q 'Build the right thing' <<<"$text" && check "soul present" ok || check "soul present" bad
-grep -q 'builder recommends' <<<"$text" && check "no recommendation" bad || check "no recommendation" ok
-grep -q 'builder onboarding' <<<"$text" && check "no onboarding" bad || check "no onboarding" ok
 grep -qF 'Conventional Commit' <<<"$text" && grep -qF -- '--no-verify' <<<"$text" && grep -qF 'WIP' <<<"$text" && grep -qiF 'signed' <<<"$text" \
   && check "commit rules in the soul" ok || check "commit rules in the soul" bad
 
-echo "test_recommendation_block"
-printf '{"onboarded": true, "answers": {}}' > "$tmp/bh/ledger.json"
-text="$(run "$hook" | ctx)"
-grep -q 'builder recommends: ' <<<"$text" && grep -q 'bin/builder" ledger answer ' <<<"$text" && check "block with answer command" ok || check "block with answer command" bad
-[ "$(grep -c 'builder recommends' <<<"$text")" -eq 1 ] && check "at most one block" ok || check "at most one block" bad
+echo "test_offers_and_asks_nothing"
+for h in claude codex cursor grok opencode; do
+  text="$(run "$hook" --harness "$h" --format text)"
+  grep -qF -e 'builder recommends' -e 'onboarding' -e 'ledger' -e 'yes|later|never' <<<"$text" \
+    && check "$h: no offer, no question" bad || check "$h: no offer, no question" ok
+done
+
+echo "test_ignores_an_old_ledger"
+mkdir -p "$tmp/bh"
+for h in claude codex cursor grok opencode; do
+  rm -f "$tmp/bh/ledger.json"
+  without="$(run "$hook" --harness "$h")"
+  printf '{"onboarded":false,"answers":{"fleet":"later"}}' > "$tmp/bh/ledger.json"
+  with="$(run "$hook" --harness "$h" 2>"$tmp/stderr")"
+  [ "$with" = "$without" ] && [ ! -s "$tmp/stderr" ] && check "$h: same output with a 3.0.0 ledger" ok || check "$h: same output with a 3.0.0 ledger" bad
+done
+rm -f "$tmp/bh/ledger.json"
+
+echo "test_unknown_harness_gets_the_soul"
+text="$(run "$hook" --harness nope --format text 2>"$tmp/stderr")"; rc=$?
+[ "$rc" -eq 0 ] && [ ! -s "$tmp/stderr" ] && grep -qF "$soul1" <<<"$text" && ! grep -qiF -e 'error:' -e 'unknown' <<<"$text" \
+  && check "nope: the soul, no error" ok || check "nope: the soul, no error (rc=$rc)" bad
 
 echo "test_hook_broken_path"
-rm -f "$tmp/bh/ledger.json"
 out="$(HOME="$tmp/home" BUILDER_HOME="$tmp/bh" CLAUDE_PLUGIN_ROOT="$root" PATH=/nonexistent /bin/bash "$hook")"
 text="$(jq -er '.hookSpecificOutput.additionalContext' <<<"$out")" && check "valid JSON" ok || check "valid JSON" bad
-grep -q 'builder onboarding' <<<"$text" && check "full hook text, not the fallback" ok || check "full hook text, not the fallback" bad
+grep -qF "$(block1 claude)" <<<"$text" && check "full hook text, not the fallback" ok || check "full hook text, not the fallback" bad
 
 echo "test_without_plugin_root"
 out="$(env -u CLAUDE_PLUGIN_ROOT HOME="$tmp/home" BUILDER_HOME="$tmp/bh" bash "$hook")"
 grep -q 'Build the right thing' <<<"$(jq -er '.hookSpecificOutput.additionalContext' <<<"$out")" && check "works from \$0" ok || check "works from \$0" bad
 
 echo "test_hook_fast"
-mkdir -p "$tmp/fakebin"
-printf '#!/bin/sh\nsleep 5\n' > "$tmp/fakebin/matchblox"; chmod +x "$tmp/fakebin/matchblox"
 s=$(now_ms)
-out="$(PATH="$tmp/fakebin:$PATH" run "$hook")"
+out="$(run "$hook")"
 e=$(now_ms)
 jq -e . >/dev/null <<<"$out" && check "valid JSON" ok || check "valid JSON" bad
 [ $(( e - s )) -lt 1000 ] && check "under 1 s" ok || check "under 1 s" bad
@@ -98,9 +91,9 @@ out="$(CLAUDECODE=1 CURSOR_VERSION=x run "$hook" --harness auto)"
 jq -e '.hookSpecificOutput.additionalContext' >/dev/null <<<"$out" && check "auto in Claude Code ignores an inherited Cursor marker" ok || check "auto in Claude Code ignores an inherited Cursor marker" bad
 grep -q 'Build the right thing' <<<"$(jq -er '.hookSpecificOutput.additionalContext' <<<"$out")" && check "auto + Cursor marker keeps the soul" ok || check "auto + Cursor marker keeps the soul" bad
 
-echo "test_ledger_path_without_claude_root"
+echo "test_root_line_without_claude_root"
 out="$(env -u CLAUDE_PLUGIN_ROOT HOME="$tmp/home" BUILDER_HOME="$tmp/bh" "$hook" --harness cursor)"
-grep -qF "$root/bin/builder" <<<"$(jq -r '.additional_context' <<<"$out")" && check "ledger path uses root" ok || check "ledger path uses root" bad
+grep -qF "builder root: $root." <<<"$(jq -r '.additional_context' <<<"$out")" && check "root line uses root" ok || check "root line uses root" bad
 
 echo "test_no_binary_each_shape"
 mkdir -p "$tmp/nohome"
@@ -115,6 +108,7 @@ for h in claude codex unknown auto; do
   nobin --harness $h; out="$(<"$tmp/out")"
   grep -q 'Build the right thing' <<<"$(jq -er '.hookSpecificOutput.additionalContext' <<<"$out")" && check "$h: hookSpecificOutput" ok || check "$h: hookSpecificOutput" bad
   grep -qF 'builder install:' <<<"$(jq -er '.hookSpecificOutput.additionalContext' <<<"$out")" && check "$h: install offer" ok || check "$h: install offer" bad
+  grep -qF -e 'recommends' -e 'onboarding' -e 'ledger' <<<"$out" && check "$h: no removed word" bad || check "$h: no removed word" ok
 done
 nobin --harness cursor; out="$(<"$tmp/out")"
 grep -q 'Build the right thing' <<<"$(jq -er '.additional_context' <<<"$out")" && check "cursor: additional_context" ok || check "cursor: additional_context" bad
@@ -130,17 +124,17 @@ jq -e . >/dev/null 2>&1 <<<"$out" && check "--format text: plain text" bad || ch
 echo "test_root_with_space"
 spaced="$tmp/plugin root"
 mkdir -p "$spaced"
-cp -R "$root/hooks" "$root/bin" "$root/skills" "$root/lib" "$root/.claude-plugin" "$spaced/"
+cp -R "$root/hooks" "$root/bin" "$root/skills" "$root/.claude-plugin" "$spaced/"
 out="$(env -u CLAUDE_PLUGIN_ROOT HOME="$tmp/home" BUILDER_HOME="$tmp/bh" "$spaced/hooks/session-start" --harness claude)"
 text="$(jq -er '.hookSpecificOutput.additionalContext' <<<"$out")" && check "valid JSON" ok || check "valid JSON" bad
-grep -q 'builder onboarding' <<<"$text" && check "onboarding text" ok || check "onboarding text" bad
+grep -qF "$soul1" <<<"$text" && check "soul" ok || check "soul" bad
 grep -qF "builder root: $spaced." <<<"$text" && check "root line names the spaced path" ok || check "root line names the spaced path" bad
 echo "test_root_line"
 text="$(run "$hook" --harness claude | ctx)"
 grep -qF "builder root: $root. Where a builder skill says \${CLAUDE_PLUGIN_ROOT}, use this path." <<<"$text" && check "root line" ok || check "root line" bad
 
 echo "test_mapping_block_max_15"
-for h in claude codex cursor opencode; do
+for h in claude codex cursor grok opencode; do
   f="$root/skills/builder/harnesses/$h.md"
   n="$(awk '/<!-- hook -->/{on=1;next} /<!-- \/hook -->/{on=0} on' "$f" 2>/dev/null | wc -l | tr -d ' ')"
   [ "$n" -ge 1 ] && [ "$n" -le 15 ] && check "$h block has $n lines" ok || check "$h block 1-15 lines (got $n)" bad
@@ -149,7 +143,7 @@ for h in claude codex cursor opencode; do
 done
 
 echo "test_speed_each_harness"
-for h in claude codex cursor opencode unknown; do
+for h in claude codex cursor grok opencode unknown; do
   s=$(now_ms)
   run "$hook" --harness $h >/dev/null
   e=$(now_ms)

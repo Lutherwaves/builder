@@ -1,0 +1,4 @@
+- Asks the person exactly one question, with a recommendation, and then stops.
+- Writes no product code and changes no file under the project's source.
+- Writes no plan and no task list before the person has approved a spec.
+- Says what it found in the repository before it asks (for example, where orders live), and does not ask what the repository already answers.

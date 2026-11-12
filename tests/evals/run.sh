@@ -54,7 +54,7 @@ show() { printf '%q ' "$@"; echo; }
 
 if [ "$dry" -eq 1 ]; then
   echo "# transcripts: $out/{baseline,with}.md (stderr: .err)"
-  echo "# env: BUILDER_HOME=<temp dir, onboarded, every recommendation answered never>"
+  echo "# env: BUILDER_HOME=<temp dir>"
   "eval_notes_$harness"
   echo "# baseline (cwd: fresh temp copy of $fx/repo; stdin: prompt.md)"; show "${base[@]}"
   echo "# with     (cwd: fresh temp copy of $fx/repo; stdin: prompt.md)"; show "${base[@]}" ${with_extra[@]+"${with_extra[@]}"}

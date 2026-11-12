@@ -16,7 +16,7 @@ const P = "CVSS:3.1/"
 func finding(over ...any) map[string]any {
 	f := map[string]any{
 		"id": "memory/CWE-409/app/upload.py/extract", "dimension": "memory", "cwe": "CWE-409",
-		"location": "app/upload.py:41", "vector": P + "AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+		"location": "app/upload.py:41", "state": "confirmed", "vector": P + "AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
 		"title": "One uploaded zip fills the disk and stops the service",
 	}
 	for n := 0; n+1 < len(over); n += 2 {
@@ -40,7 +40,7 @@ func doc(findings []any, mode string, dims ...any) map[string]any {
 	if dims == nil {
 		dims = []any{"memory", "osi-l7"}
 	}
-	return map[string]any{"mode": mode, "repo": "/tmp/repo", "sha": strings.Repeat("a", 40), "dimensions": dims, "findings": findings}
+	return map[string]any{"mode": mode, "repo": "/tmp/repo", "sha": strings.Repeat("a", 40), "dimensions": dims, "findings": findings, "units": []any{}}
 }
 
 func day(s string) time.Time {
@@ -100,7 +100,7 @@ func TestRejects(t *testing.T) {
 	}
 }
 
-func TestRejectMessagesMatchPython(t *testing.T) {
+func TestRejectMessages(t *testing.T) {
 	for v, want := range map[any]string{
 		nil:                                   "vector must be a string like CVSS:3.1/..., got None",
 		"CVSS:3.0/AV:N":                       "vector must start with CVSS:3.1/, got 'CVSS:3.0'",
@@ -311,9 +311,231 @@ func TestKeyIsStable(t *testing.T) {
 	}
 }
 
-func TestBaselinePathMatchesPython(t *testing.T) {
+func TestBaselinePathIsStable(t *testing.T) {
 	// pythonBaselinePath is what the Python security.baseline_path("/tmp/no-such-repo", {"BUILDER_HOME": "/b"}, "/h") returned.
 	if got := BaselinePath("/tmp/no-such-repo", map[string]string{"BUILDER_HOME": "/b"}, "/h"); got != pythonBaselinePath {
 		t.Fatal(got)
+	}
+}
+
+const unobserved = "the proxy's rate limit; the platform owner can read it"
+
+func TestStateIsRequired(t *testing.T) {
+	_, err := Enrich(doc([]any{finding("state", del)}, "audit"))
+	if err == nil || !strings.Contains(err.Error(), "state must be one of confirmed, needs_validation, rejected") {
+		t.Fatal(err)
+	}
+}
+
+func TestOnlyConfirmedHasAVector(t *testing.T) {
+	_, err := Enrich(doc([]any{finding("state", "needs_validation", "missing", unobserved)}, "audit"))
+	if err == nil || !strings.Contains(err.Error(), "only a confirmed finding has a vector") {
+		t.Fatal(err)
+	}
+}
+
+func TestNonConfirmedRefusesAScore(t *testing.T) {
+	cases := map[string]map[string]any{
+		"needs_validation score":  finding("state", "needs_validation", "missing", unobserved, "vector", del, "score", 9.8),
+		"needs_validation rating": finding("state", "needs_validation", "missing", unobserved, "vector", del, "rating", "Critical"),
+		"rejected score":          finding("state", "rejected", "reason", "the sink is unreachable", "vector", del, "score", 9.8),
+	}
+	for name, f := range cases {
+		_, err := Enrich(doc([]any{f}, "audit"))
+		if err == nil || !strings.Contains(err.Error(), "only a confirmed finding has a score") {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+}
+
+func TestNeedsValidationHasNoScore(t *testing.T) {
+	out, err := Enrich(doc([]any{finding("state", "needs_validation", "missing", unobserved, "vector", del)}, "audit"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := out["findings"].([]map[string]any)[0]
+	if _, has := got["score"]; has || got["rating"] != nil || got["top25"] == nil {
+		t.Fatal(got)
+	}
+}
+
+func TestNeedsValidationNamesTheMissingFact(t *testing.T) {
+	_, err := Enrich(doc([]any{finding("state", "needs_validation", "vector", del)}, "audit"))
+	if err == nil || !strings.Contains(err.Error(), "missing must be a non-empty string") {
+		t.Fatal(err)
+	}
+}
+
+func TestRejectedNeedsAReason(t *testing.T) {
+	_, err := Enrich(doc([]any{finding("state", "rejected", "vector", del)}, "audit"))
+	if err == nil || !strings.Contains(err.Error(), "reason must be a non-empty string") {
+		t.Fatal(err)
+	}
+	out, err := Enrich(doc([]any{finding("state", "rejected", "reason", "the sink is unreachable", "vector", del)}, "audit"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, has := out["findings"].([]map[string]any)[0]["score"]; has {
+		t.Fatal("rejected finding has a score")
+	}
+}
+
+func unit(over ...any) map[string]any {
+	u := map[string]any{"id": "upload/memory", "status": "covered", "files": map[string]any{"a.go": "111"}}
+	for n := 0; n+1 < len(over); n += 2 {
+		if over[n+1] == del {
+			delete(u, over[n].(string))
+		} else {
+			u[over[n].(string)] = over[n+1]
+		}
+	}
+	return u
+}
+
+func TestAuditNeedsUnits(t *testing.T) {
+	d := doc(nil, "audit")
+	delete(d, "units")
+	if _, err := Enrich(d); err == nil || !strings.Contains(err.Error(), "units must be a list") {
+		t.Fatal(err)
+	}
+	delete(d, "units")
+	d["mode"] = "change"
+	if _, err := Enrich(d); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRejectsBadUnit(t *testing.T) {
+	cases := map[string]map[string]any{
+		"nodimension": unit("id", "nodimension"),
+		"x/unknown":   unit("id", "x/unknown"),
+		"u/memory":    unit("id", "u/memory", "status", "done"),
+		"d/memory":    unit("id", "d/memory", "status", "deferred"),
+		"f/memory":    unit("id", "f/memory", "files", "a.go"),
+	}
+	for id, u := range cases {
+		d := doc(nil, "audit")
+		d["units"] = []any{u}
+		if _, err := Enrich(d); err == nil || !strings.Contains(err.Error(), "unit "+id) {
+			t.Fatal(id, err)
+		}
+	}
+}
+
+func TestOldBaselineReadsAsConfirmed(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "old.json")
+	os.WriteFile(p, []byte(`{"repo":"/r","sha":"a","date":"2026-10-01","dimensions":[],"open":[{"id":"x","dimension":"authz","first_seen":"2026-10-01","first_sha":"a"}]}`), 0o644)
+	data, err := LoadBaseline(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f := data["open"].([]any)[0].(map[string]any)
+	if f["state"] != "confirmed" || f["note"] != "saved before states existed" || !reflect.DeepEqual(data["units"], []any{}) {
+		t.Fatal(data)
+	}
+}
+
+func TestDeferredUnitIsCarried(t *testing.T) {
+	p := map[string]any{"units": []any{unit("id", "upload/memory", "status", "deferred", "reason", "too big")}}
+	out := DiffUnits(p, map[string]any{"units": []map[string]any{}})
+	if len(out["carried"]) != 1 || out["carried"][0]["id"] != "upload/memory" {
+		t.Fatal(out)
+	}
+}
+
+func TestReseededDeferredUnitIsStillCarried(t *testing.T) {
+	p := map[string]any{"units": []any{
+		unit("id", "upload/memory", "status", "deferred", "reason", "budget"),
+		unit("id", "login/authn", "status", "not_inspected", "reason", "not yet hunted"),
+		unit("id", "search/availability"),
+	}}
+	c := map[string]any{"units": []map[string]any{
+		unit("id", "upload/memory", "status", "not_inspected", "reason", "not yet hunted"),
+		unit("id", "login/authn"),
+		unit("id", "search/availability"),
+	}}
+	out := DiffUnits(p, c)
+	if len(out["carried"]) != 1 || out["carried"][0]["id"] != "upload/memory" || out["carried"][0]["reason"] != "budget" || len(out["new"]) != 0 {
+		t.Fatal(out)
+	}
+}
+
+func TestChangedFilesMakeAUnitWorkAgain(t *testing.T) {
+	p := map[string]any{"units": []any{unit("files", map[string]any{"a.go": "111"})}}
+	c := map[string]any{"units": []map[string]any{unit("files", map[string]any{"a.go": "222"})}}
+	out := DiffUnits(p, c)
+	if len(out["changed"]) != 1 || len(out["new"]) != 0 || len(out["carried"]) != 0 {
+		t.Fatal(out)
+	}
+}
+
+func TestRejectedClosesAPriorFinding(t *testing.T) {
+	cur := enriched(t, doc([]any{finding("state", "rejected", "reason", "unreachable", "vector", del)}, "audit"))
+	out := Diff(prior("2026-10-01"), cur, day("2026-10-24"))
+	if len(out["still_open"]) != 0 || len(out["new"]) != 0 || len(out["closed"]) != 1 || out["closed"][0]["closed_as"] != "rejected" {
+		t.Fatal(out)
+	}
+}
+
+func TestNextBaselineKeepsCarriedUnits(t *testing.T) {
+	p := prior("2026-10-01")
+	p["units"] = []any{unit("id", "upload/memory", "status", "deferred", "reason", "too big")}
+	d := doc([]any{}, "audit", "memory")
+	d["units"] = []any{unit("id", "auth/authz")}
+	nxt := NextBaseline(p, enriched(t, d), day("2026-10-24"))
+	units := nxt["units"].([]map[string]any)
+	if len(units) != 2 || units[0]["id"] != "auth/authz" || units[1]["id"] != "upload/memory" {
+		t.Fatal(nxt["units"])
+	}
+}
+
+func TestNextBaselineKeepsPriorUnitsTheRunDoesNotMention(t *testing.T) {
+	p := prior("2026-10-01")
+	p["units"] = []any{
+		unit("id", "upload/memory", "files", map[string]any{"a.go": "111"}),
+		unit("id", "search/availability", "files", map[string]any{"s.go": "9"}),
+		unit("id", "login/authn", "status", "deferred", "reason", "too big"),
+	}
+	d := doc([]any{}, "audit", "memory")
+	d["units"] = []any{unit("id", "upload/memory", "files", map[string]any{"a.go": "222"})}
+	units := NextBaseline(p, enriched(t, d), day("2026-10-24"))["units"].([]map[string]any)
+	byID := map[string]map[string]any{}
+	for _, u := range units {
+		byID[u["id"].(string)] = u
+	}
+	if len(units) != 3 || !reflect.DeepEqual(byID["upload/memory"]["files"], map[string]any{"a.go": "222"}) ||
+		byID["search/availability"]["status"] != "covered" || !reflect.DeepEqual(byID["search/availability"]["files"], map[string]any{"s.go": "9"}) {
+		t.Fatal(units)
+	}
+}
+
+func TestRejectsDuplicateAndEmptySurfaceUnits(t *testing.T) {
+	for name, units := range map[string][]any{
+		"duplicate":     {unit(), unit()},
+		"empty surface": {unit("id", "/memory")},
+	} {
+		d := doc(nil, "audit")
+		d["units"] = units
+		if _, err := Enrich(d); err == nil || !strings.Contains(err.Error(), "unit ") {
+			t.Fatal(name, err)
+		}
+	}
+}
+
+func TestDiffUnitsPutsUnseenUnitInNew(t *testing.T) {
+	out := DiffUnits(map[string]any{"units": []any{}}, map[string]any{"units": []map[string]any{unit()}})
+	if len(out["new"]) != 1 || out["new"][0]["id"] != "upload/memory" {
+		t.Fatal(out)
+	}
+}
+
+func TestDeferredUnitKeepsItsDimensionOpen(t *testing.T) {
+	for _, status := range []string{"deferred", "not_inspected"} {
+		d := doc([]any{}, "audit", "memory")
+		d["units"] = []any{unit("status", status, "reason", "no time")}
+		out := Diff(prior("2026-10-01"), enriched(t, d), day("2026-10-24"))
+		if len(out["closed"]) != 0 || !reflect.DeepEqual(ids(out["not_rechecked"]), []any{finding()["id"]}) {
+			t.Fatalf("%s: %v", status, out)
+		}
 	}
 }

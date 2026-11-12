@@ -26,7 +26,7 @@ Each run uses a fresh temp copy of `repo/` as its working directory.
 
 Both use `--output-format text`, `--permission-mode acceptEdits`, and `--disallowedTools "Bash(git push:*)" "Bash(gh:*)" "WebFetch" "WebSearch"`, plus the commands that steer a session (`matchblox send`, `tmux send-keys` and the like) and the tools that schedule a job or register an MCP server (`CronCreate`, `CronDelete`, `RemoteTrigger`, `crontab`, `claude mcp`). The agent can edit files in the temp dir. It cannot push, reach the network, schedule a job or register a server through these tools. The flag names match `claude --help`. The runner does not use `--bare`, because `--bare` needs an API key and most people sign in with OAuth.
 
-Both runs set `BUILDER_HOME` to a temp dir with an onboarded ledger in which every recommendation is answered "never". The hook then injects only the soul: no setup question and no recommendation reach the agent.
+Both runs set `BUILDER_HOME` to a temp dir, so no state of your own builder home reaches the agent.
 
 Because the baseline uses your normal setup, plugins you have installed also load in it. Disable plugins that overlap with the skill under test before you run.
 
@@ -66,31 +66,6 @@ After a run, the runner writes `verdict.json` next to the transcripts. It holds 
     go run ./cmd/support-table check README.md         # fail when the README table differs
 
 `record` refuses a verdict with a `met` still `null`. It stores counts only. `render` shows a harness only when it has a results file. A harness is `supported` only when every fixture under `tests/evals/` is graded and meets every bullet. Otherwise it is `experimental: <failed fixture met/total>; <n> not graded`. With no results file, the table is the line "No harness has passed its evals yet." `scripts/validate.sh` runs `check`.
-
-## Drop-in parity
-
-`parity.sh` works on Claude Code only.
-
-    bash tests/evals/parity.sh             # run the builder and shape fixtures in two setups
-    bash tests/evals/parity.sh --dry-run   # print the builder-led settings and the commands only
-
-This eval answers one question: does builder replace a hand-built setup and keep its results?
-
-- Current: `claude -p` with your setup as it is.
-- Builder-led: `CLAUDE_CONFIG_DIR` points to a separate folder that holds only what builder recommends, each one accepted.
-  Builder loads with `--plugin-dir`. superpowers is enabled. `env` sets `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` to 85. The `codebase-memory-mcp` server comes from your `.claude.json`.
-  The matchblox hooks and status line come from your settings. If your settings have none, the run has none, and a note tells you to run `matchblox setup` first.
-  The folder holds a copy of your installed superpowers version and its marketplace, so both runs use the same version. It links your gstack clone and copies the skill folders that gstack setup made. It holds no other plugin or skill.
-
-Both runs use the deny list and the PATH shims of `run.sh` (shared in `lib.sh`) and the same temp builder home.
-
-Claude Code keeps its sign-in per config folder, and the eval never copies credentials.
-A new folder is not signed in, so the eval stops before any run and says how to fix it:
-set `BUILDER_PARITY_CONFIG_DIR` to a separate folder you keep, run `parity.sh` once to prepare it, run `CLAUDE_CONFIG_DIR=<that folder> claude auth login` once, then run `parity.sh` again.
-
-The eval refuses (exit 2) a folder that is your real config dir, sits inside it, or holds it. It also refuses a folder that is not empty and that it did not create (no `.builder-parity` marker). It never deletes anything in such a folder.
-
-The runner writes `<fixture>/current.md` and `<fixture>/builder.md` to `<eval out>/parity/<timestamp>/` and prints both after each `expect.md`.
 
 ## Transcripts
 

@@ -117,16 +117,6 @@ while IFS= read -r f; do
   grep -q 'says the binary is not installed or is off, stop' "$f" || err "guard: $f runs the shim but does not stop at a missing binary"
 done < <(grep -l 'bin/builder' skills/*/SKILL.md)
 
-# A string-valued `how` runs on every harness, so it names no slash command. A map-valued `how` is per harness.
-if ! how_hits="$(jq -r '.[] | select(.how | type == "string") | select(.how | test("(^|[\\s(\\x60])/(loop|usage|compact|clear|plugin|builder:[a-z-]+)\\b"))
-    | "lib/recommendations.json: \(.id) how names a slash command"' lib/recommendations.json 2>&1)"; then
-  printf '%s\n' "$how_hits"; err "lib/recommendations.json could not be read"
-elif [ -n "$how_hits" ]; then
-  while IFS= read -r h; do err "guard: $h"; done <<<"$how_hits"
-else
-  note "✓ no slash commands in string-valued recommendation steps"
-fi
-
 echo "→ no Python"
 # builder runs without Python. Only the sample projects of the eval fixtures may hold it.
 py_guard() {
@@ -143,9 +133,9 @@ py_guard() {
 }
 py_guard git ls-files '*.py' ':!tests/evals/*/*' \
   && note "✓ no Python file"
-py_guard git grep -n -I -w -e python3 -- . ':!tests/evals/*/*' ':!docs/superpowers' ':!CHANGELOG.md' ':!scripts/validate.sh' ':!tests/test_validate.sh' \
+py_guard git grep -n -I -w -e python3 -- . ':!tests/evals/*/*' ':!docs/specs' ':!docs/plans' ':!CHANGELOG.md' ':!scripts/validate.sh' ':!tests/test_validate.sh' \
   && note "✓ no python3 command"
-py_guard git grep -n -E 'lib/(harness|ledger|reach|security|signals)\.py|burn-proj\.py|session_start\.py|support-table\.py' -- . ':!docs/superpowers' ':!CHANGELOG.md' ':!scripts/validate.sh' ':!tests/test_validate.sh' ':!skills/budget/SKILL.md' ':!tests/templates_test.go' \
+py_guard git grep -n -E 'lib/(harness|ledger|reach|security|signals)\.py|burn-proj\.py|session_start\.py|support-table\.py' -- . ':!docs/specs' ':!docs/plans' ':!CHANGELOG.md' ':!scripts/validate.sh' ':!tests/test_validate.sh' \
   && note "✓ no deleted Python tool named"
 
 echo "→ go"
@@ -160,26 +150,19 @@ else
     if vet_out="$(go vet ./... 2>&1)"; then note "✓ go vet"; else printf '%s\n' "$vet_out"; err "go vet failed"; fi
     if gt_out="$(go test ./... 2>&1)"; then note "✓ go test"; else printf '%s\n' "$gt_out"; err "go tests failed"; fi
     if sh_out="$(bash tests/test_shim.sh 2>&1)"; then note "✓ shim"; else printf '%s\n' "$sh_out"; err "shim tests failed"; fi
-    # Fixed inputs give a fixed output shape.
-    out="$("$BUILDER_BIN" budget 19 1783504800 1782990571 2>&1)" || true
-    if grep -qE 'elapsed=.* naive=.* profile_aware=.* reset_in=' <<<"$out"; then
-      note "✓ builder budget smoke: $out"
+    # One confirmed finding with a fixed vector gives a fixed rating.
+    printf '%s\n' '{"mode":"audit","repo":"/tmp/repo","sha":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","dimensions":["memory"],"units":[],"findings":[{"id":"memory/CWE-409/x","dimension":"memory","cwe":"CWE-409","location":"x:1","state":"confirmed","vector":"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H","title":"t"}]}' > "$gotmp/findings.json"
+    out="$("$BUILDER_BIN" security score "$gotmp/findings.json" 2>&1)" || true
+    if [ "$(jq -r '.findings[0].rating' <<<"$out" 2>/dev/null)" = "High" ]; then
+      note "✓ builder security smoke: rating High"
     else
-      err "builder budget output shape changed: $out"
+      err "builder security score output changed: $out"
     fi
   else
     printf '%s\n' "$bd_out"; err "go build failed"
-    for s in gofmt "go vet" "go test" shim "builder budget smoke"; do note "$s: skipped (no binary)"; done
+    for s in gofmt "go vet" "go test" shim "builder security smoke"; do note "$s: skipped (no binary)"; done
   fi
 fi
-echo "→ harness drift tests"
-if [ -n "${BUILDER_BIN:-}" ]; then
-  if dr_out="$(bash tests/test_drift.sh 2>&1)"; then note "✓ drift"; else printf '%s\n' "$dr_out"; err "drift tests failed"; fi
-  if sp_out="$(bash tests/test_state_paths.sh 2>&1)"; then note "✓ state paths"; else printf '%s\n' "$sp_out"; err "state path tests failed"; fi
-else
-  note "drift: skipped (no binary)"; note "state paths: skipped (no binary)"
-fi
-
 echo "→ hook tests"
 if of_out="$(bash tests/test_offer.sh 2>&1)"; then note "✓ install offer"; else printf '%s\n' "$of_out"; err "install offer tests failed"; fi
 if in_out="$(bash tests/test_install.sh 2>&1)"; then note "✓ installer"; else printf '%s\n' "$in_out"; err "installer tests failed"; fi
@@ -204,7 +187,7 @@ echo "→ hedges"
 hedges=0
 for p in "was proven" "were proven" "only the local path" "is not verified" "is unverified" "does not claim" "no live"; do
   rc=0
-  out="$(git grep -l -I -i -F -e "$p" -- README.md CONTRIBUTING.md 'docs/*.md' ':!docs/superpowers' 2>&1)" || rc=$?
+  out="$(git grep -l -I -i -F -e "$p" -- README.md CONTRIBUTING.md 'docs/*.md' ':!docs/specs' ':!docs/plans' 2>&1)" || rc=$?
   if [ "$rc" -eq 0 ]; then
     while IFS= read -r f; do err "hedge: $f: $p"; done <<<"$out"; hedges=1
   elif [ "$rc" -ne 1 ]; then

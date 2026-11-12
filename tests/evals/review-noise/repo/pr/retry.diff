@@ -1,0 +1,70 @@
+diff --git a/mailer.py b/mailer.py
+index cb09461..b2de99d 100644
+--- a/mailer.py
++++ b/mailer.py
+@@ -1,6 +1,7 @@
+ import logging
+ import smtplib
+ import sys
++import time
+ from email.message import EmailMessage
+ 
+ log = logging.getLogger("mailer")
+@@ -8,6 +9,8 @@ log = logging.getLogger("mailer")
+ RELAY_HOST = "localhost"
+ RELAY_PORT = 25
+ SENDER = "noreply@example.invalid"
++MAX_ATTEMPTS = 3
++RETRY_DELAY_SECONDS = 2
+ 
+ 
+ def valid_address(address):
+@@ -31,14 +34,17 @@ def smtp_deliver(message):
+         relay.send_message(message)
+ 
+ 
+-def send(to, body, deliver=smtp_deliver):
++def send(to, body, deliver=smtp_deliver, sleep=time.sleep):
+     """Send body to one address. Returns True when the relay accepted the message."""
+     message = build_message(to, body)
+-    try:
+-        deliver(message)
+-    except OSError as error:
+-        log.warning("delivery failed: %s", error)
+-        return False
++    for n in range(MAX_ATTEMPTS):
++        try:
++            deliver(message)
++            return True
++        except OSError as error:
++            log.warning("delivery attempt %d of %d failed: %s", n + 1, MAX_ATTEMPTS, error)
++            if n + 1 < MAX_ATTEMPTS:
++                sleep(RETRY_DELAY_SECONDS)
+     return True
+ 
+ 
+diff --git a/test_mailer.py b/test_mailer.py
+index 9cc6af8..ac1be88 100644
+--- a/test_mailer.py
++++ b/test_mailer.py
+@@ -21,6 +21,20 @@ class Send(unittest.TestCase):
+         self.assertEqual(delivered[0]["To"], "ana@example.com")
+         self.assertEqual(delivered[0].get_content().strip(), "hello")
+ 
++    def test_retries_until_the_relay_accepts(self):
++        attempts = []
++        waits = []
++
++        def flaky_relay(message):
++            attempts.append(message)
++            if len(attempts) < 3:
++                raise ConnectionRefusedError("relay busy")
++
++        accepted = mailer.send("ana@example.com", "hello", deliver=flaky_relay, sleep=waits.append)
++        self.assertTrue(accepted)
++        self.assertEqual(len(attempts), 3)
++        self.assertEqual(waits, [2, 2])
++
+ 
+ class Notify(unittest.TestCase):
+     def test_rejects_a_bad_address_before_sending(self):

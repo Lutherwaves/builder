@@ -61,25 +61,25 @@ out="$(cd "$tmp/nogit" && GIT_CEILING_DIRECTORIES="$tmp" BUILDER_DENYLIST="$tmp/
 
 # Case 8 (test_skill_without_self_check_fails): a skill with no "## Self-check" fails the shape check.
 rm -rf "$tmp/shape"; mkrepo "$tmp/clean" "$tmp/shape"
-sed -i.bak 's/^## Self-check$/## Checks/' "$tmp/shape/skills/budget/SKILL.md"; rm -f "$tmp/shape/skills/budget/SKILL.md.bak"
+sed -i.bak 's/^## Self-check$/## Checks/' "$tmp/shape/skills/spec/SKILL.md"; rm -f "$tmp/shape/skills/spec/SKILL.md.bak"
 out="$(cd "$tmp/shape" && env -u BUILDER_DENYLIST bash scripts/validate.sh 2>&1)"; rc=$?
-[ "$rc" -eq 1 ] && grep -q '✗ skills/budget/SKILL.md has no "## Self-check"' <<<"$out" \
+[ "$rc" -eq 1 ] && grep -q '✗ skills/spec/SKILL.md has no "## Self-check"' <<<"$out" \
   && check "skill without self-check fails" ok || check "skill without self-check fails (got $rc)" bad
 
 # Case 9: a description that does not start "Use when" fails.
 rm -rf "$tmp/shape"; mkrepo "$tmp/clean" "$tmp/shape"
-sed -i.bak 's/^description: Use when/description: Handy when/' "$tmp/shape/skills/intake/SKILL.md"; rm -f "$tmp/shape/skills/intake/SKILL.md.bak"
+sed -i.bak 's/^description: Use when/description: Handy when/' "$tmp/shape/skills/plan/SKILL.md"; rm -f "$tmp/shape/skills/plan/SKILL.md.bak"
 out="$(cd "$tmp/shape" && env -u BUILDER_DENYLIST bash scripts/validate.sh 2>&1)"; rc=$?
-[ "$rc" -eq 1 ] && grep -q '✗ skills/intake/SKILL.md description does not start "Use when"' <<<"$out" \
+[ "$rc" -eq 1 ] && grep -q '✗ skills/plan/SKILL.md description does not start "Use when"' <<<"$out" \
   && check "description without Use when fails" ok || check "description without Use when fails (got $rc)" bad
 
 # Case 10: a skill outside 60 to 150 lines fails; one without "## Common mistakes" fails.
 rm -rf "$tmp/shape"; mkrepo "$tmp/clean" "$tmp/shape"
-head -40 "$tmp/clean/skills/harness/SKILL.md" > "$tmp/shape/skills/harness/SKILL.md"
-sed -i.bak 's/^## Common mistakes$/## Pitfalls/' "$tmp/shape/skills/reach/SKILL.md"; rm -f "$tmp/shape/skills/reach/SKILL.md.bak"
+head -40 "$tmp/clean/skills/build/SKILL.md" > "$tmp/shape/skills/build/SKILL.md"
+sed -i.bak 's/^## Common mistakes$/## Pitfalls/' "$tmp/shape/skills/review/SKILL.md"; rm -f "$tmp/shape/skills/review/SKILL.md.bak"
 out="$(cd "$tmp/shape" && env -u BUILDER_DENYLIST bash scripts/validate.sh 2>&1)"; rc=$?
-[ "$rc" -eq 1 ] && grep -q '✗ skills/harness/SKILL.md has 40 lines (need 60 to 150)' <<<"$out" \
-  && grep -q '✗ skills/reach/SKILL.md has no "## Common mistakes"' <<<"$out" \
+[ "$rc" -eq 1 ] && grep -q '✗ skills/build/SKILL.md has 40 lines (need 60 to 150)' <<<"$out" \
+  && grep -q '✗ skills/review/SKILL.md has no "## Common mistakes"' <<<"$out" \
   && check "short skill and missing common mistakes fail" ok || check "short skill and missing common mistakes fail (got $rc)" bad
 
 # Case 11: commit subjects in origin/main..HEAD must follow Conventional Commits.
@@ -109,11 +109,11 @@ out="$(run_in "$tmp/cc")"; rc=$?
 
 # Case 13 (guard_flags_tool_in_skill): a harness tool name in a skill body fails and names the file.
 rm -rf "$tmp/guard"; mkrepo "$tmp/clean" "$tmp/guard"
-printf '%s\n' 'Use the PushNotification tool.' >> "$tmp/guard/skills/reach/SKILL.md"
-printf '%s\n' 'Run /loop 30m now.' >> "$tmp/guard/skills/fleet/SKILL.md"
+printf '%s\n' 'Use the PushNotification tool.' >> "$tmp/guard/skills/ship/SKILL.md"
+printf '%s\n' 'Run /loop 30m now.' >> "$tmp/guard/skills/plan/SKILL.md"
 out="$(run_in "$tmp/guard")"; rc=$?
-[ "$rc" -eq 1 ] && grep -qE '✗ guard: skills/reach/SKILL.md:[0-9]+' <<<"$out" \
-  && grep -qE '✗ guard: skills/fleet/SKILL.md:[0-9]+' <<<"$out" \
+[ "$rc" -eq 1 ] && grep -qE '✗ guard: skills/ship/SKILL.md:[0-9]+' <<<"$out" \
+  && grep -qE '✗ guard: skills/plan/SKILL.md:[0-9]+' <<<"$out" \
   && check "guard flags tool and slash command in skill" ok || check "guard flags tool and slash command in skill (got $rc)" bad
 
 # Case 14 (guard_allows_mapping_dir): the mapping files may name harness tools.
@@ -125,17 +125,9 @@ out="$(run_in "$tmp/guard")"; rc=$?
 # Case 15 (guard_allows_gh_tmux_matchblox): ordinary tools and paths are not flagged.
 rm -rf "$tmp/guard"; mkrepo "$tmp/clean" "$tmp/guard"
 printf '%s\n' 'Run `gh pr list`, `tmux send-keys`, `matchblox usage --json`, see https://example.com/loop and src/usage/x.' \
-  'The monitor of a room and an artifact in prose stay fine in lower case.' >> "$tmp/guard/skills/reach/SKILL.md"
+  'The monitor of a room and an artifact in prose stay fine in lower case.' >> "$tmp/guard/skills/review/SKILL.md"
 out="$(run_in "$tmp/guard")"; rc=$?
 [ "$rc" -eq 0 ] && ! grep -q 'guard:' <<<"$out" && check "guard allows gh, tmux, matchblox, paths" ok || check "guard allows gh, tmux, matchblox, paths (got $rc)" bad
-
-# Case 15b (guard_flags_slash_in_neutral_how): a string-valued `how` with a slash command fails; a map-valued `how` may have one.
-rm -rf "$tmp/guard"; mkrepo "$tmp/clean" "$tmp/guard"
-jq '(.[] | select(.id == "fleet") | .how) = "Ask me: /builder:fleet"' "$tmp/guard/lib/recommendations.json" > "$tmp/guard/r.json" \
-  && mv "$tmp/guard/r.json" "$tmp/guard/lib/recommendations.json"
-out="$(run_in "$tmp/guard")"; rc=$?
-[ "$rc" -eq 1 ] && grep -q '✗ guard: lib/recommendations.json: fleet how' <<<"$out" && ! grep -q 'guard: lib/recommendations.json: superpowers' <<<"$out" \
-  && check "guard flags slash command in a string how, allows it in a map how" ok || check "guard flags slash command in a string how, allows it in a map how (got $rc)" bad
 
 # Case 17 (manifest_version_drift_fails): a manifest whose version differs from plugin.json fails.
 rm -rf "$tmp/man"; mkrepo "$tmp/clean" "$tmp/man"
@@ -209,17 +201,17 @@ out="$(cd "$tmp/nogit" && GIT_CEILING_DIRECTORIES="$tmp" env -u BUILDER_DENYLIST
 
 # Case 26 (python_file_fails): a tracked .py file outside an eval fixture fails.
 rm -rf "$tmp/py"; mkrepo "$tmp/clean" "$tmp/py"
-echo 'print(1)' > "$tmp/py/skills/reach/x.py"
+echo 'print(1)' > "$tmp/py/skills/ship/x.py"
 git -C "$tmp/py" add -A >/dev/null
 out="$(run_in "$tmp/py")"; rc=$?
-[ "$rc" -eq 1 ] && grep -q '✗ python: skills/reach/x.py' <<<"$out" \
+[ "$rc" -eq 1 ] && grep -q '✗ python: skills/ship/x.py' <<<"$out" \
   && check "python file fails" ok || check "python file fails (got $rc)" bad
 
 # Case 27 (python3_word_fails): the word python3 in a skill fails.
 rm -rf "$tmp/py"; mkrepo "$tmp/clean" "$tmp/py"
-printf '%s\n' 'Run `python3 x`.' >> "$tmp/py/skills/reach/SKILL.md"
+printf '%s\n' 'Run `python3 x`.' >> "$tmp/py/skills/ship/SKILL.md"
 out="$(run_in "$tmp/py")"; rc=$?
-[ "$rc" -eq 1 ] && grep -q '✗ python: skills/reach/SKILL.md:' <<<"$out" \
+[ "$rc" -eq 1 ] && grep -q '✗ python: skills/ship/SKILL.md:' <<<"$out" \
   && check "python3 word fails" ok || check "python3 word fails (got $rc)" bad
 
 # Case 28 (fixture_python_allowed): an eval fixture's sample project may hold Python.
@@ -231,29 +223,29 @@ out="$(run_in "$tmp/py")"; rc=$?
 
 # Case 29 (old_tool_name_fails): a skill that names a deleted Python tool fails.
 rm -rf "$tmp/py"; mkrepo "$tmp/clean" "$tmp/py"
-printf '%s\n' 'Run lib/reach.py.' >> "$tmp/py/skills/reach/SKILL.md"
+printf '%s\n' 'Run lib/reach.py.' >> "$tmp/py/skills/ship/SKILL.md"
 out="$(run_in "$tmp/py")"; rc=$?
-[ "$rc" -eq 1 ] && grep -q '✗ python: skills/reach/SKILL.md:' <<<"$out" \
+[ "$rc" -eq 1 ] && grep -q '✗ python: skills/ship/SKILL.md:' <<<"$out" \
   && check "old tool name fails" ok || check "old tool name fails (got $rc)" bad
 
 # Case 30 (unquoted_shim_fails): a skill that runs the shim without the quoted plugin root fails.
 rm -rf "$tmp/py"; mkrepo "$tmp/clean" "$tmp/py"
-printf '%s\n' 'Run bin/builder reach check.' >> "$tmp/py/skills/reach/SKILL.md"
+printf '%s\n' 'Run bin/builder security score x.json.' >> "$tmp/py/skills/ship/SKILL.md"
 out="$(run_in "$tmp/py")"; rc=$?
-[ "$rc" -eq 1 ] && grep -q '✗ guard: skills/reach/SKILL.md:[0-9]* runs the shim without the quoted plugin root' <<<"$out" \
+[ "$rc" -eq 1 ] && grep -q '✗ guard: skills/ship/SKILL.md:[0-9]* runs the shim without the quoted plugin root' <<<"$out" \
   && check "unquoted shim fails" ok || check "unquoted shim fails (got $rc)" bad
 
 # Case 31 (readme_shim_allowed): a README for people names the shim with "<plugin root>" without tripping the guard.
 rm -rf "$tmp/py"; mkrepo "$tmp/clean" "$tmp/py"
-printf '%s\n' '"<plugin root>/bin/builder" budget 19 1783504800' >> "$tmp/py/skills/budget/README.md"
+printf '%s\n' '"<plugin root>/bin/builder" security score x.json' >> "$tmp/py/skills/ship/README.md"
 out="$(run_in "$tmp/py")"; rc=$?
 ! grep -q 'runs the shim without' <<<"$out" && check "README plugin root allowed" ok || check "README plugin root allowed (got $rc)" bad
 
 # Case 32 (missing_binary_line_required): a skill that runs the shim must stop at a missing binary.
 rm -rf "$tmp/py"; mkrepo "$tmp/clean" "$tmp/py"
-sed -i.bak '/says the binary is not installed or is off, stop/d' "$tmp/py/skills/reach/SKILL.md"; rm -f "$tmp/py/skills/reach/SKILL.md.bak"
+printf '%s\n' 'Run `"${CLAUDE_PLUGIN_ROOT}/bin/builder" security score x.json`.' >> "$tmp/py/skills/ship/SKILL.md"
 out="$(run_in "$tmp/py")"; rc=$?
-[ "$rc" -eq 1 ] && grep -q '✗ guard: skills/reach/SKILL.md runs the shim but does not stop at a missing binary' <<<"$out" \
+[ "$rc" -eq 1 ] && grep -q '✗ guard: skills/ship/SKILL.md runs the shim but does not stop at a missing binary' <<<"$out" \
   && check "missing binary line required" ok || check "missing binary line required (got $rc)" bad
 
 # Case 16: the run left the real repo's HEAD, refs and working tree as they were.

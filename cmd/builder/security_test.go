@@ -11,8 +11,8 @@ import (
 const vec = "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
 
 func findingsFile(t *testing.T, dir, repo, mode string) string {
-	d := map[string]any{"mode": mode, "repo": repo, "sha": strings.Repeat("a", 40), "dimensions": []any{"memory", "osi-l7"},
-		"findings": []any{map[string]any{"id": "memory/CWE-409/x", "dimension": "memory", "cwe": "CWE-409", "location": "x:1", "vector": vec, "title": "t"}}}
+	d := map[string]any{"mode": mode, "repo": repo, "sha": strings.Repeat("a", 40), "dimensions": []any{"memory", "osi-l7"}, "units": []any{},
+		"findings": []any{map[string]any{"id": "memory/CWE-409/x", "dimension": "memory", "cwe": "CWE-409", "location": "x:1", "state": "confirmed", "vector": vec, "title": "t"}}}
 	b, _ := json.Marshal(d)
 	p := filepath.Join(dir, "findings.json")
 	os.WriteFile(p, b, 0o644)
@@ -56,14 +56,26 @@ func TestSaveThenDiffRoundTrip(t *testing.T) {
 	repo := filepath.Join(d, "repo")
 	os.Mkdir(repo, 0o755)
 	f := findingsFile(t, d, repo, "audit")
-	if code, out, errs := call(t, "security", "baseline", "save", f, "--today", "2026-10-01"); code != 0 || !strings.Contains(out, `"saved"`) {
-		t.Fatal(code, errs)
+	if code, out, errs := call(t, "security", "baseline", "save", f, "--today", "2026-10-01"); code != 0 || !strings.Contains(out, `"saved"`) || !strings.Contains(out, `"found": false`) {
+		t.Fatal(code, out, errs)
 	}
 	code, out, errs := call(t, "security", "baseline", "diff", "--today", "2026-10-24", f)
 	var v map[string][]map[string]any
 	json.Unmarshal([]byte(out), &v)
 	if code != 0 || len(v["new"]) != 0 || len(v["still_open"]) != 1 || v["still_open"][0]["days_open"] != 23.0 {
 		t.Fatal(code, out, errs)
+	}
+	var u struct {
+		Units map[string][]any `json:"units"`
+	}
+	json.Unmarshal([]byte(out), &u)
+	if !strings.Contains(out, `"found": true`) {
+		t.Fatal("the diff does not say that it found the baseline", out)
+	}
+	for _, k := range []string{"carried", "changed", "new"} {
+		if _, ok := u.Units[k]; !ok {
+			t.Fatal("units missing", k, out)
+		}
 	}
 }
 
