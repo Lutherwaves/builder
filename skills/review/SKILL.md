@@ -45,7 +45,7 @@ Load `bar.md`, next to this file. It decides which candidates stay as findings.
 4. **Success only on success.** Does "done", "saved", "sent" or "safe" ever show when the work failed, was partial, or never ran? Counts, status lines and hints count.
 5. **The change's own claims.** Check the description, docs, comments and changelog against the code, sentence by sentence. Name each false claim.
 6. **Seams.** Is a value cleaned in one place and compared raw in another: paths, case, trailing slashes, IDs, labels?
-   Do keys match across layers (API, storage, UI, CLI)? Can old clients and old data read the new format?
+   Do keys match across layers (API, storage, UI, CLI)? Can old clients and old data read the new format? For an API, a service boundary, a data store or a tool for an agent, check the change against `../plan/architecture.md`.
 7. **Concurrency.** Shared state, lock order, tasks that outlive their caller, two requests for the same thing, cleanup that removes another request's work.
 8. **Hot paths.** Work per request, frame, keystroke or poll, at a realistic size.
 9. **Timeouts and waits.** Add up budgets, grace periods and queued work against each caller's timeout.

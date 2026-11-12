@@ -104,3 +104,16 @@ func TestTheBinaryPathHasAFallbackWithoutTheHook(t *testing.T) {
 		mustContain(t, read(t, f...), "With no \"builder root\" line from the session start")
 	}
 }
+
+// The architecture lens has one owner: plan runs it, review checks against the same file, and the project's own rules win.
+func TestPlanAndReviewShareTheArchitectureLens(t *testing.T) {
+	mustContain(t, read(t, "plan", "SKILL.md"), "Load `architecture.md` and run its lens")
+	mustContain(t, read(t, "review", "SKILL.md"), "`../plan/architecture.md`")
+	lens := read(t, "plan", "architecture.md")
+	for _, want := range []string{"The project's own rules win", "## The contract", "## The boundaries", "## More than one customer", "## Tools for agents", "## Guards", "## Questions with no default"} {
+		mustContain(t, lens, want)
+	}
+	for _, f := range []string{"SKILL.md", "soul-compact.md"} {
+		mustContain(t, read(t, "builder", f), "fails when it checks nothing")
+	}
+}

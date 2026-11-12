@@ -22,6 +22,7 @@ The person wants the same flow on each one, a change with nothing in it that the
 3. A failure with no known cause goes to a `debug` skill: reproduce, root cause in one sentence, a failing test, a fix at the cause, a stop after three fixes that did not hold.
 4. On each of the five harnesses, the session start prints the action map of that harness, and the map says how to load a skill that a handoff names as `builder:<name>`.
 5. A skill that runs the helper binary says where the binary is when no session-start hook ran.
+6. `plan` and `review` check work on an API, a service boundary, a data store or an agent tool against one architecture lens, and the project's own rules win over it.
 
 ## Non-goals
 
@@ -56,7 +57,8 @@ The person wants the same flow on each one, a change with nothing in it that the
 - `internal/harness`: `grok` is a harness; `auto` reads the markers in an order that tells Grok Build, Claude Code and Codex apart.
 - `skills/builder/harnesses/grok.md` (new); the Cursor, Grok Build and opencode maps say what `builder:<name>` means.
 - `skills/security/SKILL.md` and `skills/review/security-pass.md`: where the binary is with no hook.
-- `tests/chain_test.go`: four tests for the rules above.
+- `tests/chain_test.go`: five tests for the rules above.
+- `skills/plan/architecture.md` (new): the architecture lens. `skills/plan/SKILL.md` and `skills/review/SKILL.md` load it. Tenet 9 says what a good guard does.
 - `README.md`, `AGENTS.md`, `CONTRIBUTING.md`, `docs/install.md`, `CHANGELOG.md`, the manifests.
 
 ## Rulings
@@ -67,6 +69,8 @@ The person wants the same flow on each one, a change with nothing in it that the
 - 2026-11-12: slop does not block the gate of `review`. Proposed, not confirmed. Cost if wrong: a change with slop ships when `build` did not remove it.
 - 2026-11-12: Codex is detected by `PLUGIN_ROOT` and Grok Build by `GROK_PLUGIN_ROOT`. Proposed, not confirmed. The Codex and xAI documents name both variables; no session on either harness has shown them. Cost if wrong: that harness gets the Claude Code action map, as before this change.
 - 2026-11-12: the Grok Build action map marks six of seven actions "not verified". Proposed, not confirmed. Cost if wrong: an agent on Grok Build asks in plain text where a better tool exists.
+- 2026-11-12: add an architecture lens to `plan` and `review`, from the practices of a product the owner built. It names no product, and it is a reference file, not a skill. Decided by: the owner.
+- 2026-11-12: the lens gives no default for versioning, repeated writes and concurrent updates, and asks the person. Proposed, not confirmed. Cost if wrong: a plan stops for a question that a default could answer.
 
 ## Done when
 

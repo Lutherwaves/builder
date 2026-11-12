@@ -13,6 +13,8 @@
 
 ### Features
 
+- `plan` reviews work on an API, a service boundary, a data store or an agent tool through an architecture lens: where the contract is written, one shape for every list, who owns each fact, where the customer boundary is enforced, and which guard keeps each rule. The project's own rules win, and `review` checks a change against the same questions.
+- Tenet 9 says what a good guard does: it names the incident that made it, says what to do instead, and fails when it checks nothing.
 - `debug` is a new skill. When a test fails or a bug report arrives, it reproduces the failure, finds the root cause, pins it with a failing test and fixes the cause. It changes one thing at a time and stops after three fixes that did not hold. `build` loads it when a test fails.
 - `build` removes what its own change did not need before the last test run: a comment that restates the code, a guard for a case that cannot happen, a helper with one caller, an option nobody asked for, filler in prose. `review` lists the same things under a new "Slop" heading, which does not touch the gate.
 - builder runs on Grok Build: the session start prints its action map, and `docs/install.md` says how to install it.
