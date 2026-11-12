@@ -8,11 +8,18 @@ import (
 	"strings"
 )
 
-var Names = []string{"claude", "codex", "cursor", "opencode"}
+var Names = []string{"claude", "codex", "cursor", "grok", "opencode"}
 
-// envMarkers: Cursor, Codex and opencode arrive via an explicit flag or BUILDER_HARNESS.
-// A Cursor env marker is ignored: a Claude Code session can inherit it from its parent shell.
-var envMarkers = []string{"CLAUDECODE", "CLAUDE_PLUGIN_ROOT"}
+// markers are read in order, and the first one that is set names the harness.
+// The order matters: hooks/session-start exports CLAUDE_PLUGIN_ROOT on every harness, and Grok Build and Codex
+// also set it so that Claude Code plugins work. So the marker that only one harness sets comes first.
+// Cursor and opencode have no marker: a Claude Code session can inherit a Cursor one from its parent shell.
+var markers = []struct{ env, name string }{
+	{"GROK_PLUGIN_ROOT", "grok"},
+	{"CLAUDECODE", "claude"},
+	{"PLUGIN_ROOT", "codex"},
+	{"CLAUDE_PLUGIN_ROOT", "claude"},
+}
 
 func Detect(env map[string]string, explicit string) string {
 	for _, name := range []string{explicit, env["BUILDER_HARNESS"]} {
@@ -20,9 +27,9 @@ func Detect(env map[string]string, explicit string) string {
 			return name
 		}
 	}
-	for _, m := range envMarkers {
-		if env[m] != "" {
-			return "claude"
+	for _, m := range markers {
+		if env[m.env] != "" {
+			return m.name
 		}
 	}
 	return "unknown"

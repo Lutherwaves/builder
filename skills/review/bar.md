@@ -20,7 +20,7 @@ Example: "this loop could be cleaner" names neither.
 
 Drop a candidate when it is one of these:
 
-- An abstraction or an option that nobody asked for.
+- A wish for an abstraction or an option that nobody asked for.
 - A case that the callers, the types or the validation rule out. Read the callers before you drop it.
 - A guard that a caller or the framework already gives.
 - A rare case with no real harm.
@@ -29,6 +29,13 @@ Drop a candidate when it is one of these:
 - A premise that the code refutes. Example: "this can be null" when the code assigns it on every path.
 
 Write each dropped candidate under "Declined to judge", one line, with the item of this list that drops it.
+
+## Slop
+
+The change itself can add what nobody needs: a restating comment, a guard for a case that cannot happen, a helper with one caller.
+Load `../build/deslop.md` for the list. Read each added line of the diff against it.
+Slop is not a finding: it has no severity and it does not touch the gate. Write each item under "Slop", one line, with `file:line` and the item of the list.
+A line that passes the keep test is a finding, not slop. Example: a `try` that hides an error, so that "saved" shows after a failed write.
 
 ## When the two disagree
 

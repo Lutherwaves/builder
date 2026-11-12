@@ -244,7 +244,7 @@ func TestNoSkillUsesAnOldReportLine(t *testing.T) {
 
 func TestReportAsksWithAnActionEveryHarnessMaps(t *testing.T) {
 	mustContain(t, read(t, "builder", "SKILL.md"), `the "ask the person to choose" action of your harness`)
-	for _, harness := range []string{"claude", "codex", "cursor", "opencode"} {
+	for _, harness := range []string{"claude", "codex", "cursor", "grok", "opencode"} {
 		mustContain(t, read(t, "builder", "harnesses", harness+".md"), "| ask the person to choose |")
 	}
 }

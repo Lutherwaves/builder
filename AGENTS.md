@@ -1,6 +1,6 @@
 # builder — agent guide
 
-builder is a plugin for coding agents: seven skills, one session-start hook, and one Go binary, `builder`. The skills and the hook run it through `bin/builder`. builder has adapters for Claude Code, Codex CLI, Cursor CLI and opencode.
+builder is a plugin for coding agents: eight skills, one session-start hook, and one Go binary, `builder`. The skills and the hook run it through `bin/builder`. builder has adapters for Claude Code, Codex CLI, Cursor CLI, Grok Build and opencode.
 This guide routes an agent that works on builder itself.
 
 ## Where each change goes
@@ -12,8 +12,11 @@ This guide routes an agent that works on builder itself.
 | The build stage | `skills/build/SKILL.md` and its eval fixture `tests/evals/build/` | `bash tests/evals/run.sh --check`, then `bash tests/evals/run.sh build` |
 | The ship stage | `skills/ship/SKILL.md` and its eval fixture `tests/evals/ship/` | `bash tests/evals/run.sh --check`, then `bash tests/evals/run.sh ship` |
 | The engineering and design lenses of a plan review | `skills/plan/lenses.md` | `bash tests/evals/run.sh plan` |
+| The architecture lens of a plan review (API contract, boundaries, more than one customer, tools for agents) | `skills/plan/architecture.md` | `go test ./tests/ -run Architecture` |
 | The bar a review finding must pass, and the last sweep | `skills/review/bar.md` | `bash tests/evals/run.sh review-noise` |
 | How build answers review comments | `skills/build/comments.md` | `bash tests/evals/run.sh review-comments` |
+| What build removes from its own diff, and what review lists as slop | `skills/build/deslop.md` | `go test ./tests/ -run Slop` |
+| How a failure with no known cause is found and fixed | `skills/debug/SKILL.md` and its eval fixture `tests/evals/debug/` | `bash tests/evals/run.sh --check`, then `bash tests/evals/run.sh debug` |
 | The security pass of a review | `skills/review/security-pass.md` | `bash tests/evals/run.sh review-security` |
 | A domain checklist of an audit (AI, cloud, client, desktop and mobile, protocol) | `skills/security/domains.md` | `bash tests/evals/run.sh security-audit` |
 | How the stages chain (who loads whom, the plan header, the review path) | the handoff lines of each `skills/<stage>/SKILL.md` and `skills/builder/soul-compact.md` | `go test ./tests/ -run 'Stage|Soul|Handoff'` |

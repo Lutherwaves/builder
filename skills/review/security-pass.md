@@ -38,7 +38,7 @@ Section "5. Set the state" of `skills/security/SKILL.md` defines each state and 
 
 1. Write the findings file with the fields of section "6. Score" of `skills/security/SKILL.md`. Put it outside the repository, for example in a temp dir.
    Two things differ in a review: `mode` is `"change"`, and `units` is optional.
-2. Run `"${CLAUDE_PLUGIN_ROOT}/bin/builder" security score <findings.json>`. It adds `score` and `rating` to each confirmed finding and `top25` to every finding, or names the bad field. Fix the field and run it again. Never write a score yourself.
+2. Run `"${CLAUDE_PLUGIN_ROOT}/bin/builder" security score <findings.json>`. It adds `score` and `rating` to each confirmed finding and `top25` to every finding, or names the bad field. Fix the field and run it again. Never write a score yourself. With no "builder root" line from the session start, `${CLAUDE_PLUGIN_ROOT}` is the folder that holds `skills/`, two folders above the folder of this file. When it holds no `bin/`, stop and say that the builder root is not known.
 3. Run `"${CLAUDE_PLUGIN_ROOT}/bin/builder" security baseline diff <findings.json>`. It saves nothing. A review never saves a baseline.
    In change mode, no finding closes because the run leaves it out. A prior finding that this run marks `rejected` shows under `closed`, with `closed_as: rejected`. The saved baseline still holds it.
    Mark each finding that the diff lists as `still_open` "already known since <date>".

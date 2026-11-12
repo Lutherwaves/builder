@@ -10,7 +10,7 @@ report: is it done, what you have to do, what isn't proven yet, what left your m
 and every call the agent made on its own, with the reason. Nothing leaves the machine
 (no push, no PR, no message) without your yes.
 
-It's a plugin for Claude Code, Codex CLI, Cursor CLI and opencode. It takes a request
+It's a plugin for Claude Code, Codex CLI, Cursor CLI, Grok Build and opencode. It takes a request
 through spec, plan, build, review and ship, with security in every stage. Skills and one
 session hook; no server, no account, no network call at session start.
 
@@ -55,6 +55,11 @@ sensitive surface the work touches. A task on such a surface writes its hostile-
 test first. The review runs a security pass by itself, and `ship` stops on an open check.
 `security` audits the whole repository and remembers what it covered.
 
+Two more things keep the work honest. When something fails and the cause is not known, `debug`
+finds the root cause and pins it with a test before any fix. Before the last test run, `build`
+removes what its own change did not need: a comment that restates the code, a guard for a case
+that cannot happen, a helper with one caller. `review` lists the same things under "Slop".
+
 | | builder | your own CLAUDE.md |
 |---|---|---|
 | Starts from the person and the non-goals | every piece of work | if you wrote it |
@@ -80,6 +85,8 @@ codex plugin marketplace add Lutherwaves/builder
 codex plugin add builder@builder
 ```
 
+**Grok Build.** Grok Build reads Claude Code plugins. Add this repository as a marketplace in its `/plugins` screen, and install `builder`.
+
 **Cursor CLI** and **opencode:** see [docs/install.md](docs/install.md).
 
 The first session asks to install the helper binary. It runs the session-start hook and
@@ -96,7 +103,7 @@ A harness counts as supported once every eval fixture passes on it.
 <!-- support:start -->
 | Harness | Version | Eval date | Status |
 | --- | --- | --- | --- |
-| Claude Code | 2.1.308 (Claude Code) | 2026-10-22 | experimental: spec 2/6; 10 not graded |
+| Claude Code | 2.1.308 (Claude Code) | 2026-10-22 | experimental: spec 2/6; 11 not graded |
 <!-- support:end -->
 
 ## Skills
@@ -105,11 +112,12 @@ A harness counts as supported once every eval fixture passes on it.
 | --- | --- |
 | `builder` | The thirteen tenets, the five stages and their gates, and the report. |
 | `spec` | A request becomes a spec. It reads the repository, asks one question at a time with its recommendation, shows two or three ways to build it, and waits for your approval. |
-| `plan` | An approved spec becomes tasks that each start with a failing test, reviewed as an engineer and as a designer. |
-| `build` | The plan runs one task at a time, test first, one commit per task. It stops when a step is wrong and proposes the change. It answers each review comment with one outcome and one reply. |
+| `plan` | An approved spec becomes tasks that each start with a failing test, reviewed as an engineer and as a designer. Work on an API, a service boundary, a data store or an agent tool also gets an architecture review. |
+| `build` | The plan runs one task at a time, test first, one commit per task. It stops when a step is wrong and proposes the change. It removes what its own change did not need. It answers each review comment with one outcome and one reply. |
 | `review` | A review that proves each harm with evidence, a fix and a test, with a security pass and the running product. Posts nothing without your yes. |
 | `ship` | Reviewed work becomes a checked release. It stops on an open finding and waits for your yes before each push, pull request, merge, tag and release. |
 | `security` | A whole-repository audit: every layer, standards-mapped findings with CVSS scores, and what changed since last time. |
+| `debug` | A failure becomes a root cause in one sentence, a test that pins it, and a fix at the cause. It stops after three fixes that did not hold. |
 
 Ask for a skill by name, or just describe the job. The agent loads the right one.
 

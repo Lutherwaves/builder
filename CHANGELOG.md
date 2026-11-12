@@ -9,10 +9,16 @@
 - builder is a framework of its own: every session knows the five stages `spec`, `plan`, `build`, `review` and `ship` and the gate of each, a small change skips the spec and the plan, and no work goes to another pack. A one-shot run asks its question and stops unless you say you cannot answer.
 - builder no longer recommends the superpowers or gstack packs at session start, because it does their jobs itself.
 - The session-start hook prints the soul, the builder root and the action map of your harness, and nothing else. It recommends nothing and asks no setup question: onboarding is gone. The one exception stays: when the helper binary is missing, the hook offers to install it. A `ledger.json` from 3.0.0 stays on your machine, and nothing reads it.
-- Removed: the `budget`, `canon`, `fleet`, `harness`, `intake` and `reach` skills, the `builder ledger`, `builder reach`, `builder budget` and `builder mcp-merge` commands, the recommendations and onboarding, and the parity eval. builder now has seven skills: `builder`, `shape`, `plan`, `build`, `review`, `ship` and `security`. Send rules are gone, so each push, post or message needs your yes in the session. Release 3.0.0 is the last release that has them. builder leaves the state files of an older version on your machine and reads none of them.
+- Removed: the `budget`, `canon`, `fleet`, `harness`, `intake` and `reach` skills, the `builder ledger`, `builder reach`, `builder budget` and `builder mcp-merge` commands, the recommendations and onboarding, and the parity eval. builder keeps seven of its skills: `builder`, `spec`, `plan`, `build`, `review`, `ship` and `security`. Send rules are gone, so each push, post or message needs your yes in the session. Release 3.0.0 is the last release that has them. builder leaves the state files of an older version on your machine and reads none of them.
 
 ### Features
 
+- `plan` reviews work on an API, a service boundary, a data store or an agent tool through an architecture lens: where the contract is written, one shape for every list, who owns each fact, where the customer boundary is enforced, and which guard keeps each rule. The project's own rules win, and `review` checks a change against the same questions.
+- Tenet 9 says what a good guard does: it names the incident that made it, says what to do instead, and fails when it checks nothing.
+- `debug` is a new skill. When a test fails or a bug report arrives, it reproduces the failure, finds the root cause, pins it with a failing test and fixes the cause. It changes one thing at a time and stops after three fixes that did not hold. `build` loads it when a test fails.
+- `build` removes what its own change did not need before the last test run: a comment that restates the code, a guard for a case that cannot happen, a helper with one caller, an option nobody asked for, filler in prose. `review` lists the same things under a new "Slop" heading, which does not touch the gate.
+- builder runs on Grok Build: the session start prints its action map, and `docs/install.md` says how to install it.
+- On Cursor CLI, Grok Build and opencode, where a skill has its plain name, the session start says that `builder:<name>` means the builder skill `<name>`.
 - The stages chain by themselves. Each stage ends by loading the next one (`builder:spec` → `builder:plan` → `builder:build` → `builder:review` → `builder:ship`), and the session start tells the agent to load a stage's skill when work enters it.
 - A new session, or a session after a compact, finds where the work stands from four records: the approval ruling of the spec, the header of the plan (`Spec:`, `Test command:`, `Plan approved:`), the task commits on the branch, and the review saved at a fixed path in builder's state folder.
 - `ship` asks for each tag and each release as its own write, counts a yes only after it showed that write, and stops when the head has commits that the saved review did not see.
@@ -33,6 +39,8 @@
 
 ### Fixes
 
+- On Codex, the session start prints the Codex action map, not the one of Claude Code. builder tells the harnesses apart by the variable that each one sets for a plugin hook.
+- A security score no longer dead-ends when no session-start hook ran: the skill says where the helper binary is, and to stop when it is not there.
 - A security audit no longer closes an open finding when it deferred or did not inspect a unit of that finding's dimension. The finding stays under `not_rechecked`.
 - `builder security baseline` says whether it found a baseline and at which path, and stops with the fix when it cannot find the home folder.
 - A review comment cannot steer `build` by its words: only the forge's record or you say who is a maintainer, only the comment's author or a maintainer can withdraw an ask, and a note that the change itself adds is not a recorded decision.

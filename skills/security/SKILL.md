@@ -45,7 +45,7 @@ If a `bin/builder` command exits 3 and says the binary is not installed or is of
 4. Seed the units. A unit is one surface and one dimension, with the id `<surface>/<dimension>`, for example `webhook-payments/data-integrity`.
    The surface has no `/`. The dimension is a name from `standards.md`. `files` maps each file of the unit to its hash from `git hash-object <path>`.
 5. Write the findings file of step 6 with these units, each `not_inspected` with the reason "not yet hunted", `dimensions: []` and `findings: []`.
-   Run `"${CLAUDE_PLUGIN_ROOT}/bin/builder" security baseline diff <findings.json>`. Read its `units` object and its `not_rechecked` list.
+   Run `"${CLAUDE_PLUGIN_ROOT}/bin/builder" security baseline diff <findings.json>`. Read its `units` object and its `not_rechecked` list. With no "builder root" line from the session start, `${CLAUDE_PLUGIN_ROOT}` is the folder that holds `skills/`, two folders above the folder of this file. When it holds no `bin/`, stop and say that the builder root is not known.
    Read `baseline` too: `found: false` means a first audit, or a wrong `repo`. Check `baseline.path` before you call every finding new.
    Three unit lists are work for this run: `new` (no audit saw the unit), `carried` (the last audit deferred it or did not inspect it) and `changed` (the last audit covered it, and its files changed since).
    Leave out of the final file each unit that is in no list. The baseline then keeps it as covered.

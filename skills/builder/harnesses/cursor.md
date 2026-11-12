@@ -1,11 +1,12 @@
 <!-- hook -->
 On Cursor, builder skills load from the plugin and from .agents/skills.
+A skill text that says `builder:<name>` means the skill `<name>` of builder. When two skills share that name, take the one under the builder root.
 The full action map for this harness is in skills/builder/harnesses/cursor.md.
 <!-- /hook -->
 
 | Action | cursor |
 |---|---|
-| load a skill (and its syntax) | load by its name; Cursor loads builder skills from the plugin and from `.agents/skills` |
+| load a skill (and its syntax) | load by its name, without the `builder:` prefix; Cursor loads builder skills from the plugin and from `.agents/skills` |
 | ask the person to choose | not verified: ask in plain text, one question at a time, with your recommendation |
 | start a subagent | not verified: do the work in this session, or ask the person to start another agent |
 | compact the context | not verified: write the record file, then ask the person to start a fresh chat |

@@ -77,6 +77,7 @@ Example: the anti-goal is "a customer name runs as a formula". The test exports 
 
 Load `lenses.md`. Run the engineering lens on the whole plan.
 Then run the design lens, when a person sees or types anything.
+Load `architecture.md` and run its lens, when the work touches an API, a boundary between services, a data store or a tool for an agent.
 Write each finding in the plan, under "Lens findings". Each finding changes the plan, or says "no change, because <reason>".
 A change from a finding is a new task, a changed task or a cut. Name it: "added Task 4", "cut `utils.py`".
 
@@ -138,7 +139,7 @@ Before you hand the plan over:
 - [ ] Each task has files, a failing test, the command with its result before and after, a done-when line and a commit.
 - [ ] No step is a placeholder. Each names a behaviour and its test.
 - [ ] Each task that touches a spec surface has `Surface: <name>` and a hostile-input test for its anti-goal.
-- [ ] I ran the engineering lens, and the design lens when a person sees anything.
+- [ ] I ran the engineering lens, the design lens when a person sees anything, and the architecture lens when the work touches an API, a boundary, a data store or a tool for an agent.
 - [ ] Each finding changed the plan or says "no change, because …".
 - [ ] Each done-when line and each anti-goal maps to a task by name.
 - [ ] The last task is the review. In an unattended run, `build` starts only when the request asked for the build.

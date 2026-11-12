@@ -18,13 +18,14 @@
     "rulings",
     "codex",
     "cursor",
+    "grok",
     "opencode",
     "agent-skills"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "builder",
-    "shortDescription": "Shape, plan, build, review and ship, with security in every stage",
+    "shortDescription": "Spec, plan, build, review and ship, with security in every stage",
     "developerName": "Lutherwaves",
     "category": "Developer Tools",
     "capabilities": [

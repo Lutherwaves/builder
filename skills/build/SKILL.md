@@ -58,11 +58,8 @@ Where your harness has no such action, build each task inline in this session. S
 ## 4. When a test fails
 
 A test that fails after your code stops the run. Change no more code until you know why.
-
-1. Reproduce the failure with one command. Quote it.
-2. Find the root cause. Read the error, the code and the data it uses. State the cause in one sentence.
-3. Fix the cause, never the symptom. Never skip a test, loosen an assertion or catch the error to hide it.
-4. Run the test, then the full suite.
+Load `builder:debug`. It finds the root cause, pins it with a test and fixes the cause, then comes back to this task.
+Never skip a test, loosen an assertion or catch the error to hide it.
 
 ## 5. When the plan is wrong
 
@@ -91,7 +88,7 @@ After the fixes, load `builder:review` again, as section 8 says. A push or a pos
 A small change has no plan. The size rule of the builder skill defines a small change, and says to step up to `spec` when the work grows.
 
 1. Write one test that fails without the change. Run it and quote the failure.
-2. Make the change. Run the test, then the full suite. Quote the result.
+2. Make the change. Run the test, then the full suite. Quote the result. Apply the list in `deslop.md` to the diff.
 3. Commit with a Conventional Commit.
 4. Load `builder:review` on the diff, with the test command. Section 8 says what to do with its findings.
 
@@ -102,11 +99,12 @@ In the report, say under ⚠ Not proven that no test covers the change.
 
 ## 8. Done
 
-1. Run the full suite after the last change. Quote its output: the command and the summary line. A run before the last change does not count.
-2. Load `builder:review` now, and give it the plan, the spec and the test command. Do not wait for the person to ask.
-3. When the review returns a Critical or an Important finding, fix each one test-first, with the test that the review names. Then ask for the review again.
-4. Do this at most twice. After the second round with an open Critical or Important finding, stop. Hand the review to the person.
-5. When the review's gate passes, the next stage is `builder:ship`. Load it when the request asked to ship.
+1. Load `deslop.md`, next to this file. Run its pass over your own diff, and remove what the change did not need.
+2. Run the full suite after the last change. Quote its output: the command and the summary line. A run before the last change does not count.
+3. Load `builder:review` now, and give it the plan, the spec and the test command. Do not wait for the person to ask.
+4. When the review returns a Critical or an Important finding, fix each one test-first, with the test that the review names. Remove each item under its Slop heading. Then ask for the review again.
+5. Do this at most twice. After the second round with an open Critical or Important finding, stop. Hand the review to the person.
+6. When the review's gate passes, the next stage is `builder:ship`. Load it when the request asked to ship.
    Otherwise the report's ▶ You item says: "Reply `ship` to start `builder:ship`."
 
 End with the builder report from the builder skill.
@@ -124,7 +122,8 @@ List each plan change under Calls.
 | One commit for the whole plan | One commit per task, with the plan's subject. |
 | A missing function written in silence | Stop. Name the step, propose the change, update the plan. |
 | The hostile-input test written last | In a `Surface:` task, the hostile-input test comes first. |
-| A skipped test or a loosened assertion to go green | Find the root cause. Fix the cause. |
+| A skipped test or a loosened assertion to go green | Load `builder:debug`. Find the root cause. Fix the cause. |
+| A restating comment, an unused option or a one-caller helper left in the diff | Run the pass in `deslop.md` before the last test run. |
 | The suite run before the last fix, quoted as done | Run the full suite after the last change. |
 | A third review round | Stop after two. Hand the review to the person. |
 | No word on who built each task | Say "fresh agent" or "this session" for each task. |
@@ -141,6 +140,7 @@ Before you say the build is done:
 - [ ] Each finished task has one Conventional Commit.
 - [ ] Each wrong step is named, its change is proposed, and the plan file holds the change.
 - [ ] No failing test is skipped or loosened. Each fix names its root cause.
+- [ ] The deslop pass ran over my own diff, and the report says what it removed.
 - [ ] The full suite ran after the last change. Its output is quoted.
 - [ ] The change went to `review`. Each Critical and Important finding is fixed, or handed to the person after two rounds.
 - [ ] The report says, per task, whether a fresh agent or this session built it.

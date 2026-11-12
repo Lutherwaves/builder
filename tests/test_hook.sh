@@ -19,7 +19,7 @@ soul1="$(head -1 "$root/skills/builder/soul-compact.md")"
 block1() { awk '/<!-- hook -->/{on=1;next} /<!-- \/hook -->/{on=0} on' "$root/skills/builder/harnesses/$1.md" | head -1; }
 
 echo "test_prints_soul_root_and_map"
-for h in claude codex cursor opencode; do
+for h in claude codex cursor grok opencode; do
   text="$(run "$hook" --harness "$h" --format text)"
   grep -qF "$soul1" <<<"$text" && grep -qF "builder root: $root." <<<"$text" && grep -qF "$(block1 "$h")" <<<"$text" \
     && check "$h: soul, root line and map" ok || check "$h: soul, root line and map" bad
@@ -29,7 +29,7 @@ grep -qF 'Conventional Commit' <<<"$text" && grep -qF -- '--no-verify' <<<"$text
   && check "commit rules in the soul" ok || check "commit rules in the soul" bad
 
 echo "test_offers_and_asks_nothing"
-for h in claude codex cursor opencode; do
+for h in claude codex cursor grok opencode; do
   text="$(run "$hook" --harness "$h" --format text)"
   grep -qF -e 'builder recommends' -e 'onboarding' -e 'ledger' -e 'yes|later|never' <<<"$text" \
     && check "$h: no offer, no question" bad || check "$h: no offer, no question" ok
@@ -37,7 +37,7 @@ done
 
 echo "test_ignores_an_old_ledger"
 mkdir -p "$tmp/bh"
-for h in claude codex cursor opencode; do
+for h in claude codex cursor grok opencode; do
   rm -f "$tmp/bh/ledger.json"
   without="$(run "$hook" --harness "$h")"
   printf '{"onboarded":false,"answers":{"fleet":"later"}}' > "$tmp/bh/ledger.json"
@@ -134,7 +134,7 @@ text="$(run "$hook" --harness claude | ctx)"
 grep -qF "builder root: $root. Where a builder skill says \${CLAUDE_PLUGIN_ROOT}, use this path." <<<"$text" && check "root line" ok || check "root line" bad
 
 echo "test_mapping_block_max_15"
-for h in claude codex cursor opencode; do
+for h in claude codex cursor grok opencode; do
   f="$root/skills/builder/harnesses/$h.md"
   n="$(awk '/<!-- hook -->/{on=1;next} /<!-- \/hook -->/{on=0} on' "$f" 2>/dev/null | wc -l | tr -d ' ')"
   [ "$n" -ge 1 ] && [ "$n" -le 15 ] && check "$h block has $n lines" ok || check "$h block 1-15 lines (got $n)" bad
@@ -143,7 +143,7 @@ for h in claude codex cursor opencode; do
 done
 
 echo "test_speed_each_harness"
-for h in claude codex cursor opencode unknown; do
+for h in claude codex cursor grok opencode unknown; do
   s=$(now_ms)
   run "$hook" --harness $h >/dev/null
   e=$(now_ms)

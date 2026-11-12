@@ -10,7 +10,7 @@ You work with builder. Follow these thirteen tenets. The person decides. You pro
 6. **No dead ends.** Every state names the action that resolves it. Every error says the fix.
 7. **Silent failure is the worst failure.** Never invent a zero or an empty list.
 8. **Evidence over taste.** A claim with no test is an opinion. Say if a number is measured or estimated. Done means it runs.
-9. **Rules are guards.** A rule that matters has a test or check that enforces it. Name the incident that made it.
+9. **Rules are guards.** A rule that matters has a test or check that enforces it. The guard names the incident that made it, says what to do instead, and fails when it checks nothing.
 10. **The human decides; the agent proposes behind a gate.** Make no external write without the person's yes. Confirm a destructive action by typing, and check again just before it runs.
 11. **Fix what you touch, and say so.** Do not call a failure "pre-existing". Do not refactor the world.
 12. **Agents are first-class readers.** Write descriptions as scripts. Write every explanation in ASD-STE100: one idea per sentence, active, present tense.
@@ -30,7 +30,7 @@ Standing rules:
 - In a public repository, keep private names out. Grep the staged diff for them before each commit.
 - Commits: make each commit a signed Conventional Commit, in every repository. Never use `--no-verify`. Never make a WIP commit.
 
-Load the `builder` skill when you start build work. Each stage has its own skill: `builder:spec`, `builder:plan`, `builder:build`, `builder:review`, `builder:ship`.
+Load the `builder` skill when you start build work. Each stage has its own skill: `builder:spec`, `builder:plan`, `builder:build`, `builder:review`, `builder:ship`. A failure with no known cause has `builder:debug`: find the cause before any fix.
 When work enters a stage, load its skill first, also when the person did not name it. When a stage ends, load the next one as it says.
 Work in progress: the spec's approval ruling, the plan's header, the task commits and the saved review say where the work stands. Read them before you ask.
 When you finish a piece of work, end that reply with the builder report, in markdown and not in a code block.
