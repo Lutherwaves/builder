@@ -6,8 +6,8 @@ description: Use when a spec or an issue is approved and the work has more than 
 # plan — tasks a builder with no context can run
 
 A spec says what changes for whom. A plan says how to build it, one task at a time.
-`plan` is the second stage of the builder flow. It takes the spec that the builder skill `shape` wrote and the person approved.
-It hands the plan to the builder skill `build`. The builder of each task has the plan and the repository, and nothing else.
+`plan` is the second stage of the builder flow. It takes the spec that `builder:spec` wrote and the person approved.
+It hands the plan to `builder:build`. The builder of each task has the plan and the repository, and nothing else.
 The builder skill sets how to ask and what to do when nobody answers. Read its "Questions" and "When nobody answers" rules.
 
 A small change skips the plan. The size rule of the builder skill defines a small change.
@@ -24,16 +24,26 @@ A small change skips the plan. The size rule of the builder skill defines a smal
 ## 1. Read the spec
 
 1. Read the spec, then the code and the tests it touches. Say what you found: "`orders.month` already returns one shop's month."
-2. Check that the spec is approved. Its Rulings section holds the line `<YYYY-MM-DD>: spec approved. Decided by: <role>.`, which `shape` adds on approval.
+2. Check that the spec is approved. Its Rulings section holds the line `<YYYY-MM-DD>: spec approved. Decided by: <role>.`, which `spec` adds on approval.
    A spec with no such line, or with an approval marked "proposed, not confirmed", is not approved. When the person approves it now, add the line first.
-   If it is not approved, stop. Say so, and offer `shape`.
-   In an unattended run, go on. Write "spec not approved; planned anyway" at the top of the plan and under Calls.
+   If it is not approved, stop. Say so, and offer `builder:spec`.
+   In an unattended run, go on only when the request asked for the build. Write `Spec approved: no` in the plan header and "spec not approved; planned anyway" under Calls.
 3. Copy out each done-when line, each anti-goal and each line of Surfaces. Step 5 checks the plan against them.
 4. Find the test command in the README, the CI file or the build file. Each task uses it.
 
-## 2. The file map
+## 2. The header and the file map
 
-The plan opens with the file map, before any task.
+The plan opens with this header, word for word. `build` reads it and stops without it.
+
+```
+Spec: <path of the spec>
+Spec approved: <YYYY-MM-DD> | no
+Test command: <the command>
+Plan approved: <YYYY-MM-DD> by <role> | no
+Next: builder:build
+```
+
+The file map comes next, before any task.
 List each file to create or change. Give each file one job, in one line.
 
 ```
@@ -67,7 +77,7 @@ Example: the anti-goal is "a customer name runs as a formula". The test exports 
 
 Load `lenses.md`. Run the engineering lens on the whole plan.
 Then run the design lens, when a person sees or types anything.
-Write each finding in the plan, under "Review". Each finding changes the plan, or says "no change, because <reason>".
+Write each finding in the plan, under "Lens findings". Each finding changes the plan, or says "no change, because <reason>".
 A change from a finding is a new task, a changed task or a cut. Name it: "added Task 4", "cut `utils.py`".
 
 ## 5. Check against the spec
@@ -90,21 +100,24 @@ A line with no task is a gap. Add the task, or move the line to Calls with the r
 ## The gate
 
 The last task of every plan is the review of the whole change.
-It names the builder skill `review`, the spec and the test command.
+It names `builder:review`, the spec and the test command.
 The gate to `build`: every done-when line maps to a task, the last task is the review, and in an attended run the person approves the plan.
-In an unattended run, go on to `build` only when the request asked for the build. Otherwise the plan is the deliverable.
+On approval, write the date and the role into the header line `Plan approved:`. `build` reads the plan, not the chat.
+In an unattended run, leave it at `no`, and load `builder:build` only when the request asked for the build. Otherwise the plan is the deliverable.
 Build nothing while you plan.
 
 ## After the plan
 
 End with the builder report from the builder skill. Its first line names the plan by the person's new ability, and links it.
-Then offer the next step in one line: "Approve it, and I build it with `build`. Or change a task first?"
+Then ask for the approval in one line: "Approve it, and I build it. Or change a task first?"
+Next: when the person approves, fill in `Plan approved:` and load `builder:build` in the same turn. Do not wait for the person to name it.
 
 ## Common mistakes
 
 | Mistake | Fix |
 |---|---|
-| Tasks before the file map | Open with the file map. Each file has one job. |
+| Tasks before the header and the file map | Open with the header, then the file map. Each file has one job. |
+| An approval in the chat only | Write it into `Plan approved:`. `build` reads the plan, not the chat. |
 | "Add error handling" or "write tests" as a step | Name the behaviour, the input, the test and its assertion. |
 | A task with no failing test, or no expected result | Write the test first, the command, and what it prints before and after. |
 | A task that touches personal data with only happy-path tests | Add `Surface: <name>` and a hostile-input test for the anti-goal. |
@@ -120,8 +133,8 @@ Then offer the next step in one line: "Approve it, and I build it with `build`. 
 
 Before you hand the plan over:
 
-- [ ] The spec holds the approval ruling, or the plan says "spec not approved; planned anyway".
-- [ ] The plan opens with the file map. Each file has one job.
+- [ ] The spec holds the approval ruling, or the header says `Spec approved: no`.
+- [ ] The plan opens with the five header lines, then the file map. Each file has one job.
 - [ ] Each task has files, a failing test, the command with its result before and after, a done-when line and a commit.
 - [ ] No step is a placeholder. Each names a behaviour and its test.
 - [ ] Each task that touches a spec surface has `Surface: <name>` and a hostile-input test for its anti-goal.
@@ -130,4 +143,4 @@ Before you hand the plan over:
 - [ ] Each done-when line and each anti-goal maps to a task by name.
 - [ ] The last task is the review. In an unattended run, `build` starts only when the request asked for the build.
 - [ ] I wrote no product code.
-- [ ] The reply ends with the builder report, then a one-line offer of the next step.
+- [ ] The reply ends with the builder report, then the one-line request for approval. On approval I fill in `Plan approved:` and load `builder:build`.

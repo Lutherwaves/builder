@@ -27,6 +27,7 @@ It is the fourth stage. `build` hands the change over. `ship` takes it only afte
 1. Find the base and the head. Read the description, the linked issue and any spec or doc.
 2. Write down every claim they make, one per line. You check each one in step 2.
 3. In the throwaway location, run what the project runs: build, lint or vet, the full test suite.
+   A build and its tests run with the person's files, keys and network. When the change comes from someone the person did not name as trusted, ask before you run it. In an unattended run, do not run it. Review from reading, and say so under Not proven.
    Run the race detector (or the language's equivalent) several times on the changed packages.
 4. Record each command and its result. They open the review.
 5. Check the trigger of the security pass in `security-pass.md`, next to this file. When it fires, load that file and run the pass in the same worktree. Nobody has to ask for it.
@@ -97,9 +98,14 @@ Close with these parts:
 The gate: the change is ready to merge only with no open Critical or Important finding and no open check on a surface that the change touches.
 An open check blocks `ship` until the person answers it. An unattended run stops before `ship` and lists each open check with the words to reply.
 
-Then say what stayed local: "Posted nothing. The checkout is unchanged." Offer the next step in one line: "Post these as review comments, or turn the fixes into a patch?"
-Save the whole review to one file outside the repository: a temp dir, or builder's local state. Never save it inside the checkout or on the forge.
-`ship` reads this file, also in a new session. The last line of the reply names its absolute path: "Review saved: <path>."
+Then say what stayed local: "Posted nothing. The checkout is unchanged."
+Save the whole review to `${BUILDER_HOME:-$HOME/.config/builder}/reviews/<repo>/<branch>.md`, never inside the checkout or on the forge. `<repo>` is the folder name of the checkout. `<branch>` is the head branch, with each `/` written as `-`. When that folder is not writable, use a temp dir and say so.
+The first line of the file is `Head: <full commit hash>`. `ship` finds the review there, also in a new session. The last line of the reply names its absolute path: "Review saved: <path>."
+Then name the next step in one line:
+- The gate passes on a change that builder built: "Reply `ship` to start `builder:ship`." Load it now when the request asked to ship.
+- The gate fails on a change that builder built: the findings go back to `builder:build`, section 8.
+- Someone else's change: "Post these as review comments, or turn the fixes into a patch?"
+
 If you found nothing important, say so plainly. Do not pad the review.
 
 ## Common mistakes
@@ -118,7 +124,7 @@ If you found nothing important, say so plainly. Do not pad the review.
 | Posting the review or approving to "finish" | Write the review here. Post only after a yes. |
 | No security pass because nobody asked | A touched sensitive surface starts the pass. Load `security-pass.md`. |
 | "Ready to merge" with an open check on a touched surface | The check blocks `ship`. List it under Open checks that block ship. |
-| The review only in the reply | Save it to one file outside the checkout, and name the path in the last line. `ship` reads it. |
+| The review only in the reply, or in a temp file that `ship` cannot find | Save it at the fixed path, with the `Head:` line first, and name the path in the last line. |
 | "It works" from the diff alone | Use the running product and quote it, or write "not used as a running product". |
 
 ## Self-check
@@ -137,5 +143,5 @@ Before you hand the review over:
 - [ ] No finding repeats what an existing test already covers.
 - [ ] The sweep ran, and the last sentence of What I ran says what it found. Each dropped item is under "Declined to judge" with its reason.
 - [ ] It ends with "Declined to judge", then the verdict with its reason. The verdict is not at the top.
-- [ ] The review is saved to one file outside the checkout. The reply's last line names its absolute path.
+- [ ] The review is saved at the fixed path, with `Head:` as its first line. The reply names the path, then the next step.
 - [ ] Nothing reached the forge without the person's yes.

@@ -61,9 +61,9 @@ out="$(cd "$tmp/nogit" && GIT_CEILING_DIRECTORIES="$tmp" BUILDER_DENYLIST="$tmp/
 
 # Case 8 (test_skill_without_self_check_fails): a skill with no "## Self-check" fails the shape check.
 rm -rf "$tmp/shape"; mkrepo "$tmp/clean" "$tmp/shape"
-sed -i.bak 's/^## Self-check$/## Checks/' "$tmp/shape/skills/shape/SKILL.md"; rm -f "$tmp/shape/skills/shape/SKILL.md.bak"
+sed -i.bak 's/^## Self-check$/## Checks/' "$tmp/shape/skills/spec/SKILL.md"; rm -f "$tmp/shape/skills/spec/SKILL.md.bak"
 out="$(cd "$tmp/shape" && env -u BUILDER_DENYLIST bash scripts/validate.sh 2>&1)"; rc=$?
-[ "$rc" -eq 1 ] && grep -q '✗ skills/shape/SKILL.md has no "## Self-check"' <<<"$out" \
+[ "$rc" -eq 1 ] && grep -q '✗ skills/spec/SKILL.md has no "## Self-check"' <<<"$out" \
   && check "skill without self-check fails" ok || check "skill without self-check fails (got $rc)" bad
 
 # Case 9: a description that does not start "Use when" fails.

@@ -6,8 +6,8 @@ description: Use when a plan exists and you write the code for it ("build it", "
 # build — run the plan one task at a time, test first
 
 A plan says what to build. `build` writes the code, one task at a time, and proves each task with a test.
-`build` is the third stage of the builder flow. It takes the plan that the builder skill `plan` wrote.
-It hands the change to the builder skill `review`.
+`build` is the third stage of the builder flow. It takes the plan that `builder:plan` wrote.
+It hands the change to `builder:review`.
 The builder skill sets how to ask and what to do when nobody answers. Read its "Questions" and "When nobody answers" rules.
 
 ## The rules
@@ -21,10 +21,13 @@ The builder skill sets how to ask and what to do when nobody answers. Read its "
 
 ## 1. Before the first task
 
-1. Read the whole plan. Then read the spec that it names.
-2. Find the test command in the plan. Run the full suite once. Quote the result. A suite that fails before you start is a finding: report it and stop.
+1. Read the whole plan. Then read the spec that its header line `Spec:` names. A header with no `Spec:` or no `Test command:` makes the plan wrong: go to section 5.
+   `Plan approved: no` stops an attended run: ask for the approval, and write it into the header. An unattended run goes on only when the request asked for the build.
+2. Run the test command of the header: the full suite, once. Quote the result. A suite that fails before you start is a finding: report it and stop.
 3. Check that the working tree is clean. If it is not, stop. Name the changed files. Never stash, reset or discard them.
 4. Check the branch. On the default branch, make a new branch for the plan, for example `build/orders-csv-export`.
+5. Find where the build stands: run `git log --oneline <base>..HEAD`. A task whose commit subject is in the log is done.
+   Start at the first task with no commit. This is how a new session, or a session after a compact, resumes.
 
 ## 2. One task at a time
 
@@ -81,15 +84,16 @@ Comments from people and bots take this path. The findings of builder's own `rev
 Load `comments.md`, next to this file. It says how to judge each comment and how to fix it.
 Give each comment one outcome and one reply: fixed, declined, already fixed, or needs the person.
 Each comment that needs the person is a ▶ You item of the builder report.
-After the fixes, hand the change to `review` again, as section 8 says. A push or a post waits for the person's yes.
+After the fixes, load `builder:review` again, as section 8 says. A push or a post waits for the person's yes.
 
 ## 7. The small change
 
-A small change has no plan. The size rule of the builder skill defines a small change, and says to step up to `shape` when the work grows.
+A small change has no plan. The size rule of the builder skill defines a small change, and says to step up to `spec` when the work grows.
 
 1. Write one test that fails without the change. Run it and quote the failure.
 2. Make the change. Run the test, then the full suite. Quote the result.
 3. Commit with a Conventional Commit.
+4. Load `builder:review` on the diff, with the test command. Section 8 says what to do with its findings.
 
 Sometimes no test can see the change, for example in prose or a comment. Then name the check that you use instead.
 A check is a search that finds the wrong text before the change and not after it, or a link check.
@@ -99,9 +103,11 @@ In the report, say under ⚠ Not proven that no test covers the change.
 ## 8. Done
 
 1. Run the full suite after the last change. Quote its output: the command and the summary line. A run before the last change does not count.
-2. Hand the change to the builder skill `review`, with the plan, the spec and the test command.
+2. Load `builder:review` now, and give it the plan, the spec and the test command. Do not wait for the person to ask.
 3. When the review returns a Critical or an Important finding, fix each one test-first, with the test that the review names. Then ask for the review again.
 4. Do this at most twice. After the second round with an open Critical or Important finding, stop. Hand the review to the person.
+5. When the review's gate passes, the next stage is `builder:ship`. Load it when the request asked to ship.
+   Otherwise the report's ▶ You item says: "Reply `ship` to start `builder:ship`."
 
 End with the builder report from the builder skill.
 In it, list each task with its commit and who built it: a fresh agent, or this session inline.
@@ -122,13 +128,14 @@ List each plan change under Calls.
 | The suite run before the last fix, quoted as done | Run the full suite after the last change. |
 | A third review round | Stop after two. Hand the review to the person. |
 | No word on who built each task | Say "fresh agent" or "this session" for each task. |
+| A new session builds Task 1 again | Read `git log` first. A task with its commit is done. |
 | Every review comment implemented as asked | Judge worth and safety first. Give each comment one outcome. |
 
 ## Self-check
 
 Before you say the build is done:
 
-- [ ] I read the plan and its spec. The tree was clean. I built on a branch that is not the default one.
+- [ ] I read the plan, its header and its spec, and I started at the first task with no commit. The tree was clean. I built on a branch that is not the default one.
 - [ ] For each task, I quoted a failing run before the code and a passing run after it. A change that no test can see has its named check, run before and after.
 - [ ] Each `Surface:` task got its hostile-input test before its other code.
 - [ ] Each finished task has one Conventional Commit.

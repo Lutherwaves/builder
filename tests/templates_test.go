@@ -1,4 +1,4 @@
-// The shape template keeps the section order its SKILL.md lists.
+// The spec template keeps the section order its SKILL.md lists.
 //
 // Eval agents cannot read the template (it sits outside the eval's working
 // directory), so the order written in SKILL.md must match the template.
@@ -71,8 +71,8 @@ func submatches(re, text string) []string {
 }
 
 func TestIssueTemplateMatchesShapeSkill(t *testing.T) {
-	headings := submatches(`(?m)^## (.+?)(?: \(.*\))?$`, read(t, "shape", "issue-template.md"))
-	want := listedOrder(t, read(t, "shape", "SKILL.md"), "Its sections, in order:")
+	headings := submatches(`(?m)^## (.+?)(?: \(.*\))?$`, read(t, "spec", "issue-template.md"))
+	want := listedOrder(t, read(t, "spec", "SKILL.md"), "Its sections, in order:")
 	if !reflect.DeepEqual(headings, want) {
 		t.Fatalf("issue-template headings %q, SKILL.md lists %q", headings, want)
 	}
@@ -309,7 +309,7 @@ func readmeSection(t *testing.T, heading string) string {
 
 func TestReadmeSaysWhyBuilder(t *testing.T) {
 	section := whyBuilderSection(t)
-	for _, part := range []string{"shape", "plan", "build", "review", "ship", "security", "CLAUDE.md"} {
+	for _, part := range []string{"spec", "plan", "build", "review", "ship", "security", "CLAUDE.md"} {
 		mustContain(t, section, part)
 	}
 }

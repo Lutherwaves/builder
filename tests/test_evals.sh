@@ -128,10 +128,10 @@ rm -rf "$tmp/evals/allowed"
 
 # Per harness: the claude dry-run stays as it was; each other harness names its own runner.
 # Machine paths and the timestamp are normalised the same way on both sides.
-norm() { sed "s#$root#<root>#g; s#$1/shape/[0-9]\{8\}-[0-9]\{6\}#<out>#g"; }
+norm() { sed "s#$root#<root>#g; s#$1/spec/[0-9]\{8\}-[0-9]\{6\}#<out>#g"; }
 gold_run() { BUILDER_EVAL_OUT=/OUT bash "$root/tests/evals/run.sh" "$@" 2>&1 | norm /OUT; }
-[ "$(gold_run shape --dry-run)" = "$(cat "$root/tests/evals/golden-dry-run-claude.txt")" ] \
-  && [ "$(gold_run --harness claude shape --dry-run)" = "$(cat "$root/tests/evals/golden-dry-run-claude.txt")" ] \
+[ "$(gold_run spec --dry-run)" = "$(cat "$root/tests/evals/golden-dry-run-claude.txt")" ] \
+  && [ "$(gold_run --harness claude spec --dry-run)" = "$(cat "$root/tests/evals/golden-dry-run-claude.txt")" ] \
   && check "dry-run for claude is byte-identical to the golden output" ok || check "dry-run for claude is byte-identical to the golden output" bad
 runners_ok=1
 for pair in 'codex:^codex exec ' 'cursor:^agent -p --force ' 'opencode:^opencode run '; do
@@ -213,8 +213,8 @@ d="$(ls -d "$tmp"/hout-codex/h1/*/ | head -1)"
   && check "codex: temp CODEX_HOME, auth.json symlinked, builder installed only in the with run" ok || check "codex run ($(cat "$d/with.md" 2>&1))" bad
 d="$(ls -d "$tmp"/hout-cursor/h1/*/ | head -1)"
 { [ "$(grep -c '^HOOKS: ' "$d/baseline.md")" -eq 1 ] && ! grep -q 'session-start' "$d/baseline.md" \
-  && grep -q "^HOOKS: .*$root/hooks/session-start --harness cursor" "$d/with.md" && grep -q '^SKILLS: .*shape' "$d/with.md" \
-  && ! grep -q 'SKILLS: .*shape' "$d/baseline.md" && grep -q '^SKILLCOPY: regular' "$d/with.md" && grep -q '^CURSOR_CONFIG_DIR: unset' "$d/with.md" \
+  && grep -q "^HOOKS: .*$root/hooks/session-start --harness cursor" "$d/with.md" && grep -q '^SKILLS: .*spec' "$d/with.md" \
+  && ! grep -q 'SKILLS: .*spec' "$d/baseline.md" && grep -q '^SKILLCOPY: regular' "$d/with.md" && grep -q '^CURSOR_CONFIG_DIR: unset' "$d/with.md" \
   && grep -q 'PROBE gh => rc=3' "$d/with.md" && grep -q 'PROBE push => rc=3' "$d/with.md" && grep -q 'PROBE push2 => rc=3' "$d/with.md" \
   && grep -q 'PROBE status => rc=0' "$d/with.md"; } \
   && check "cursor: project hooks.json and skills in the with run only, real config dir untouched, gh and git push shimmed" ok || check "cursor run ($(cat "$d/with.md" 2>&1))" bad

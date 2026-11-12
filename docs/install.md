@@ -11,7 +11,7 @@ second.
 /plugin install builder@builder
 ```
 
-Call a skill as `/builder:shape`.
+Call a skill as `/builder:spec`.
 
 ## Codex CLI
 

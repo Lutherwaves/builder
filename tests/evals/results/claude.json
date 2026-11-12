@@ -3,7 +3,7 @@
   "harness_version": "2.1.308 (Claude Code)",
   "date": "2026-10-22",
   "fixtures": {
-    "shape": {
+    "spec": {
       "met": 2,
       "total": 6
     }

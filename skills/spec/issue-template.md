@@ -38,7 +38,7 @@ Write each line in ASD-STE100: one idea, active voice, present tense.
 ## Rulings
 
 - <YYYY-MM-DD> — <the decision> — because <the reason>. — <who decided, by role, or "proposed, not confirmed">.
-- <YYYY-MM-DD>: spec approved. Decided by: the owner. <!-- shape adds this line when the owner approves the spec. Without it, plan treats the spec as not approved. -->
+- <YYYY-MM-DD>: spec approved. Decided by: the owner. <!-- spec adds this line when the owner approves the spec. Without it, plan treats the spec as not approved. -->
 
 ## Left to the builder
 

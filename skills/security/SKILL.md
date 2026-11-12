@@ -46,6 +46,7 @@ If a `bin/builder` command exits 3 and says the binary is not installed or is of
    The surface has no `/`. The dimension is a name from `standards.md`. `files` maps each file of the unit to its hash from `git hash-object <path>`.
 5. Write the findings file of step 6 with these units, each `not_inspected` with the reason "not yet hunted", `dimensions: []` and `findings: []`.
    Run `"${CLAUDE_PLUGIN_ROOT}/bin/builder" security baseline diff <findings.json>`. Read its `units` object and its `not_rechecked` list.
+   Read `baseline` too: `found: false` means a first audit, or a wrong `repo`. Check `baseline.path` before you call every finding new.
    Three unit lists are work for this run: `new` (no audit saw the unit), `carried` (the last audit deferred it or did not inspect it) and `changed` (the last audit covered it, and its files changed since).
    Leave out of the final file each unit that is in no list. The baseline then keeps it as covered.
    `not_rechecked` lists each open finding of the last audit. Check each one again in this run, and write it into the final file with its state: `confirmed` if it still holds, `rejected` with a reason if the source now refutes it. A finding that the final file leaves out is closed by silence.

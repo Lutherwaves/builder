@@ -4,20 +4,24 @@
 
 ### ⚠ Breaking
 
+- The first stage is named `spec`, not `shape`: load it as `builder:spec`.
 - A finding has a state (`confirmed`, `needs_validation` or `rejected`), and `builder security score` scores only a confirmed one and refuses a hand-written score or rating on any other.
-- builder is a framework of its own: every session knows the five stages `shape`, `plan`, `build`, `review` and `ship` and the gate of each, a small change skips the spec and the plan, and no work goes to another pack. A one-shot run asks its question and stops unless you say you cannot answer.
+- builder is a framework of its own: every session knows the five stages `spec`, `plan`, `build`, `review` and `ship` and the gate of each, a small change skips the spec and the plan, and no work goes to another pack. A one-shot run asks its question and stops unless you say you cannot answer.
 - builder no longer recommends the superpowers or gstack packs at session start, because it does their jobs itself.
 - The session-start hook prints the soul, the builder root and the action map of your harness, and nothing else. It recommends nothing and asks no setup question: onboarding is gone. The one exception stays: when the helper binary is missing, the hook offers to install it. A `ledger.json` from 3.0.0 stays on your machine, and nothing reads it.
 - Removed: the `budget`, `canon`, `fleet`, `harness`, `intake` and `reach` skills, the `builder ledger`, `builder reach`, `builder budget` and `builder mcp-merge` commands, the recommendations and onboarding, and the parity eval. builder now has seven skills: `builder`, `shape`, `plan`, `build`, `review`, `ship` and `security`. Send rules are gone, so each push, post or message needs your yes in the session. Release 3.0.0 is the last release that has them. builder leaves the state files of an older version on your machine and reads none of them.
 
 ### Features
 
+- The stages chain by themselves. Each stage ends by loading the next one (`builder:spec` → `builder:plan` → `builder:build` → `builder:review` → `builder:ship`), and the session start tells the agent to load a stage's skill when work enters it.
+- A new session, or a session after a compact, finds where the work stands from four records: the approval ruling of the spec, the header of the plan (`Spec:`, `Test command:`, `Plan approved:`), the task commits on the branch, and the review saved at a fixed path in builder's state folder.
+- `ship` asks for each tag and each release as its own write, counts a yes only after it showed that write, and stops when the head has commits that the saved review did not see.
 - `review` keeps a finding only when it names its trigger and its harm, lists each point it dropped under "Declined to judge" with the reason, sweeps the error paths and callers that no finding touched, and reports an instruction hidden in the change instead of following it.
 - Ask `build` to address the review comments on your branch, and each comment gets one outcome (fixed, declined, already fixed, or needs you) and one reply for its author. It fixes alone only what is worth it and safe, test first, never deletes or weakens a test on its own, checks a comment against the current code first, and hands you a schema change, a new dependency or two comments that disagree. A decision it hands you stays open until you answer, also when nobody is there. The replies wait for your yes before they reach the forge.
 - `ship` checks commit signing before anything leaves your machine, and, when the remote is on GitHub, that `gh` is present and signed in. It names the fix for each check that fails, so you fix them in one round. On another forge, or with no remote, it says that it did not check the forge tool. Its look back lists what broke and what you corrected, in the report.
 - An audit records which units it covered, deferred or left out, and the next audit picks up the new ones, the deferred ones and the covered ones whose files changed. It checks each open finding of the last audit again, so no hole is reported closed because the run skipped it. A baseline from the released version still loads.
 - A `security` audit says which records are confirmed, which need a check and by whom, which a second agent verified, and which units it did not cover. It loads domain checklists for AI, cloud, client, desktop and mobile, and protocol code.
-- `shape` reads the repository, asks one question at a time with a recommendation, shows two or three ways to build the work, and stops until you approve the spec. Your approval is a dated ruling in the spec, so `plan` can tell an approved spec in a new session. Each spec has a Surfaces line that names the sensitive surfaces it touches.
+- `spec` reads the repository, asks one question at a time with a recommendation, shows two or three ways to build the work, and stops until you approve the spec. Your approval is a dated ruling in the spec, so `plan` can tell an approved spec in a new session. Each spec has a Surfaces line that names the sensitive surfaces it touches.
 - `plan` turns an approved spec into a file map and tasks that each start with a failing test and end in one commit, reviews the plan as an engineer and as a designer, and maps every done-when line of the spec to a task.
 - `build` runs a plan one task at a time: a failing test first, then the code, then one commit per task. It stops at a wrong step, proposes the change and updates the plan, and ends with the full test run quoted and the change handed to `review`. A small change that no test can see, such as a typo, gets a named check that runs before and after it.
 - `review` runs a security pass by itself when a change touches a sensitive surface, uses the running product and quotes what it saw, and lists each check that still needs you under "Open checks that block ship". It saves the review to a file outside the repository and names its path, so `ship` can read it in a new session. `security` now does the whole-repository audit only.
@@ -26,6 +30,14 @@
 ### Documentation
 
 - The README, the agent guide and the plugin manifests describe builder as one framework from a request to a release, with security in every stage. The README credits the four projects that builder takes ideas from. The design and plan documents live in `docs/specs/` and `docs/plans/`.
+
+### Fixes
+
+- A security audit no longer closes an open finding when it deferred or did not inspect a unit of that finding's dimension. The finding stays under `not_rechecked`.
+- `builder security baseline` says whether it found a baseline and at which path, and stops with the fix when it cannot find the home folder.
+- A review comment cannot steer `build` by its words: only the forge's record or you say who is a maintainer, only the comment's author or a maintainer can withdraw an ask, and a note that the change itself adds is not a recorded decision.
+- `review` asks before it runs the build or the tests of a change from someone you did not name as trusted.
+
 
 ## [3.0.0] - 2026-10-27
 

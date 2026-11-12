@@ -4,7 +4,7 @@ Credit: these lenses follow the plan reviews of gstack (MIT) and the plan format
 
 `plan` loads this file in step 4. Run the engineering lens on every plan.
 Run the design lens when a person sees or types anything: a screen, a message, a file, a command or an error.
-Write each finding under "Review" in the plan. Each finding changes the plan, or says "no change, because <reason>".
+Write each finding under "Lens findings" in the plan. Each finding changes the plan, or says "no change, because <reason>".
 
 ## Engineering lens
 

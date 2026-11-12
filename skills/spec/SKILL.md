@@ -1,16 +1,16 @@
 ---
-name: shape
+name: spec
 description: Use when a request arrives as a feature name, a component or a ticket title ("we need CSV export", "add SSO", "build a dashboard", "take it from here"), when you write an issue, spec or brief for someone else to build, or when a request has no stated person, moment, non-goals or done-when.
 ---
 
-# shape — work starts from the person and the moment
+# spec — work starts from the person and the moment
 
 A request names a thing. The work is a change for one person at one moment.
-`shape` is the first stage of the builder flow. It turns the request into one spec that a builder can act on with no follow-up question.
-`shape` asks the questions, writes the spec and stops at the gate. The builder skill `plan` takes the approved spec.
+`spec` is the first stage of the builder flow. It turns the request into one spec that a builder can act on with no follow-up question.
+`spec` asks the questions, writes the spec and stops at the gate. `builder:plan` takes the approved spec.
 The builder skill sets how to ask and what to do when nobody answers. Read its "Questions" and "When nobody answers" rules.
 
-A small change skips `shape`. The size rule of the builder skill defines a small change, and says when it steps up to `shape`.
+A small change skips `spec`. The size rule of the builder skill defines a small change, and says when it steps up to `spec`.
 
 ## Look before you ask
 
@@ -19,7 +19,7 @@ Never ask what they answer. Say what you found before you ask: "The rota lives i
 
 ## Challenge the request
 
-Before you shape the request, answer three questions from the evidence:
+Before you write the spec, answer three questions from the evidence:
 - Who wants this, by role?
 - What do they do today instead?
 - What is the narrowest version that helps them this week?
@@ -84,20 +84,21 @@ A long spec that prescribes the build is a plan. Move that content to `plan`.
 
 The person approves the spec. Nothing is planned or built before that approval.
 On approval, add one ruling to Rulings: `<YYYY-MM-DD>: spec approved. Decided by: the owner.` Name the approver by role, never by name. `plan` reads this line.
-Write no plan, no task list and no product code while you shape.
+Write no plan, no task list and no product code while you write the spec.
 Until the person approves, each turn ends with one question, or with the spec and a request for approval.
 
 The "When nobody answers" rule of the builder skill says when a run is unattended, and what to do in doubt.
 In an unattended run, do not wait. Take your recommendations, and pick the way to build it yourself.
 The ruling still lists each way and its trade-off.
 Mark each decision you made alone "proposed, not confirmed", and list it under Calls to check. Write no approval line.
-Go on to `plan` only when the request asked for the build. Otherwise the spec is the deliverable.
+Load `builder:plan` only when the request asked for the build. Otherwise the spec is the deliverable.
 
 ## After the spec
 
 End with the builder report from the builder skill. Its first line names the spec by the person's new ability, and links it.
 While the gate is open, the report's ▶ You item is the one open question or the approval. Ask nothing else.
-Then offer the next step in one line: "Approve it, and I plan it with `plan`. Or change a ruling first?"
+Then ask for the approval in one line: "Approve it, and I plan it. Or change a ruling first?"
+Next: when the person approves, add the approval ruling and load `builder:plan` in the same turn. Do not wait for the person to name it.
 
 ## Common mistakes
 
@@ -105,7 +106,7 @@ Then offer the next step in one line: "Approve it, and I plan it with `plan`. Or
 |---|---|
 | Asking where the code lives, or what the README already says | Read first. Say what you found. Ask only what the evidence does not answer. |
 | Three questions in one message | Ask one question, with your recommendation. Stop. |
-| A plan, a task list or code before the person approves the spec | Stop at the gate. The builder skill `plan` starts after the approval. |
+| A plan, a task list or code before the person approves the spec | Stop at the gate. `builder:plan` starts after the approval. |
 | One way to build it, presented as the only way | Show two or three ways, with trade-offs and a pick. The person picks. |
 | No Surfaces line, or "Surfaces: n/a" | Always write it. Name the touched surfaces, or the surfaces you checked. |
 | Title names a component: "Rota export", "Add ExportService" | Title the outcome in the person's words: who can now do what. |
@@ -135,4 +136,4 @@ Before you hand the spec over:
 - [ ] I wrote no plan, no task list and no code before the approval.
 - [ ] An approved spec has the ruling `<YYYY-MM-DD>: spec approved. Decided by: the owner.` An unattended spec has none.
 - [ ] Nothing went to a tracker without a yes.
-- [ ] The reply ends with the builder report, then a one-line offer of the next step.
+- [ ] The reply ends with the builder report, then the one-line request for approval. On approval I load `builder:plan`.

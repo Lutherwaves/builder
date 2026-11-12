@@ -11,7 +11,7 @@ and every call the agent made on its own, with the reason. Nothing leaves the ma
 (no push, no PR, no message) without your yes.
 
 It's a plugin for Claude Code, Codex CLI, Cursor CLI and opencode. It takes a request
-through shape, plan, build, review and ship, with security in every stage. Skills and one
+through spec, plan, build, review and ship, with security in every stage. Skills and one
 session hook; no server, no account, no network call at session start.
 
 > **▶ Needs you:** a customer who moved can now change their email at checkout, in one step.
@@ -37,11 +37,15 @@ and each stage stops at a gate before the next one starts.
 
 | Stage | Skill | You get | Gate before the next stage |
 | --- | --- | --- | --- |
-| Shape | `shape` | A spec: the person, the moment, the non-goals and when it is done | You approve the spec |
+| Spec | `spec` | A spec: the person, the moment, the non-goals and when it is done | You approve the spec |
 | Plan | `plan` | Tasks that each start with a failing test and end in one commit | Each done-when line of the spec maps to a task |
 | Build | `build` | The code, one task at a time, test first | Every test passes, with the output quoted |
 | Review | `review` | Each way the change hurts a person, proven, with a fix and a test | No open Critical or Important finding |
 | Ship | `ship` | A pull request, then a merged and checked release | Your yes before anything leaves the machine |
+
+Each stage ends by loading the next one, so you do not name the skills yourself. On Claude Code they are
+`/builder:spec`, `/builder:plan`, `/builder:build`, `/builder:review` and `/builder:ship`. A new session finds
+where the work stands from the spec, the plan, the task commits and the saved review.
 
 A small change skips the spec and the plan. It still gets a failing test or a named check,
 a review and the report.
@@ -92,7 +96,7 @@ A harness counts as supported once every eval fixture passes on it.
 <!-- support:start -->
 | Harness | Version | Eval date | Status |
 | --- | --- | --- | --- |
-| Claude Code | 2.1.308 (Claude Code) | 2026-10-22 | experimental: shape 2/6; 10 not graded |
+| Claude Code | 2.1.308 (Claude Code) | 2026-10-22 | experimental: spec 2/6; 10 not graded |
 <!-- support:end -->
 
 ## Skills
@@ -100,11 +104,11 @@ A harness counts as supported once every eval fixture passes on it.
 | Skill | What you get |
 | --- | --- |
 | `builder` | The thirteen tenets, the five stages and their gates, and the report. |
-| `shape` | A request becomes a spec. It reads the repository, asks one question at a time with its recommendation, shows two or three ways to build it, and waits for your approval. |
+| `spec` | A request becomes a spec. It reads the repository, asks one question at a time with its recommendation, shows two or three ways to build it, and waits for your approval. |
 | `plan` | An approved spec becomes tasks that each start with a failing test, reviewed as an engineer and as a designer. |
 | `build` | The plan runs one task at a time, test first, one commit per task. It stops when a step is wrong and proposes the change. It answers each review comment with one outcome and one reply. |
 | `review` | A review that proves each harm with evidence, a fix and a test, with a security pass and the running product. Posts nothing without your yes. |
-| `ship` | Reviewed work becomes a checked release. It stops on an open finding and waits for your yes before each push, pull request and merge. |
+| `ship` | Reviewed work becomes a checked release. It stops on an open finding and waits for your yes before each push, pull request, merge, tag and release. |
 | `security` | A whole-repository audit: every layer, standards-mapped findings with CVSS scores, and what changed since last time. |
 
 Ask for a skill by name, or just describe the job. The agent loads the right one.

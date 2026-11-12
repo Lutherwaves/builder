@@ -1,7 +1,12 @@
 # Plan: a shop owner sends a month of orders to their accountant in one download
 
-Spec: `docs/specs/2026-01-10-orders-csv-export.md` (approved by the owner on 2026-01-10).
-Test command: `python3 -m pytest`.
+```
+Spec: docs/specs/2026-01-10-orders-csv-export.md
+Spec approved: 2026-01-10
+Test command: python3 -m pytest
+Plan approved: 2026-01-11 by the owner
+Next: builder:build
+```
 
 ## File map
 

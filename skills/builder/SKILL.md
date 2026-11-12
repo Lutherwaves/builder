@@ -58,7 +58,7 @@ Each tenet has a rule and a test. Fail the test, fix the work.
    Test: the report quotes a command and its output from this session.
 9. **Rules are guards.** A rule that matters has a test or check that enforces it. Name the incident that made it.
    Test: break the rule on purpose. Something fails.
-10. **The human decides; the agent proposes behind a gate.** Make no external write unseen. Confirm a destructive action by typing, and check again just before it runs.
+10. **The human decides; the agent proposes behind a gate.** Make no external write without the person's yes. Confirm a destructive action by typing, and check again just before it runs.
     Test: no push, pull request, post, message, deploy, tracker or ticket write happened without the person's yes in this session.
 11. **Fix what you touch, and say so.** Do not call a failure "pre-existing". Do not refactor the world.
     Test: the suite you ran is green, or the report names each red test and what you did about it.
@@ -71,7 +71,7 @@ Each tenet has a rule and a test. Fail the test, fix the work.
 
 Two rules settle how far you go on your own.
 
-- **Autonomy.** Decide together while you shape the work. Then act inside the repository without stalls and record each call. Outside the repository, show first, always.
+- **Autonomy.** Decide together while you write the spec. Then act inside the repository without stalls and record each call. Outside the repository, show first and wait for the yes, always.
 - **Scope.** Finish the agreed scope: the first version and its obvious next step land together, fully tested. Add nothing beyond the scope.
 
 **Questions.** In an interactive session, ask one decision at a time with the "ask the person to choose" action of your harness (text only when it has none). A question with no recommendation is a stall. Each question gives: **What is at stake** (two or three plain sentences; what breaks on a wrong pick), **Recommendation** (the option and one reason; that option comes first, its label ends with `(recommended)`), each option's concrete pro and con, and a **Net** line with the real trade-off.
@@ -93,19 +93,20 @@ Still stop before a step that leaves the repository, destroys data, or costs mon
 ## The framework
 
 Work goes through five stages. Each stage has one owner skill and one gate. Do not start a stage before the gate of the stage before it passes.
+When work enters a stage, load its skill first, also when the person did not name it. When the gate passes, the stage names the next skill: load it.
 
 | Stage | Skill | Gate before the next stage |
 |---|---|---|
-| Shape | `shape` | The person approves the spec. |
-| Plan | `plan` | Every done-when line of the spec maps to a task. The last task is the review. In an attended run, the person approves the plan. In an unattended run, `build` starts only when the request asked for the build. |
-| Build | `build` | The full suite passes after the last change. The report quotes its output. |
-| Review | `review` | No open Critical or Important finding, and no open check on a surface that the change touches. |
-| Ship | `ship` | The person says yes to each push, pull request and merge. |
+| Spec | `builder:spec` | The person approves the spec. In an unattended run, `plan` starts only when the request asked for the build. |
+| Plan | `builder:plan` | Every done-when line of the spec maps to a task. The last task is the review. In an attended run, the person approves the plan. In an unattended run, `build` starts only when the request asked for the build. |
+| Build | `builder:build` | The full suite passes after the last change. The report quotes its output. |
+| Review | `builder:review` | No open Critical or Important finding, and no open check on a surface that the change touches. |
+| Ship | `builder:ship` | The person says yes to each push, pull request, merge, tag and release. |
 
 **Size.** A change is small when the request says everything that matters and one task covers it. A small change has no spec and no plan.
-It still gets a failing test first, or the check that `build` names when no test can see the change, a review of its diff and the builder report. If the work grows, stop, say so, and step up to `shape`.
+It still gets a failing test first, or the check that `build` names when no test can see the change, a review of its diff and the builder report. If the work grows, stop, say so, and step up to `spec`.
 
-**One flow per piece of work.** When another installed pack offers a spec, plan, build, review or ship flow, builder's flow owns the work.
+**One flow per piece of work.** When another installed pack offers a spec, plan, build, review or ship flow, builder's flow owns the work. `builder:<name>` is builder's own skill `<name>`. Never load a skill of the same name from another pack in its place.
 
 Three rules have no skill of their own:
 
@@ -113,9 +114,8 @@ Three rules have no skill of their own:
 - Done means that the tests ran in this session and the report quotes their output.
 - Show a mockup, a diagram or a visual as a shareable page (the "make a shareable page" action). With no such action, write a file in the repository and give its path. Never only a local browser tab.
 
-Use `security` for an audit of a whole repository.
-
-Skills name actions, not tools. The tool for each action on your harness is in `skills/builder/harnesses/<harness>.md` (`claude`, `codex`, `cursor` or `opencode`).
+**Where the work stands.** In a new session or after a compact, read four things before you ask: the approval ruling of the spec, the header of the plan, the task commits on the branch, and the saved review. They name the next stage.
+Use `builder:security` for an audit of a whole repository. Skills name actions, not tools. The tool for each action on your harness is in `skills/builder/harnesses/<harness>.md` (`claude`, `codex`, `cursor` or `opencode`).
 
 ## Common mistakes
 
