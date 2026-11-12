@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [4.0.0] - 2026-11-12
+
 ### ⚠ Breaking
 
 - The first stage is named `spec`, not `shape`: load it as `builder:spec`.
@@ -147,5 +149,6 @@
 * add release automation, validation, metrics badges, and contributor guardrails ([2f4a570](https://github.com/Lutherwaves/builder/commit/2f4a570720a5be2a1a7137834f3e451668f30e5f))
 * bootstrap release + validation workflows ([be8e3ee](https://github.com/Lutherwaves/builder/commit/be8e3eec88bda415a041db75ef4836e7e1e31ca5))
 
-[Unreleased]: https://github.com/Lutherwaves/builder/compare/v3.0.0...HEAD
+[Unreleased]: https://github.com/Lutherwaves/builder/compare/v4.0.0...HEAD
+[4.0.0]: https://github.com/Lutherwaves/builder/compare/v3.0.0...v4.0.0
 [3.0.0]: https://github.com/Lutherwaves/builder/compare/v2.1.0...v3.0.0
