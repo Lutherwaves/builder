@@ -12,6 +12,8 @@ This guide routes an agent that works on builder itself.
 | The build stage | `skills/build/SKILL.md` and its eval fixture `tests/evals/build/` | `bash tests/evals/run.sh --check`, then `bash tests/evals/run.sh build` |
 | The ship stage | `skills/ship/SKILL.md` and its eval fixture `tests/evals/ship/` | `bash tests/evals/run.sh --check`, then `bash tests/evals/run.sh ship` |
 | The engineering and design lenses of a plan review | `skills/plan/lenses.md` | `bash tests/evals/run.sh plan` |
+| The bar a review finding must pass, and the last sweep | `skills/review/bar.md` | `bash tests/evals/run.sh review-noise` |
+| How build answers review comments | `skills/build/comments.md` | `bash tests/evals/run.sh review-comments` |
 | The security pass of a review | `skills/review/security-pass.md` | `bash tests/evals/run.sh review-security` |
 | A domain checklist of an audit (AI, cloud, client, desktop and mobile, protocol) | `skills/security/domains.md` | `bash tests/evals/run.sh security-audit` |
 | The soul the hook injects | `skills/builder/soul-compact.md` (keep it in step with `skills/builder/SKILL.md`) | `bash tests/test_hook.sh` |
@@ -44,10 +46,11 @@ Before every commit, run `bash scripts/validate.sh`. It runs all of the checks a
 
 ## Attribution
 
-builder takes ideas, and no text, from three MIT-licensed projects:
+builder takes ideas, and no text, from four MIT-licensed projects:
 
 - **obra/superpowers** (<https://github.com/obra/superpowers>): the spec, plan and build loop. `shape`, `plan` and `build` follow it.
 - **garrytan/gstack** (<https://github.com/garrytan/gstack>): the reviews of a plan, the use of the running product, and shipping. `skills/plan/lenses.md`, `review` and `ship` follow it.
 - **cloudflare/security-audit-skill** (<https://github.com/cloudflare/security-audit-skill>): the audit method. `security` and `skills/security/domains.md` follow it.
+- **PostHog/posthog** (<https://github.com/PostHog/posthog>, MIT outside its `ee/` folder): the bar a review finding must pass, the last sweep, and the handling of review comments. `skills/review/bar.md` and `skills/build/comments.md` follow it.
 
-Keep each credit when you change the file that carries it. Copy no prose from any of the three.
+Keep each credit when you change the file that carries it. Copy no prose from any of the four.

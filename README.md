@@ -92,7 +92,7 @@ A harness counts as supported once every eval fixture passes on it.
 <!-- support:start -->
 | Harness | Version | Eval date | Status |
 | --- | --- | --- | --- |
-| Claude Code | 2.1.308 (Claude Code) | 2026-10-22 | experimental: shape 2/6; 8 not graded |
+| Claude Code | 2.1.308 (Claude Code) | 2026-10-22 | experimental: shape 2/6; 10 not graded |
 <!-- support:end -->
 
 ## Skills
@@ -102,7 +102,7 @@ A harness counts as supported once every eval fixture passes on it.
 | `builder` | The thirteen tenets, the five stages and their gates, and the report. |
 | `shape` | A request becomes a spec. It reads the repository, asks one question at a time with its recommendation, shows two or three ways to build it, and waits for your approval. |
 | `plan` | An approved spec becomes tasks that each start with a failing test, reviewed as an engineer and as a designer. |
-| `build` | The plan runs one task at a time, test first, one commit per task. It stops when a step is wrong and proposes the change. |
+| `build` | The plan runs one task at a time, test first, one commit per task. It stops when a step is wrong and proposes the change. It answers each review comment with one outcome and one reply. |
 | `review` | A review that proves each harm with evidence, a fix and a test, with a security pass and the running product. Posts nothing without your yes. |
 | `ship` | Reviewed work becomes a checked release. It stops on an open finding and waits for your yes before each push, pull request and merge. |
 | `security` | A whole-repository audit: every layer, standards-mapped findings with CVSS scores, and what changed since last time. |
@@ -124,10 +124,11 @@ Every change lands through a pull request that passes `bash scripts/validate.sh`
 
 ## Credits
 
-builder takes ideas, and no text, from three MIT-licensed projects:
+builder takes ideas, and no text, from four MIT-licensed projects:
 [obra/superpowers](https://github.com/obra/superpowers) (the spec, plan and build loop),
-[garrytan/gstack](https://github.com/garrytan/gstack) (the reviews of a plan, the use of the running product, shipping)
-and [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) (the audit method).
+[garrytan/gstack](https://github.com/garrytan/gstack) (the reviews of a plan, the use of the running product, shipping),
+[cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) (the audit method)
+and [PostHog/posthog](https://github.com/PostHog/posthog), MIT outside its `ee/` folder (the bar a review finding must pass, the last sweep, the handling of review comments).
 
 ## License
 

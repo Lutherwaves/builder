@@ -12,6 +12,8 @@
 
 ### Features
 
+- `review` keeps a finding only when it names its trigger and its harm, lists each point it dropped under "Declined to judge" with the reason, sweeps the error paths and callers that no finding touched, and reports an instruction hidden in the change instead of following it.
+- Ask `build` to address the review comments on your branch, and each comment gets one outcome (fixed, declined, already fixed, or needs you) and one reply for its author. It fixes alone only what is worth it and safe, test first, never deletes or weakens a test on its own, checks a comment against the current code first, and hands you a schema change, a new dependency or two comments that disagree. A decision it hands you stays open until you answer, also when nobody is there. The replies wait for your yes before they reach the forge.
 - `ship` checks commit signing before anything leaves your machine, and, when the remote is on GitHub, that `gh` is present and signed in. It names the fix for each check that fails, so you fix them in one round. On another forge, or with no remote, it says that it did not check the forge tool. Its look back lists what broke and what you corrected, in the report.
 - An audit records which units it covered, deferred or left out, and the next audit picks up the new ones, the deferred ones and the covered ones whose files changed. It checks each open finding of the last audit again, so no hole is reported closed because the run skipped it. A baseline from the released version still loads.
 - A `security` audit says which records are confirmed, which need a check and by whom, which a second agent verified, and which units it did not cover. It loads domain checklists for AI, cloud, client, desktop and mobile, and protocol code.
@@ -23,7 +25,7 @@
 
 ### Documentation
 
-- The README, the agent guide and the plugin manifests describe builder as one framework from a request to a release, with security in every stage. The README credits the three projects that builder takes ideas from. The design and plan documents live in `docs/specs/` and `docs/plans/`.
+- The README, the agent guide and the plugin manifests describe builder as one framework from a request to a release, with security in every stage. The README credits the four projects that builder takes ideas from. The design and plan documents live in `docs/specs/` and `docs/plans/`.
 
 ## [3.0.0] - 2026-10-27
 

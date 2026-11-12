@@ -316,14 +316,29 @@ func TestReadmeSaysWhyBuilder(t *testing.T) {
 
 func TestReadmeNamesOtherPacksOnlyInCredits(t *testing.T) {
 	credits := readmeSection(t, "## Credits")
-	for _, source := range []string{"obra/superpowers", "garrytan/gstack", "cloudflare/security-audit-skill"} {
-		mustContain(t, credits, source)
-	}
 	rest := strings.ToLower(strings.Replace(readme(t), credits, "", 1))
-	for _, pack := range []string{"superpowers", "gstack"} {
+	for _, pack := range []string{"superpowers", "gstack", "posthog"} {
 		mustNotContain(t, rest, pack)
 	}
 	mustContain(t, readmeSection(t, "## License"), "[Credits](#credits)")
+}
+
+func TestCreditsNameFourSources(t *testing.T) {
+	agents, err := os.ReadFile("../AGENTS.md")
+	if err != nil {
+		t.Fatalf("read AGENTS.md: %v", err)
+	}
+	_, attribution, ok := strings.Cut(string(agents), "\n## Attribution\n")
+	if !ok {
+		t.Fatal("AGENTS.md has no Attribution section")
+	}
+	for name, text := range map[string]string{"README Credits": readmeSection(t, "## Credits"), "AGENTS.md Attribution": attribution} {
+		for _, source := range []string{"obra/superpowers", "garrytan/gstack", "cloudflare/security-audit-skill", "PostHog/posthog"} {
+			if !strings.Contains(text, source) {
+				t.Errorf("%s misses %q", name, source)
+			}
+		}
+	}
 }
 
 func TestWhyBuilderClaimsHold(t *testing.T) {
