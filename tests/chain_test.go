@@ -2,6 +2,7 @@
 package tests
 
 import (
+	"os"
 	"strings"
 	"testing"
 )
@@ -134,4 +135,24 @@ func TestSpecAndPlanShareTheColdRead(t *testing.T) {
 	} {
 		mustContain(t, cold, want)
 	}
+}
+
+// The cold-read fixture plants three gaps, and its bullets name each one.
+func TestColdReadFixtureNamesItsPlantedGaps(t *testing.T) {
+	draft, err := os.ReadFile("evals/cold-read/repo/docs/specs/2026-01-12-month-export.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	expect, err := os.ReadFile("evals/cold-read/expect.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, gap := range []string{"the cut-off rule", "docs/decisions/refunds.md", "feels fast"} {
+		mustContain(t, string(draft), gap)
+		mustContain(t, string(expect), gap)
+	}
+	if _, err := os.Stat("evals/cold-read/repo/docs/decisions/refunds.md"); err == nil {
+		t.Error("the fixture must not hold docs/decisions/refunds.md: the missing file is the planted gap")
+	}
+	mustContain(t, string(expect), "Cold read")
 }

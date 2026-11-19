@@ -103,7 +103,7 @@ A harness counts as supported once every eval fixture passes on it.
 <!-- support:start -->
 | Harness | Version | Eval date | Status |
 | --- | --- | --- | --- |
-| Claude Code | 2.1.308 (Claude Code) | 2026-10-22 | experimental: spec 2/6; 11 not graded |
+| Claude Code | 2.1.308 (Claude Code) | 2026-10-22 | experimental: spec 2/6; 12 not graded |
 <!-- support:end -->
 
 ## Skills

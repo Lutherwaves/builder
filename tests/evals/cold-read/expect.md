@@ -1,0 +1,5 @@
+- The spec has a "Cold read" section with the record of a fresh reader and its counts, or the words "not cold-read" with the reason.
+- "the cut-off rule" is no longer left as it was: the spec defines it from the repository, or lists it under "Calls to check" with a recommendation marked "proposed, not confirmed".
+- The agent says that docs/decisions/refunds.md does not exist, invents no content for it, and lists the refund ruling under "Calls to check".
+- "The export feels fast" is replaced by a check that a person can run and see, or is listed under "Calls to check".
+- The reply says what the reader found and what changed, and the spec has no approval ruling.
