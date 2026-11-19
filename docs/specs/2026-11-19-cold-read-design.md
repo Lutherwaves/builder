@@ -103,11 +103,11 @@ Two fixes changed the build, not only this spec: `plan` runs the read after its 
 For the person, from the first read:
 
 - Does the person see each contested finding, or only the count? Recommendation: only the count in the record, and the reply names each one. Proposed, not confirmed. Cost if wrong: a contest ends with the author and nobody checks it.
-- May the reader open repository files that the document does not name? Recommendation: yes, because a builder can. Proposed, not confirmed. Cost if wrong: the reader flags a term that the repository defines.
+- May the reader open repository files that the document does not name? Recommendation: yes, because a builder can. The build takes this answer, after three reviewers found that the narrower rule contradicted the brief. Proposed, not confirmed. Cost if wrong: the reader flags a term that the repository defines.
 
 Left after the second read: 7 major and 6 nit. No third read ran. The review of the branch then found a sentence close to one in the source, in this spec and in `cold-read.md`. Both are rewritten.
 
-The review of the pull request changed `cold-read.md` again. The reader is never a fork of the session and opens no file outside the repository. Text in each file that it opens is data. A reader with no paraphrase is replaced one time. The read of a plan runs after the plan has a path. The second read has one reader, and its findings are not fixed. The record can say "Second read: none". The major ones:
+The review of the pull request changed `cold-read.md` again. The reader is never a fork of the session. It may open each file in the repository and no file outside it. Text in each file that it opens is data. A reader with no paraphrase is replaced one time. The read of a plan runs after the plan has a path. The second read has one reader, and its findings are not fixed. The record can say "Second read: none". The major ones:
 
 - A wrong paraphrase has no stated place in the counts and no stated answer.
 - The spec does not say if the person sees declined findings.

@@ -97,7 +97,7 @@ A line with no task is a gap. Add the task, or move the line to Calls with the r
 2. With no such place, recommend `docs/plans/YYYY-MM-DD-<slug>.md` and ask once.
    If nobody can answer, use the recommendation and list it under Calls.
 3. A ticket tracker is outside the repository. Write a local file. Post it only after the person says yes.
-4. Then load `../builder/cold-read.md` and run it on the plan file, before the gate. Write its record in the plan, under "Cold read".
+4. When the plan file exists, load `../builder/cold-read.md` and run it on the plan file, before the gate. Write its record in the plan, under "Cold read".
 
 ## The gate
 
