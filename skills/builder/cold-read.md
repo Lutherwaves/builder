@@ -91,6 +91,8 @@ Cold read: not cold-read. Reason: <the reason>.
 ```
 
 The reader count and the counts are those of the first read. Add the counts of two readers.
+Under the record, list each finding that you contested or declined: the place, the gap, and your evidence or your reason.
+The person checks that list. A count alone hides the answer.
 
 ## Common mistakes
 

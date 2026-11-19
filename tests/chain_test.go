@@ -180,6 +180,8 @@ func TestSpecAndPlanShareTheColdRead(t *testing.T) {
 		"except for the approval line",
 		"Cold read: <YYYY-MM-DD>, <1|2> fresh reader(s). Blocker <n>, major <n>, nit <n>. Fixed <n>, contested <n>, for the person <n>, declined <n>. Second read: <clean | n left | none>.",
 		"Cold read: not cold-read. Reason: <the reason>.",
+		"Under the record, list each finding that you contested or declined: the place, the gap, and your evidence or your reason.",
+		"The person checks that list. A count alone hides the answer.",
 		"Only a fresh agent reads.",
 	} {
 		mustContain(t, cold, want)
