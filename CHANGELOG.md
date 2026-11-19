@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Bug Fixes
+
+- The cold read lists each finding that the author contested or declined, under its record line. Before, the document showed only the counts, and nobody could check those answers.
+
 ## [4.1.0] - 2026-11-19
 
 ### Features
