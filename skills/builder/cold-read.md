@@ -18,8 +18,8 @@ Use the "start a subagent" action of your harness. The reader is a fresh agent.
 - The reader changes no file. It reads, and it reports.
 - A document over 300 lines gets two readers. Each reads the whole document. One reports on the first half and one on the second.
 
-With no "start a subagent" action, do not read your own document in its place.
-Your own read is not a cold read. Write the "not cold-read" record below.
+With no "start a subagent" action, or when your harness map says "not verified", do not read your own document in its place.
+Your own read is not a cold read. Write the "not cold-read" record below. Do the same when the reader fails.
 
 ## The brief
 

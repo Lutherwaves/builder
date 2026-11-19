@@ -126,11 +126,16 @@ func TestSpecAndPlanShareTheColdRead(t *testing.T) {
 		mustContain(t, read(t, stage, "SKILL.md"), `"Cold read"`)
 	}
 	mustContain(t, read(t, "spec", "issue-template.md"), "\n## Cold read\n")
+	// The reader of a plan sees the whole plan: the read comes after the check against the spec, which can add a task.
+	plan := read(t, "plan", "SKILL.md")
+	if strings.Index(plan, "load `../builder/cold-read.md`") < strings.Index(plan, "## 5. Check against the spec") {
+		t.Error("plan runs the cold read before step 5; a task that step 5 adds would reach the person unread")
+	}
 	cold := read(t, "builder", "cold-read.md")
 	for _, want := range []string{
 		"## The reader", "## The brief", "## The answers", "## The second read", "## The record",
 		"never gets the conversation", "changes no file", "A finding is a claim to check",
-		"not cold-read", "300 lines", "proposed, not confirmed", "Apache-2.0",
+		"not cold-read", "not verified", "the reader fails", "300 lines", "proposed, not confirmed", "Apache-2.0",
 		"Cold read: <YYYY-MM-DD>", "Cold read: not cold-read. Reason:",
 	} {
 		mustContain(t, cold, want)

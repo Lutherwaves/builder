@@ -80,8 +80,6 @@ Then run the design lens, when a person sees or types anything.
 Load `architecture.md` and run its lens, when the work touches an API, a boundary between services, a data store or a tool for an agent.
 Write each finding in the plan, under "Lens findings". Each finding changes the plan, or says "no change, because <reason>".
 A change from a finding is a new task, a changed task or a cut. Name it: "added Task 4", "cut `utils.py`".
-Then load `../builder/cold-read.md` and run it on the plan, before the gate.
-Write its record in the plan, under "Cold read". A finding for the person goes under Calls.
 
 ## 5. Check against the spec
 
@@ -92,6 +90,8 @@ Write a table at the end of the plan: each done-when line, each anti-goal, and t
 | The file has no customer email | Task 3: the file leaves out customer email |
 
 A line with no task is a gap. Add the task, or move the line to Calls with the reason.
+Then load `../builder/cold-read.md` and run it on the plan, before the gate.
+Write its record in the plan, under "Cold read". A finding for the person goes under Calls.
 
 ## 6. Where it goes
 
