@@ -117,3 +117,21 @@ func TestPlanAndReviewShareTheArchitectureLens(t *testing.T) {
 		mustContain(t, read(t, "builder", f), "fails when it checks nothing")
 	}
 }
+
+// The cold read has one owner: spec and plan load the same file before their gate, and the file holds the rules that no test can run.
+func TestSpecAndPlanShareTheColdRead(t *testing.T) {
+	for _, stage := range []string{"spec", "plan"} {
+		mustContain(t, read(t, stage, "SKILL.md"), "load `../builder/cold-read.md` and run it")
+		mustContain(t, read(t, stage, "SKILL.md"), `"Cold read"`)
+	}
+	mustContain(t, read(t, "spec", "issue-template.md"), "\n## Cold read\n")
+	cold := read(t, "builder", "cold-read.md")
+	for _, want := range []string{
+		"## The reader", "## The brief", "## The answers", "## The second read", "## The record",
+		"never gets the conversation", "changes no file", "A finding is a claim to check",
+		"not cold-read", "300 lines", "proposed, not confirmed", "Apache-2.0",
+		"Cold read: <YYYY-MM-DD>", "Cold read: not cold-read. Reason:",
+	} {
+		mustContain(t, cold, want)
+	}
+}

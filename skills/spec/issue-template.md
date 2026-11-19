@@ -51,3 +51,7 @@ Write each line in ASD-STE100: one idea, active voice, present tense.
 ## Done when
 
 - [ ] <A check that a person can run and see, from their side. Not "code reviewed".>
+
+## Cold read
+
+<The record line that `skills/builder/cold-read.md` defines. Always present, like Surfaces.>
