@@ -97,6 +97,7 @@ A line with no task is a gap. Add the task, or move the line to Calls with the r
 2. With no such place, recommend `docs/plans/YYYY-MM-DD-<slug>.md` and ask once.
    If nobody can answer, use the recommendation and list it under Calls.
 3. A ticket tracker is outside the repository. Write a local file. Post it only after the person says yes.
+4. When the plan file exists, load `../builder/cold-read.md` and run it on the plan file, before the gate. Write its record in the plan, under "Cold read".
 
 ## The gate
 
@@ -141,6 +142,7 @@ Before you hand the plan over:
 - [ ] Each task that touches a spec surface has `Surface: <name>` and a hostile-input test for its anti-goal.
 - [ ] I ran the engineering lens, the design lens when a person sees anything, and the architecture lens when the work touches an API, a boundary, a data store or a tool for an agent.
 - [ ] Each finding changed the plan or says "no change, because …".
+- [ ] The plan has a "Cold read" record, or says "not cold-read" with the reason.
 - [ ] Each done-when line and each anti-goal maps to a task by name.
 - [ ] The last task is the review. In an unattended run, `build` starts only when the request asked for the build.
 - [ ] I wrote no product code.

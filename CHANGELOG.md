@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Features
+
+- `spec` and `plan` have a cold read: before you approve a spec or a plan, a fresh agent that has only the document reads it, says it back and lists each place where a builder must guess. The document records the counts by severity and by answer. When no fresh reader can run, as on Cursor and Grok today, the document says "not cold-read" with the reason.
+
 ## [4.0.0] - 2026-11-12
 
 ### ⚠ Breaking

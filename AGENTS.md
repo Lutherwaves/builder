@@ -14,6 +14,7 @@ This guide routes an agent that works on builder itself.
 | The engineering and design lenses of a plan review | `skills/plan/lenses.md` | `bash tests/evals/run.sh plan` |
 | The architecture lens of a plan review (API contract, boundaries, more than one customer, tools for agents) | `skills/plan/architecture.md` | `go test ./tests/ -run Architecture` |
 | The bar a review finding must pass, and the last sweep | `skills/review/bar.md` | `bash tests/evals/run.sh review-noise` |
+| The cold read of a spec or a plan | `skills/builder/cold-read.md` | `go test ./tests/`, then `bash tests/evals/run.sh cold-read` |
 | How build answers review comments | `skills/build/comments.md` | `bash tests/evals/run.sh review-comments` |
 | What build removes from its own diff, and what review lists as slop | `skills/build/deslop.md` | `go test ./tests/ -run Slop` |
 | How a failure with no known cause is found and fixed | `skills/debug/SKILL.md` and its eval fixture `tests/evals/debug/` | `bash tests/evals/run.sh --check`, then `bash tests/evals/run.sh debug` |
@@ -50,11 +51,12 @@ Before every commit, run `bash scripts/validate.sh`. It runs all of the checks a
 
 ## Attribution
 
-builder takes ideas, and no text, from four MIT-licensed projects:
+builder takes ideas, and no text, from five projects, four under the MIT licence and one under Apache-2.0:
 
 - **obra/superpowers** (<https://github.com/obra/superpowers>): the spec, plan and build loop. `spec`, `plan` and `build` follow it.
 - **garrytan/gstack** (<https://github.com/garrytan/gstack>): the reviews of a plan, the use of the running product, and shipping. `skills/plan/lenses.md`, `review` and `ship` follow it.
 - **cloudflare/security-audit-skill** (<https://github.com/cloudflare/security-audit-skill>): the audit method. `security` and `skills/security/domains.md` follow it.
 - **PostHog/posthog** (<https://github.com/PostHog/posthog>, MIT outside its `ee/` folder): the bar a review finding must pass, the last sweep, and the handling of review comments. `skills/review/bar.md` and `skills/build/comments.md` follow it.
+- **google/elephant-goldfish-model** (<https://github.com/google/elephant-goldfish-model>, Apache-2.0): the reading of a document by an agent that has only the document. `skills/builder/cold-read.md` follows it.
 
-Keep each credit when you change the file that carries it. Copy no prose from any of the four.
+Keep each credit when you change the file that carries it. Copy no prose from any of the five.

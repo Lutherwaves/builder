@@ -39,7 +39,7 @@ The person picks. Record the pick under Rulings: the ways, the pick and who pick
 
 ## The spec
 
-Copy `issue-template.md`. Its sections, in order: Who, and the moment · Why it matters · The experience · Non-goals · Anti-goals · Surfaces · Rulings · Left to the builder · Calls to check · Done when.
+Copy `issue-template.md`. Its sections, in order: Who, and the moment · Why it matters · The experience · Non-goals · Anti-goals · Surfaces · Rulings · Left to the builder · Calls to check · Done when · Cold read.
 Write the title after the moment. Fill the rest in this order, because each section feeds the next:
 
 1. **Who, and the moment.** One person, by role. Their moment: when, where, what they hold, what they try to do. Name the evidence source.
@@ -65,9 +65,10 @@ Write the title after the moment. Fill the rest in this order, because each sect
     A question with no recommendation is a stall. Delete it or answer it.
 11. **Done when.** Checks a person can run and see. "Each volunteer opens the chat and sees their own shifts, and no declined shift."
     "Tests pass" and "code reviewed" are not done-when lines. Every change needs those.
+12. **Cold read.** The record of the fresh reader. See "The cold read" below.
 
 Delete a section that does not apply. Never write "n/a", "TBD" or "none".
-Surfaces is the one exception: it is always present.
+Surfaces and Cold read are the two exceptions: they are always present.
 
 ## Where it goes
 
@@ -79,6 +80,12 @@ Surfaces is the one exception: it is always present.
 
 One screen is the target. Each line must change what a builder does.
 A long spec that prescribes the build is a plan. Move that content to `plan`.
+
+## The cold read
+
+Before the first request for approval, load `../builder/cold-read.md` and run it on the spec.
+Write its record under "Cold read".
+Run it in an unattended run too.
 
 ## The gate
 
@@ -117,6 +124,7 @@ Next: when the person approves, add the approval ruling and load `builder:plan` 
 | A decision with no date, no reason or a real person's name | Each ruling has a date and a reason. The decider is a role, such as "the owner". |
 | An approval in the chat only | Add the approval ruling to the spec. `plan` reads the spec, not the chat. |
 | Posting the spec to a tracker to "finish" | Write the file. Post only after a yes. |
+| A request for approval with no "Cold read" record | Run the cold read first, or write "not cold-read" with the reason. |
 
 ## Self-check
 
@@ -133,6 +141,7 @@ Before you hand the spec over:
 - [ ] Every open question has a recommendation, a reason and a cost if wrong.
 - [ ] No section is empty, "n/a" or "TBD".
 - [ ] Each done-when line is a check a person can run and see.
+- [ ] The spec has a "Cold read" record, or says "not cold-read" with the reason.
 - [ ] I wrote no plan, no task list and no code before the approval.
 - [ ] An approved spec has the ruling `<YYYY-MM-DD>: spec approved. Decided by: the owner.` An unattended spec has none.
 - [ ] Nothing went to a tracker without a yes.

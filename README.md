@@ -103,7 +103,7 @@ A harness counts as supported once every eval fixture passes on it.
 <!-- support:start -->
 | Harness | Version | Eval date | Status |
 | --- | --- | --- | --- |
-| Claude Code | 2.1.308 (Claude Code) | 2026-10-22 | experimental: spec 2/6; 11 not graded |
+| Claude Code | 2.1.308 (Claude Code) | 2026-10-22 | experimental: spec 2/6; 12 not graded |
 <!-- support:end -->
 
 ## Skills
@@ -111,8 +111,8 @@ A harness counts as supported once every eval fixture passes on it.
 | Skill | What you get |
 | --- | --- |
 | `builder` | The thirteen tenets, the five stages and their gates, and the report. |
-| `spec` | A request becomes a spec. It reads the repository, asks one question at a time with its recommendation, shows two or three ways to build it, and waits for your approval. |
-| `plan` | An approved spec becomes tasks that each start with a failing test, reviewed as an engineer and as a designer. Work on an API, a service boundary, a data store or an agent tool also gets an architecture review. |
+| `spec` | A request becomes a spec. It reads the repository, asks one question at a time with its recommendation, shows two or three ways to build it, and waits for your approval. A fresh reader that has not seen the conversation checks it before you approve. |
+| `plan` | An approved spec becomes tasks that each start with a failing test, reviewed as an engineer and as a designer. Work on an API, a service boundary, a data store or an agent tool also gets an architecture review. A fresh reader checks the plan too. |
 | `build` | The plan runs one task at a time, test first, one commit per task. It stops when a step is wrong and proposes the change. It removes what its own change did not need. It answers each review comment with one outcome and one reply. |
 | `review` | A review that proves each harm with evidence, a fix and a test, with a security pass and the running product. Posts nothing without your yes. |
 | `ship` | Reviewed work becomes a checked release. It stops on an open finding and waits for your yes before each push, pull request, merge, tag and release. |
@@ -136,11 +136,12 @@ Every change lands through a pull request that passes `bash scripts/validate.sh`
 
 ## Credits
 
-builder takes ideas, and no text, from four MIT-licensed projects:
+builder takes ideas, and no text, from five projects, four under the MIT licence and one under Apache-2.0:
 [obra/superpowers](https://github.com/obra/superpowers) (the spec, plan and build loop),
 [garrytan/gstack](https://github.com/garrytan/gstack) (the reviews of a plan, the use of the running product, shipping),
-[cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) (the audit method)
-and [PostHog/posthog](https://github.com/PostHog/posthog), MIT outside its `ee/` folder (the bar a review finding must pass, the last sweep, the handling of review comments).
+[cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) (the audit method),
+[PostHog/posthog](https://github.com/PostHog/posthog), MIT outside its `ee/` folder (the bar a review finding must pass, the last sweep, the handling of review comments)
+and [google/elephant-goldfish-model](https://github.com/google/elephant-goldfish-model), Apache-2.0 (the fresh reader of a spec and a plan).
 
 ## License
 
