@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [4.1.1] - 2026-11-19
+
 ### Bug Fixes
 
 - The cold read lists each finding that the author contested or declined, under its record line. Before, the document showed only the counts, and nobody could check those answers.
@@ -159,7 +161,8 @@
 * add release automation, validation, metrics badges, and contributor guardrails ([2f4a570](https://github.com/Lutherwaves/builder/commit/2f4a570720a5be2a1a7137834f3e451668f30e5f))
 * bootstrap release + validation workflows ([be8e3ee](https://github.com/Lutherwaves/builder/commit/be8e3eec88bda415a041db75ef4836e7e1e31ca5))
 
-[Unreleased]: https://github.com/Lutherwaves/builder/compare/v4.1.0...HEAD
+[Unreleased]: https://github.com/Lutherwaves/builder/compare/v4.1.1...HEAD
+[4.1.1]: https://github.com/Lutherwaves/builder/compare/v4.1.0...v4.1.1
 [4.1.0]: https://github.com/Lutherwaves/builder/compare/v4.0.0...v4.1.0
 [4.0.0]: https://github.com/Lutherwaves/builder/compare/v3.0.0...v4.0.0
 [3.0.0]: https://github.com/Lutherwaves/builder/compare/v2.1.0...v3.0.0
