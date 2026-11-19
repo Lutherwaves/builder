@@ -25,7 +25,7 @@ The person wants to approve a document that a builder can act on, and not to fin
 
 1. Before `spec` asks for approval the first time, a fresh agent reads the spec. Before `plan` asks for approval the first time, a fresh agent reads the plan. A later request for approval of the same document starts no new read.
 2. The reader gets the path of the document, and may open the files it names. It never gets the conversation.
-3. The reader paraphrases first: what the document proposes, and how things work today. The author compares the paraphrase with the intent: a wrong paraphrase is a major finding. A part that the reader cannot paraphrase is a blocker.
+3. The reader paraphrases first: what the document proposes, and how things work today. The author compares the paraphrase with the intent: where they differ, the author records a major finding. A part that the reader cannot paraphrase is a blocker.
 4. The reader lists each place where a builder must guess, ask or decide. Each finding is a blocker, a major gap or a nit.
 5. The author gives each finding one answer: fix the document, contest it, ask the person, or decline a nit.
 6. The document records that the read ran, the counts, and what changed.
@@ -41,7 +41,7 @@ The person wants to approve a document that a builder can act on, and not to fin
 ## Anti-goals
 
 - The author must not answer a finding with "that was intended". A contest cites a file, a line or a ruling that the reader could open.
-- The author must not contest a gap in understanding. If a fresh reader could not follow the document, the document is short of words.
+- The author must not contest a gap in understanding. The reader had the whole document, so the document must say more.
 - The read must not replace the person. Findings that only the person can settle go to the person with the request for approval.
 - The read must not pass in silence when it did not run. A harness with no subagent writes "not cold-read" in the document.
 
@@ -105,7 +105,7 @@ For the person, from the first read:
 - Does the person see each contested finding, or only the count? Recommendation: only the count in the record, and the reply names each one. Proposed, not confirmed. Cost if wrong: a contest ends with the author and nobody checks it.
 - May the reader open repository files that the document does not name? Recommendation: yes, because a builder can. Proposed, not confirmed. Cost if wrong: the reader flags a term that the repository defines.
 
-Left after the second read: 7 major and 6 nit. No third read ran. The major ones:
+Left after the second read: 7 major and 6 nit. No third read ran. The review of the branch then found a sentence close to one in the source, in this spec and in `cold-read.md`. Both are rewritten. The major ones:
 
 - A wrong paraphrase has no stated place in the counts and no stated answer.
 - The spec does not say if the person sees declined findings.
