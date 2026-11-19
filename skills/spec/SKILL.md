@@ -84,7 +84,7 @@ A long spec that prescribes the build is a plan. Move that content to `plan`.
 ## The cold read
 
 Before the first request for approval, load `../builder/cold-read.md` and run it on the spec.
-Write its record under "Cold read". A finding for the person joins "Calls to check".
+Write its record under "Cold read".
 Run it in an unattended run too.
 
 ## The gate

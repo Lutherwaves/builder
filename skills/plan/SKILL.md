@@ -90,8 +90,6 @@ Write a table at the end of the plan: each done-when line, each anti-goal, and t
 | The file has no customer email | Task 3: the file leaves out customer email |
 
 A line with no task is a gap. Add the task, or move the line to Calls with the reason.
-Then load `../builder/cold-read.md` and run it on the plan, before the gate.
-Write its record in the plan, under "Cold read". A finding for the person goes under Calls.
 
 ## 6. Where it goes
 
@@ -99,6 +97,7 @@ Write its record in the plan, under "Cold read". A finding for the person goes u
 2. With no such place, recommend `docs/plans/YYYY-MM-DD-<slug>.md` and ask once.
    If nobody can answer, use the recommendation and list it under Calls.
 3. A ticket tracker is outside the repository. Write a local file. Post it only after the person says yes.
+4. Then load `../builder/cold-read.md` and run it on the plan file, before the gate. Write its record in the plan, under "Cold read".
 
 ## The gate
 

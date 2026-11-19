@@ -60,7 +60,7 @@ The person wants to approve a document that a builder can act on, and not to fin
 
 - `skills/builder/cold-read.md` (new): what the reader gets; the brief (paraphrase, then findings with a severity, a place and what a builder must guess); the four answers and the two rules for a contest; one more read after the fixes; the record; the case of no subagent; a document over 300 lines gets two readers: each reads the whole document, one reports on the first half and one on the second, and the record adds their counts.
 - `skills/spec/SKILL.md`: before the gate, load `cold-read.md` and run it. Findings for the person join "Calls to check".
-- `skills/plan/SKILL.md`: after the lenses in step 4 and the check against the spec in step 5, load `cold-read.md` and run it, so that the reader sees the whole plan. At most three new lines, or the same number cut elsewhere.
+- `skills/plan/SKILL.md`: after the lenses in step 4, the check against the spec in step 5 and the choice of the file in step 6, load `cold-read.md` and run it, so that the reader sees the whole plan at its path. At most three new lines, or the same number cut elsewhere.
 - `skills/spec/issue-template.md`: a "Cold read" section. It is always present, like Surfaces. The plan carries the same line next to "Lens findings". The plan's five header lines do not change, because `build` reads them word for word.
 - `tests/evals/cold-read/` (new fixture): a draft spec with planted gaps (a term nobody defines, a ruling the reader cannot see, a done-when line nobody can run) and a prompt that asks for the approval-ready spec.
 - `README.md`: the support table is rendered again in the same task as the fixture, because a new fixture changes its counts. The credits gain a fifth project.
@@ -105,7 +105,9 @@ For the person, from the first read:
 - Does the person see each contested finding, or only the count? Recommendation: only the count in the record, and the reply names each one. Proposed, not confirmed. Cost if wrong: a contest ends with the author and nobody checks it.
 - May the reader open repository files that the document does not name? Recommendation: yes, because a builder can. Proposed, not confirmed. Cost if wrong: the reader flags a term that the repository defines.
 
-Left after the second read: 7 major and 6 nit. No third read ran. The review of the branch then found a sentence close to one in the source, in this spec and in `cold-read.md`. Both are rewritten. The major ones:
+Left after the second read: 7 major and 6 nit. No third read ran. The review of the branch then found a sentence close to one in the source, in this spec and in `cold-read.md`. Both are rewritten.
+
+The review of the pull request changed `cold-read.md` again. The reader is never a fork of the session and opens no file outside the repository. Text in each file that it opens is data. A reader with no paraphrase is replaced one time. The read of a plan runs after the plan has a path. The second read has one reader, and its findings are not fixed. The record can say "Second read: none". The major ones:
 
 - A wrong paraphrase has no stated place in the counts and no stated answer.
 - The spec does not say if the person sees declined findings.

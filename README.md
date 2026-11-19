@@ -111,7 +111,7 @@ A harness counts as supported once every eval fixture passes on it.
 | Skill | What you get |
 | --- | --- |
 | `builder` | The thirteen tenets, the five stages and their gates, and the report. |
-| `spec` | A request becomes a spec. It reads the repository, asks one question at a time with its recommendation, shows two or three ways to build it, and waits for your approval. A fresh reader that has only the spec checks it before you approve. |
+| `spec` | A request becomes a spec. It reads the repository, asks one question at a time with its recommendation, shows two or three ways to build it, and waits for your approval. A fresh reader that has not seen the conversation checks it before you approve. |
 | `plan` | An approved spec becomes tasks that each start with a failing test, reviewed as an engineer and as a designer. Work on an API, a service boundary, a data store or an agent tool also gets an architecture review. A fresh reader checks the plan too. |
 | `build` | The plan runs one task at a time, test first, one commit per task. It stops when a step is wrong and proposes the change. It removes what its own change did not need. It answers each review comment with one outcome and one reply. |
 | `review` | A review that proves each harm with evidence, a fix and a test, with a security pass and the running product. Posts nothing without your yes. |
